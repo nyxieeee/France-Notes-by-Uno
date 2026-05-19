@@ -314,7 +314,10 @@ export default function RetDemPage() {
                       : uploadedFiles.length > 0 ? 'Add more files' : 'Upload your RetDem reference material'}
                   </p>
                   <p className="text-xs text-[var(--text-secondary)]">
-                    {isExtracting ? 'Doc Uno is reading your files 🩺' : 'Drag & drop or click — images, TXT, PDF • Select multiple at once'}
+                    {isExtracting 
+                      ? (isFrance ? 'Doc Uno is reading your files 🩺' : `${aiAssistantName} is reading your files 🩺`) 
+                      : 'Drag & drop or click — images, TXT, PDF • Select multiple at once'
+                    }
                   </p>
                 </div>
                 <div className="flex gap-1.5 shrink-0">
@@ -342,7 +345,10 @@ export default function RetDemPage() {
                         setActiveTab('library')
                       } catch (e) {
                         console.error(e)
-                        setGenerateError("Babe, nagka-error sa pagkonek kay Doc Uno. Please try again! 🩺🌸")
+                        setGenerateError(isFrance 
+                          ? "Babe, nagka-error sa pagkonek kay Doc Uno. Please try again! 🩺🌸"
+                          : `Nagka-error sa pagkonek kay ${aiAssistantName}. Please try again! 🩺`
+                        )
                       }
                     }}
                     disabled={isGenerating}
