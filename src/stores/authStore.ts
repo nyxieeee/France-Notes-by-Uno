@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
       })
     } else {
       if (!hasHash) {
-        set({ isInitialLoading: false })
+        set({ isInitialLoading: false, isLoading: false })
       }
     }
 
@@ -67,73 +67,78 @@ export const useAuthStore = create<AuthState>()((set) => ({
           },
           isAuthenticated: true,
           isInitialLoading: false,
+          isLoading: false,
         })
       } else {
-        set({ user: null, isAuthenticated: false, isInitialLoading: false })
+        set({ user: null, isAuthenticated: false, isInitialLoading: false, isLoading: false })
       }
     })
   },
 
   login: async (email: string, password: string) => {
     set({ isLoading: true })
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        throw new Error(error.message)
+      }
+      if (data?.user) {
+        const u = data.user
+        set({
+          user: {
+            id: u.id,
+            full_name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Nurse',
+            email: u.email || '',
+            avatar_url: u.user_metadata?.avatar_url || null,
+            theme_preference: 'light',
+            year_level: u.user_metadata?.year_level || '',
+            school: u.user_metadata?.school || '',
+            created_at: u.created_at,
+          },
+          isAuthenticated: true,
+        })
+      }
+    } finally {
       set({ isLoading: false })
-      throw new Error(error.message)
-    }
-    if (data.user) {
-      const u = data.user
-      set({
-        user: {
-          id: u.id,
-          full_name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Nurse',
-          email: u.email || '',
-          avatar_url: u.user_metadata?.avatar_url || null,
-          theme_preference: 'light',
-          year_level: u.user_metadata?.year_level || '',
-          school: u.user_metadata?.school || '',
-          created_at: u.created_at,
-        },
-        isAuthenticated: true,
-        isLoading: false,
-      })
     }
   },
 
   signup: async (name: string, email: string, password: string, school = '', yearLevel = '') => {
     set({ isLoading: true })
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: name, school, year_level: yearLevel },
-        emailRedirectTo: window.location.origin
-      }
-    })
-    if (error) {
-      set({ isLoading: false })
-      throw new Error(error.message)
-    }
-    if (data.user) {
-      const u = data.user
-      const session = data.session
-      set({
-        user: session ? {
-          id: u.id,
-          full_name: name,
-          email: u.email || '',
-          avatar_url: null,
-          theme_preference: 'light',
-          year_level: yearLevel,
-          school,
-          created_at: u.created_at,
-        } : null,
-        isAuthenticated: !!session,
-        isLoading: false,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name, school, year_level: yearLevel },
+          emailRedirectTo: window.location.origin
+        }
       })
-      return { confirmationRequired: !session }
+      if (error) {
+        throw new Error(error.message)
+      }
+      if (data?.user) {
+        const u = data.user
+        const session = data.session
+        set({
+          user: session ? {
+            id: u.id,
+            full_name: name,
+            email: u.email || '',
+            avatar_url: null,
+            theme_preference: 'light',
+            year_level: yearLevel,
+            school,
+            created_at: u.created_at,
+          } : null,
+          isAuthenticated: !!session,
+        })
+        return { confirmationRequired: !session }
+      }
+      return { confirmationRequired: false }
+    } finally {
+      set({ isLoading: false })
     }
-    return { confirmationRequired: false }
   },
 
   loginWithGoogle: async () => {
@@ -147,7 +152,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   logout: async () => {
     await supabase.auth.signOut()
-    set({ user: null, isAuthenticated: false })
+    set({ user: null, isAuthenticated: false, isLoading: false, isInitialLoading: false })
   },
 
   updateProfile: (updates) => {
