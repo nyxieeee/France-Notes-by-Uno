@@ -20,7 +20,22 @@ import KnowledgeGardenPage from '@/pages/KnowledgeGarden/KnowledgeGardenPage'
 import PlannerPage from '@/pages/Planner/PlannerPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, isLoading } = useAuthStore()
+  const isOAuthCallback = window.location.hash.includes('access_token=') || 
+                          window.location.hash.includes('id_token=') || 
+                          window.location.search.includes('code=')
+
+  if (isLoading || isOAuthCallback) {
+    return (
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin" />
+          <p className="text-[var(--text-secondary)] text-sm font-body">Authenticating...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!isAuthenticated) return <Navigate to="/login" replace />
   return <>{children}</>
 }
