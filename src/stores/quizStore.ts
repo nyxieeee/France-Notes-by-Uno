@@ -39,14 +39,20 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
 
   fetchQuizzes: async () => {
     set({ isLoading: true, error: null })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      set({ quizzes: [], isLoading: false })
+      return
+    }
     const { data, error } = await supabase
       .from('quizzes')
       .select('*')
+      .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching quizzes:', error)
-      set({ error: error.message, isLoading: false })
+      set({ error: error.message, quizzes: [], isLoading: false })
     } else {
       set({ quizzes: data as Quiz[], isLoading: false })
     }
@@ -214,12 +220,15 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
     if (!activeQuiz) return
 
     const score = get().getScore()
+    const { data: { session } } = await supabase.auth.getSession()
+    
     const updatedQuiz = { 
       ...activeQuiz, 
       score, 
       completed: true,
       questions,
-      user_answers: answers
+      user_answers: answers,
+      ...(session?.user ? { user_id: session.user.id } : {})
     }
     
     // Save to Supabase

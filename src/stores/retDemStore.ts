@@ -47,9 +47,12 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
   uploadHistory: [],
 
   fetchProcedures: async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
     const { data, error } = await supabase
       .from('retdem_procedures')
       .select('*')
+      .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
     
     if (!error && data) {
@@ -58,9 +61,12 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
   },
 
   fetchUploadHistory: async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
     const { data, error } = await supabase
       .from('retdem_upload_history')
       .select('*')
+      .eq('user_id', session.user.id)
       .order('uploaded_at', { ascending: false })
 
     if (!error && data) {
@@ -144,6 +150,9 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
 
       const result = await generateJSON(prompt, systemPrompt, 'retdem', 0.8, 4000)
       
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) throw new Error("No active session found")
+      
       const newProcedureData = {
         title: result.title || topic,
         category: result.category || "General",
@@ -152,7 +161,8 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
         rationale: result.rationale || "",
         materials: result.materials || [],
         steps: result.steps || [],
-        is_favorite: false
+        is_favorite: false,
+        user_id: session.user.id
       }
 
       const { data, error } = await supabase.from('retdem_procedures').insert([newProcedureData]).select().single()
@@ -205,6 +215,9 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
 
       const result = await generateJSON(prompt, systemPrompt, 'retdem', 0.8, 4000)
 
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) throw new Error("No active session found")
+
       const newProcedureData = {
         title: result.title || uploadedFiles[0].name || 'Uploaded Procedure',
         category: result.category || 'General',
@@ -213,13 +226,15 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
         rationale: result.rationale || '',
         materials: result.materials || [],
         steps: result.steps || [],
-        is_favorite: false
+        is_favorite: false,
+        user_id: session.user.id
       }
 
       // Save upload history to Supabase
       const uploadHistoryInserts = uploadedFiles.map((f) => ({
         name: f.name,
-        text: f.text
+        text: f.text,
+        user_id: session.user.id
       }))
 
       const { data: savedHistories, error: historyError } = await supabase

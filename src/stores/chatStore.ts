@@ -25,23 +25,32 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   fetchMessages: async () => {
     set({ isLoading: true, error: null })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      set({ messages: [], isLoading: false })
+      return
+    }
     const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
+      .eq('user_id', session.user.id)
       .order('created_at', { ascending: true })
 
     if (error) {
       console.error('Error fetching chat messages:', error)
-      set({ error: error.message, isLoading: false })
+      set({ error: error.message, messages: [], isLoading: false })
     } else {
       set({ messages: data as ChatMessage[], isLoading: false })
     }
   },
 
-  sendMessage: async (content: string) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
+
     const userMsg = {
       role: 'user',
       content,
+      user_id: session.user.id
     }
 
     set((state) => ({
@@ -62,6 +71,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const assistantMsg = {
       role: 'assistant',
       content: responseContent,
+      user_id: session.user.id
     }
 
     // Save assistant message to DB
@@ -74,10 +84,12 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   clearHistory: async () => {
     set({ messages: [] })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
     const { error } = await supabase
       .from('chat_messages')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all rows
+      .eq('user_id', session.user.id)
 
     if (error) {
       console.error('Error clearing chat history:', error)

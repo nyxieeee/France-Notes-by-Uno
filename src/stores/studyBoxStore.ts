@@ -77,9 +77,15 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
 
   fetchItems: async () => {
     set({ isLoading: true })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      set({ items: [], isLoading: false })
+      return
+    }
     const { data, error } = await supabase
       .from("study_materials")
       .select("*")
+      .eq("user_id", session.user.id)
       .order("created_at", { ascending: false })
       
     if (!error && data) {
@@ -90,9 +96,12 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
   },
 
   fetchSavedKnowledge: async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
     const { data, error } = await supabase
       .from("saved_knowledge")
       .select("*")
+      .eq("user_id", session.user.id)
       .order("date_saved", { ascending: false })
       
     if (!error && data) {
@@ -236,6 +245,9 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       }
     }
 
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) throw new Error("No active session found")
+
     const newItem = {
       file_name: file.name,
       file_type: fileType,
@@ -245,7 +257,8 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       topic_id: assignedTopicId,
       is_favorite: false,
       tags: [],
-      summary: summaryText || undefined
+      summary: summaryText || undefined,
+      user_id: session.user.id
     }
     
     // Save to Supabase
@@ -339,6 +352,9 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       fullArticleText += `SUMMARY:\n${result.description}`
     }
 
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) throw new Error("No active session found")
+
     const newItem = {
       file_name: `[Reference] ${result.title}.txt`,
       file_type: 'txt',
@@ -348,7 +364,8 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       topic_id: null,
       is_favorite: true,
       tags: ['knowledge-garden', result.category],
-      summary: undefined
+      summary: undefined,
+      user_id: session.user.id
     }
 
     const { data: insertedItem } = await supabase.from('study_materials').insert([newItem]).select().single()
@@ -360,7 +377,8 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       source: result.source,
       url: result.url,
       category: result.category,
-      date_saved: new Date().toISOString()
+      date_saved: new Date().toISOString(),
+      user_id: session.user.id
     }
     const { data: insertedKnowledge } = await supabase.from('saved_knowledge').insert([knowledgeToSave]).select().single()
 

@@ -162,6 +162,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   logout: async () => {
     await supabase.auth.signOut()
     set({ user: null, isAuthenticated: false, isLoading: false, isInitialLoading: false })
+    window.location.href = '/login'
   },
 
   updateProfile: (updates) => {

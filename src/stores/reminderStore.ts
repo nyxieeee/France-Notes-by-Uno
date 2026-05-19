@@ -21,25 +21,35 @@ export const useReminderStore = create<ReminderState>()((set, get) => ({
 
   fetchReminders: async () => {
     set({ isLoading: true, error: null })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      set({ reminders: [], isLoading: false })
+      return
+    }
     const { data, error } = await supabase
       .from('reminders')
       .select('*')
+      .eq('user_id', session.user.id)
       .order('due_date', { ascending: true })
     
     if (error) {
       console.error('Error fetching reminders:', error)
-      set({ error: error.message, isLoading: false })
+      set({ error: error.message, reminders: [], isLoading: false })
     } else {
       set({ reminders: data as Reminder[], isLoading: false })
     }
   },
 
   addReminder: async (reminder) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) throw new Error("No active session found")
+
     const newRem = {
       title: reminder.title,
       due_date: reminder.due_date,
       reminder_type: reminder.reminder_type,
-      completed: false
+      completed: false,
+      user_id: session.user.id
     }
     
     const { data, error } = await supabase
