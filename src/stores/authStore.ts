@@ -13,6 +13,8 @@ interface AuthState {
   logout: () => Promise<void>
   updateProfile: (updates: Partial<UserProfile>) => void
   initAuth: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
+  updatePassword: (password: string) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()((set) => ({
@@ -166,5 +168,27 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set(state => ({
       user: state.user ? { ...state.user, ...updates } : null,
     }))
+  },
+
+  resetPassword: async (email: string) => {
+    set({ isLoading: true })
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`
+      })
+      if (error) throw error
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  updatePassword: async (password: string) => {
+    set({ isLoading: true })
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw error
+    } finally {
+      set({ isLoading: false })
+    }
   },
 }))

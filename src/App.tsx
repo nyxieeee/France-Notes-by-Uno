@@ -7,6 +7,8 @@ import { PersonalizationProvider } from '@/context/PersonalizationContext'
 // Pages
 import LoginPage from '@/pages/Auth/LoginPage'
 import SignupPage from '@/pages/Auth/SignupPage'
+import ForgotPasswordPage from '@/pages/Auth/ForgotPasswordPage'
+import UpdatePasswordPage from '@/pages/Auth/UpdatePasswordPage'
 import HomePage from '@/pages/Home/HomePage'
 import StudyBoxPage from '@/pages/StudyBox/StudyBoxPage'
 import ReviewerLibraryPage from '@/pages/ReviewerLibrary/ReviewerLibraryPage'
@@ -65,6 +67,8 @@ function App() {
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/update-password" element={<UpdatePasswordPage />} />
 
           {/* Protected Routes */}
           <Route
