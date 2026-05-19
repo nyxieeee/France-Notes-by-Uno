@@ -1,0 +1,273 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #FFF8F6;
+    --card: #FFFFFF;
+    --secondary-bg: #FFD6E0;
+    --pink: #F7A8B8;
+    --pink-hover: #FF7FA3;
+    --accent: #FFC2D1;
+    --text: #5B4636;
+    --text-secondary: #8C6A74;
+    --border: #F3D8DE;
+    --success: #A8D8B9;
+    --warning: #FFD59E;
+    --error: #FFB3C1;
+  }
+
+  .dark {
+    --bg: #1F1A1D;
+    --card: #2A2327;
+    --secondary-bg: #332B30;
+    --pink: #F7A8B8;
+    --pink-hover: #FF8FB1;
+    --accent: #FFB3C7;
+    --text: #F9F1F3;
+    --text-secondary: #CBBAC1;
+    --border: #3A3136;
+    --success: #9FD4AF;
+    --warning: #F6C177;
+    --error: #F29CAB;
+  }
+
+  * {
+    @apply border-[var(--border)];
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-body text-[var(--text)] bg-[var(--bg)];
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold;
+  }
+}
+
+@layer components {
+  /* Card base */
+  .fn-card {
+    @apply bg-[var(--card)] rounded-3xl border border-[var(--border)] shadow-fn;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .fn-card:hover {
+    @apply shadow-fn-md;
+  }
+
+  /* Glassmorphism accent */
+  .fn-glass {
+    @apply backdrop-blur-md bg-white/60 dark:bg-white/5 border border-white/40 dark:border-white/10;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-[var(--pink)] text-white font-heading font-semibold px-6 py-3 rounded-2xl
+      hover:bg-[var(--pink-hover)] active:scale-95 transition-all duration-200
+      shadow-fn hover:shadow-fn-md disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-[var(--secondary-bg)] text-[var(--text)] font-heading font-semibold px-6 py-3 rounded-2xl
+      hover:bg-[var(--accent)] active:scale-95 transition-all duration-200
+      border border-[var(--border)] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-[var(--text-secondary)] font-body font-medium px-4 py-2.5 rounded-xl
+      hover:bg-[var(--secondary-bg)] hover:text-[var(--text)] active:scale-95 transition-all duration-200;
+  }
+
+  .btn-icon {
+    @apply p-2.5 rounded-xl hover:bg-[var(--secondary-bg)] text-[var(--text-secondary)]
+      hover:text-[var(--text)] transition-all duration-200 active:scale-90;
+  }
+
+  /* Input */
+  .fn-input {
+    @apply w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3
+      font-body text-[var(--text)] placeholder:text-[var(--text-secondary)]
+      focus:outline-none focus:ring-2 focus:ring-[var(--pink)] focus:border-transparent
+      transition-all duration-200;
+  }
+
+  /* Badge */
+  .fn-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-heading font-semibold
+      bg-[var(--secondary-bg)] text-[var(--text-secondary)];
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 99px;
+  }
+  /* Show extremely subtle scrollbar thumb only when container is hovered */
+  *:hover::-webkit-scrollbar-thumb {
+    background: rgba(91, 70, 54, 0.1); /* warm text color with 10% opacity */
+  }
+  .dark *:hover::-webkit-scrollbar-thumb {
+    background: rgba(249, 241, 243, 0.1); /* dark text color with 10% opacity */
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--pink) !important;
+  }
+
+  /* Page container */
+  .page-container {
+    @apply flex-1 px-4 sm:px-6 py-6 pb-24 md:pb-8 w-full max-w-6xl mx-auto;
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* Section title */
+  .section-title {
+    @apply font-heading font-bold text-xl text-[var(--text)] mb-4;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-[#F7A8B8] to-[#FF7FA3] bg-clip-text text-transparent;
+  }
+
+  /* Bottom nav safe area */
+  .bottom-nav-spacer {
+    @apply h-20 md:h-0;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 0.2s;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 0.4s;
+  }
+
+  .perspective {
+    perspective: 1000px;
+  }
+
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+}
+
+/* Markdown Content Styling for France Notes */
+.markdown-content {
+  font-family: inherit;
+  color: var(--text-secondary);
+}
+
+.markdown-content p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content ul {
+  list-style-type: disc !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+.markdown-content ol {
+  list-style-type: decimal !important;
+  padding-left: 1.75rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+.markdown-content li {
+  display: list-item !important;
+  margin-bottom: 0.6rem !important;
+  padding-left: 0.25rem !important;
+  line-height: 1.6 !important;
+  color: var(--text-secondary);
+}
+
+.markdown-content li::marker {
+  color: var(--pink) !important;
+  font-weight: 800 !important;
+  font-size: 1.05em;
+}
+
+.markdown-content strong {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.markdown-content h1, 
+.markdown-content h2, 
+.markdown-content h3, 
+.markdown-content h4 {
+  color: var(--text);
+  font-weight: 700;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.markdown-content h1:first-child, 
+.markdown-content h2:first-child, 
+.markdown-content h3:first-child {
+  margin-top: 0;
+}
+
+.markdown-content h1 { font-size: 1.4rem; }
+.markdown-content h2 { font-size: 1.25rem; }
+.markdown-content h3 { font-size: 1.1rem; }
+
+/* Custom Premium slow-spinning animation */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+
