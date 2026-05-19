@@ -25,13 +25,18 @@ export default function SignupPage() {
     e.preventDefault()
     setError('')
     try {
+      console.log('Submitting signup form for email:', email)
       const res = await signup(name, email, password, school, yearLevel)
+      console.log('Signup result returned:', res)
       if (res?.confirmationRequired) {
+        console.log('Confirmation is required, setting isPendingConfirmation to true')
         setIsPendingConfirmation(true)
       } else {
+        console.log('Confirmation NOT required, navigating to /home')
         navigate('/home')
       }
     } catch (err: any) {
+      console.error('Signup error caught:', err)
       setError(err.message || 'Signup failed. Please try again.')
     }
   }
