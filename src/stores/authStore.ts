@@ -106,7 +106,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
       email,
       password,
       options: {
-        data: { full_name: name, school, year_level: yearLevel }
+        data: { full_name: name, school, year_level: yearLevel },
+        emailRedirectTo: window.location.origin
       }
     })
     if (error) {
