@@ -6,6 +6,7 @@ interface AuthState {
   user: UserProfile | null
   isAuthenticated: boolean
   isLoading: boolean
+  isInitialLoading: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string, school?: string, yearLevel?: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
@@ -17,10 +18,11 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()((set) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: false,
+  isInitialLoading: true,
 
   initAuth: async () => {
-    set({ isLoading: true })
+    set({ isInitialLoading: true })
     const hasHash = window.location.hash.includes('access_token=') || 
                     window.location.hash.includes('id_token=') || 
                     window.location.search.includes('code=')
@@ -40,11 +42,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
           created_at: u.created_at,
         },
         isAuthenticated: true,
-        isLoading: false,
+        isInitialLoading: false,
       })
     } else {
       if (!hasHash) {
-        set({ isLoading: false })
+        set({ isInitialLoading: false })
       }
     }
 
@@ -64,10 +66,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
             created_at: u.created_at,
           },
           isAuthenticated: true,
-          isLoading: false,
+          isInitialLoading: false,
         })
       } else {
-        set({ user: null, isAuthenticated: false, isLoading: false })
+        set({ user: null, isAuthenticated: false, isInitialLoading: false })
       }
     })
   },

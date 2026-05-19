@@ -20,12 +20,12 @@ import KnowledgeGardenPage from '@/pages/KnowledgeGarden/KnowledgeGardenPage'
 import PlannerPage from '@/pages/Planner/PlannerPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const { isAuthenticated, isInitialLoading } = useAuthStore()
   const isOAuthCallback = window.location.hash.includes('access_token=') || 
                           window.location.hash.includes('id_token=') || 
                           window.location.search.includes('code=')
 
-  if (isLoading || isOAuthCallback) {
+  if (isInitialLoading || isOAuthCallback) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -41,13 +41,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { initAuth, isLoading } = useAuthStore()
+  const { initAuth, isInitialLoading } = useAuthStore()
 
   useEffect(() => {
     initAuth()
   }, [])
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
