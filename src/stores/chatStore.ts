@@ -44,6 +44,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }
   },
 
+  sendMessage: async (content: string) => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) return
 
