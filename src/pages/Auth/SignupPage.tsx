@@ -10,6 +10,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [school, setSchool] = useState('')
   const [yearLevel, setYearLevel] = useState('')
+  const [error, setError] = useState('')
   const { signup, isLoading, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
 
@@ -21,8 +22,13 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await signup(name, email, password, school, yearLevel)
-    navigate('/home')
+    setError('')
+    try {
+      await signup(name, email, password, school, yearLevel)
+      navigate('/home')
+    } catch (err: any) {
+      setError(err.message || 'Signup failed. Please try again.')
+    }
   }
 
   return (
@@ -45,6 +51,11 @@ export default function SignupPage() {
         </div>
 
         <div className="fn-card p-8 bg-[var(--card)]/80 backdrop-blur-md">
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-xl text-center">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div className="space-y-2">
