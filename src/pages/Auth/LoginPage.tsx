@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
@@ -8,8 +8,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { login, loginWithGoogle, isLoading } = useAuthStore()
+  const { login, loginWithGoogle, isLoading, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/home')
+    }
+  }, [isAuthenticated, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

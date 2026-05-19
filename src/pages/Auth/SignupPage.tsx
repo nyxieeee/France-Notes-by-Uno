@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Sparkles, Mail, Lock, User, ArrowRight, GraduationCap, BookOpen } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
@@ -10,8 +10,14 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [school, setSchool] = useState('')
   const [yearLevel, setYearLevel] = useState('')
-  const { signup, isLoading } = useAuthStore()
+  const { signup, isLoading, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/home')
+    }
+  }, [isAuthenticated, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
