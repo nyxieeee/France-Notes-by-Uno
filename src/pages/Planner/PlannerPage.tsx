@@ -10,7 +10,8 @@ import {
   Trash2,
   CheckCircle2,
   Sparkles,
-  BookOpen
+  BookOpen,
+  ChevronUp
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate, getReminderTypeColor, getReminderTypeLabel } from '@/lib/utils'
@@ -29,6 +30,16 @@ export default function PlannerPage() {
   const [newType, setNewType] = useState<Reminder['reminder_type']>('assignment')
   const [newDate, setNewDate] = useState('')
   const [newTime, setNewTime] = useState('')
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false)
+
+  const CATEGORIES = [
+    { value: 'assignment', label: 'Homework / Assignment' },
+    { value: 'quiz', label: 'Quiz Preparation' },
+    { value: 'exam', label: 'Major Exam' },
+    { value: 'retdem', label: 'RetDem Practice' },
+    { value: 'duty', label: 'Clinical Duty' },
+    { value: 'other', label: 'Other Review' }
+  ]
 
   // Calendar Logic
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
@@ -213,28 +224,7 @@ export default function PlannerPage() {
             </div>
           </div>
           
-          {/* AI Auto-Schedule Promo */}
-          <div className="fn-card p-6 bg-gradient-to-br from-[var(--pink)] to-pink-500 text-white relative overflow-hidden">
-            <div className="absolute right-0 bottom-0 opacity-10 translate-x-1/4 translate-y-1/4">
-              <Sparkles size={160} />
-            </div>
-            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div>
-                <h3 className="font-heading font-bold text-xl mb-2 flex items-center gap-2">
-                  <Sparkles size={20} /> AI Study Planner
-                </h3>
-                <p className="text-sm font-medium opacity-90 max-w-md">
-                  {isFrance 
-                    ? "Babe, let Doc Uno create a custom study schedule based on your uploaded reviewers and weak topics!" 
-                    : `Let ${aiAssistantName} create a custom study schedule based on your uploaded materials.`
-                  }
-                </p>
-              </div>
-              <button className="bg-white text-[var(--pink)] px-6 py-3 rounded-2xl font-bold shadow-lg hover:scale-105 transition-transform whitespace-nowrap">
-                Auto-Schedule
-              </button>
-            </div>
-          </div>
+
         </div>
 
         {/* Right Column: Upcoming Reminders */}
@@ -356,20 +346,72 @@ export default function PlannerPage() {
                   />
                 </div>
                 
-                <div>
+                <div className="relative">
                   <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Category</label>
-                  <select 
-                    value={newType}
-                    onChange={e => setNewType(e.target.value as any)}
-                    className="fn-input w-full appearance-none bg-white"
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                    className="fn-input w-full flex items-center justify-between text-left focus:border-[var(--pink)] transition-all active:scale-[0.99] bg-white"
                   >
-                    <option value="assignment">Homework / Assignment</option>
-                    <option value="quiz">Quiz Preparation</option>
-                    <option value="exam">Major Exam</option>
-                    <option value="retdem">RetDem Practice</option>
-                    <option value="duty">Clinical Duty</option>
-                    <option value="other">Other Review</option>
-                  </select>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "w-2.5 h-2.5 rounded-full shrink-0",
+                        getReminderTypeColor(newType)
+                      )} />
+                      <span className="truncate">{CATEGORIES.find(c => c.value === newType)?.label || 'Select Category'}</span>
+                    </div>
+                    <ChevronUp 
+                      size={18} 
+                      className={cn(
+                        "text-[var(--text-secondary)] transition-transform duration-300 shrink-0",
+                        isCategoryDropdownOpen ? "" : "rotate-180"
+                      )} 
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {isCategoryDropdownOpen && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40 cursor-default" 
+                          onClick={() => setIsCategoryDropdownOpen(false)}
+                        />
+                        
+                        <motion.div
+                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border border-[var(--border)] rounded-2xl shadow-fn-lg max-h-60 overflow-y-auto custom-scrollbar p-2"
+                        >
+                          <div className="space-y-1">
+                            {CATEGORIES.map(category => (
+                              <button
+                                key={category.value}
+                                type="button"
+                                onClick={() => {
+                                  setNewType(category.value as any)
+                                  setIsCategoryDropdownOpen(false)
+                                }}
+                                className={cn(
+                                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5",
+                                  newType === category.value 
+                                    ? "bg-[var(--pink)]/10 text-[var(--pink)]" 
+                                    : "text-[var(--text)]"
+                                )}
+                              >
+                                <span className={cn(
+                                  "w-2.5 h-2.5 rounded-full shrink-0",
+                                  getReminderTypeColor(category.value as any)
+                                )} />
+                                <span className="truncate">{category.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

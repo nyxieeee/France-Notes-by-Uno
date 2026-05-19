@@ -97,8 +97,10 @@ export const getSimulationEvaluationPrompt = () => {
   const config = getPersonalizationConfig()
   const { greetingName } = config
   return `
-    You are evaluating ${config.isFrance ? 'France' : greetingName}'s performance in the clinical simulation.
-    Analyze the chat transcript and provide a structured performance report.
+    You are an expert Clinical Nursing Instructor evaluating ${config.isFrance ? 'France' : greetingName}'s performance in a clinical simulation.
+    Analyze the provided chat transcript. 
+    IMPORTANT: You must ONLY evaluate the "user" (the nursing student). Do NOT evaluate the "assistant" (Doc Uno/Nurse Florence).
+    All feedback in "What You Did Right" and "Areas for Improvement" MUST be about the user's medical accuracy, safety, reasoning, and clinical knowledge.
 
     Output strictly as a JSON object with the following structure:
     {
@@ -107,9 +109,9 @@ export const getSimulationEvaluationPrompt = () => {
       "reasoning": number (0-100),
       "confidence": number (0-100),
       "feedback": {
-        "correct": [array of strings explaining what they did right],
-        "missed": [array of strings explaining what they missed or got wrong],
-        "safetyViolations": [array of strings explaining critical safety errors, or empty array if none]
+        "correct": [array of strings explaining what the USER did right, e.g. "You correctly identified the symptoms...", "You remembered to check vitals..."],
+        "missed": [array of strings explaining what the USER missed or got wrong, e.g. "You forgot to mention hand hygiene..."],
+        "safetyViolations": [array of strings explaining critical safety errors made by the USER, or empty array if none]
       }
     }
   `

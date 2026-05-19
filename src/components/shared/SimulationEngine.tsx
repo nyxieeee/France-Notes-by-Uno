@@ -18,7 +18,7 @@ export function SimulationEngine() {
 
 function SimulationSession() {
   const { isFrance, aiAssistantName } = usePersonalization()
-  const { activeMode, topic, difficulty, messages, addMessage, endSession, setScores } = useSimulationStore()
+  const { activeMode, topic, difficulty, messages, addMessage, endSession, setScores, sourceName } = useSimulationStore()
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isListening, setIsListening] = useState(false)
@@ -153,7 +153,7 @@ ${formattedTranscript}`
             <img src={isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
           </div>
           <div>
-            <h2 className="font-bold text-sm">{activeMode === 'recitation' ? 'Live Recitation' : 'RetDem Practice'}: {topic}</h2>
+            <h2 className="font-bold text-sm">{activeMode === 'recitation' ? 'Live Recitation' : 'RetDem Practice'}: {sourceName || topic}</h2>
             <p className="text-xs text-[var(--text-secondary)] capitalize">{activeMode === 'recitation' ? difficulty.replace('_', ' ') : 'Clinical Instructor Mode'}</p>
           </div>
         </div>
