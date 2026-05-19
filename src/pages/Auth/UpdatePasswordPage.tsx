@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Lock, ArrowRight, CheckCircle } from 'lucide-react'
+import { Lock, ArrowRight, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { updatePassword, isLoading } = useAuthStore()
@@ -79,13 +81,20 @@ export default function UpdatePasswordPage() {
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
                   <input 
-                    type="password" 
-                    className="fn-input pl-11" 
+                    type={showPassword ? "text" : "password"} 
+                    className="fn-input pl-11 pr-11" 
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 hover:text-[var(--pink)] transition-colors focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 
@@ -94,13 +103,20 @@ export default function UpdatePasswordPage() {
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
                   <input 
-                    type="password" 
-                    className="fn-input pl-11" 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    className="fn-input pl-11 pr-11" 
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 hover:text-[var(--pink)] transition-colors focus:outline-none"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 

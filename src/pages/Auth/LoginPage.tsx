@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react'
+import { Sparkles, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { motion } from 'framer-motion'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const { login, loginWithGoogle, isLoading, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
@@ -79,13 +80,20 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
                 <input 
-                  type="password" 
-                  className="fn-input pl-11" 
+                  type={showPassword ? "text" : "password"} 
+                  className="fn-input pl-11 pr-11" 
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 hover:text-[var(--pink)] transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
