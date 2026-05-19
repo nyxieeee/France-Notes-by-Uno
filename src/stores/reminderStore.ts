@@ -1,107 +1,111 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import type { Reminder } from '@/types'
-import { generateId } from '@/lib/utils'
-
-import { useAuthStore } from './authStore'
+import { supabase } from '@/lib/supabase'
 
 interface ReminderState {
   reminders: Reminder[]
-  
-  allReminders: Reminder[]
-  filterByUser: (email: string | null) => void
+  isLoading: boolean
+  error: string | null
 
-  addReminder: (reminder: Omit<Reminder, 'id' | 'user_id' | 'completed'>) => void
-  toggleReminder: (id: string) => void
-  removeReminder: (id: string) => void
+  fetchReminders: () => Promise<void>
+  addReminder: (reminder: Omit<Reminder, 'id' | 'user_id' | 'completed'>) => Promise<void>
+  toggleReminder: (id: string) => Promise<void>
+  removeReminder: (id: string) => Promise<void>
   getUpcomingReminders: (count?: number) => Reminder[]
 }
 
-export const useReminderStore = create<ReminderState>()(
-  persist(
-    (set, get) => ({
-      reminders: [],
-      
-      allReminders: [],
+export const useReminderStore = create<ReminderState>()((set, get) => ({
+  reminders: [],
+  isLoading: false,
+  error: null,
 
-      filterByUser: (email: string | null) => {
-        const { allReminders } = get()
-        const activeEmail = email || ''
-        const filteredReminders = allReminders.filter((r: any) => r.user_email === activeEmail)
-        set({ reminders: filteredReminders })
-      },
-
-      addReminder: (reminder: Omit<Reminder, 'id' | 'user_id' | 'completed'>) => {
-        const currentUser = useAuthStore.getState().user
-        const newRem: Reminder & { user_email?: string } = {
-          ...reminder,
-          id: generateId(),
-          user_id: currentUser?.id || 'guest',
-          user_email: currentUser?.email || 'guest',
-          completed: false
-        }
-        set((state: any) => ({
-          allReminders: [newRem, ...state.allReminders],
-          reminders: [newRem, ...state.reminders]
-        }))
-      },
-
-      toggleReminder: (id: string) => {
-        set((state: any) => {
-          const update = (list: any[]) => list.map((r: any) => r.id === id ? { ...r, completed: !r.completed } : r)
-          return {
-            allReminders: update(state.allReminders),
-            reminders: update(state.reminders)
-          }
-        })
-      },
-
-      removeReminder: (id: string) => {
-        set((state: any) => ({
-          allReminders: state.allReminders.filter((r: any) => r.id !== id),
-          reminders: state.reminders.filter((r: any) => r.id !== id)
-        }))
-      },
-
-      getUpcomingReminders: (count = 5) => {
-        return [...get().reminders]
-          .filter(r => !r.completed)
-          .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-          .slice(0, count)
-      }
-    }),
-    {
-      name: 'fn-reminders-v3',
-      merge: (persistedState: any, currentState: any) => {
-        const state = persistedState || {}
-        
-        // 1. Migrate old single-user reminder list to allReminders
-        const allReminders = state.allReminders || state.reminders || []
-        
-        // 2. Tag old reminders with france's email by default
-        const migratedReminders = allReminders.map((r: any) => ({
-          ...r,
-          user_email: r.user_email || 'france@example.com'
-        }))
-
-        // 3. Filter for active user
-        const currentUser = useAuthStore.getState().user
-        const activeEmail = currentUser?.email || ''
-        const filteredReminders = migratedReminders.filter((r: any) => r.user_email === activeEmail)
-
-        return {
-          ...currentState,
-          ...persistedState,
-          allReminders: migratedReminders,
-          reminders: filteredReminders
-        }
-      }
+  fetchReminders: async () => {
+    set({ isLoading: true, error: null })
+    const { data, error } = await supabase
+      .from('reminders')
+      .select('*')
+      .order('due_date', { ascending: true })
+    
+    if (error) {
+      console.error('Error fetching reminders:', error)
+      set({ error: error.message, isLoading: false })
+    } else {
+      set({ reminders: data as Reminder[], isLoading: false })
     }
-  )
-)
+  },
 
-// Dynamically trigger filtering on authentication state changes
-useAuthStore.subscribe((state) => {
-  const currentUser = state.user
-  useReminderStore.getState().filterByUser(currentUser?.email || null)
-})
+  addReminder: async (reminder) => {
+    const newRem = {
+      title: reminder.title,
+      due_date: reminder.due_date,
+      reminder_type: reminder.reminder_type,
+      completed: false
+    }
+    
+    const { data, error } = await supabase
+      .from('reminders')
+      .insert([newRem])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error adding reminder:', error)
+    } else if (data) {
+      set((state) => ({
+        reminders: [data as Reminder, ...state.reminders]
+      }))
+    }
+  },
+
+  toggleReminder: async (id: string) => {
+    const current = get().reminders.find(r => r.id === id)
+    if (!current) return
+    
+    // Optimistic update
+    set((state) => ({
+      reminders: state.reminders.map(r => r.id === id ? { ...r, completed: !r.completed } : r)
+    }))
+
+    const { error } = await supabase
+      .from('reminders')
+      .update({ completed: !current.completed })
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error toggling reminder:', error)
+      // Revert on error
+      set((state) => ({
+        reminders: state.reminders.map(r => r.id === id ? { ...r, completed: current.completed } : r)
+      }))
+    }
+  },
+
+  removeReminder: async (id: string) => {
+    // Optimistic update
+    const previousReminders = get().reminders
+    set((state) => ({
+      reminders: state.reminders.filter(r => r.id !== id)
+    }))
+
+    const { error } = await supabase
+      .from('reminders')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error removing reminder:', error)
+      // Revert
+      set({ reminders: previousReminders })
+    }
+  },
+
+  getUpcomingReminders: (count = 5) => {
+    return [...get().reminders]
+      .filter(r => !r.completed)
+      .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+      .slice(0, count)
+  }
+}))
+
+// Initial fetch
+useReminderStore.getState().fetchReminders()
