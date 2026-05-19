@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [school, setSchool] = useState('')
   const [yearLevel, setYearLevel] = useState('')
   const [error, setError] = useState('')
+  const [isPendingConfirmation, setIsPendingConfirmation] = useState(false)
   const { signup, isLoading, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
 
@@ -24,8 +25,12 @@ export default function SignupPage() {
     e.preventDefault()
     setError('')
     try {
-      await signup(name, email, password, school, yearLevel)
-      navigate('/home')
+      const res = await signup(name, email, password, school, yearLevel)
+      if (res?.confirmationRequired) {
+        setIsPendingConfirmation(true)
+      } else {
+        navigate('/home')
+      }
     } catch (err: any) {
       setError(err.message || 'Signup failed. Please try again.')
     }
@@ -51,12 +56,42 @@ export default function SignupPage() {
         </div>
 
         <div className="fn-card p-8 bg-[var(--card)]/80 backdrop-blur-md">
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-xl text-center">
-              {error}
+          {isPendingConfirmation ? (
+            <div className="text-center space-y-6 py-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[var(--pink)]/10 text-[var(--pink)] animate-bounce mb-2">
+                <Mail size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-[var(--text)]">Verify Your Email</h2>
+              <div className="space-y-3">
+                <p className="text-[var(--text-secondary)] text-sm">
+                  We've sent a verification link to <strong className="text-[var(--text)]">{email}</strong>.
+                </p>
+                <p className="text-[var(--text-secondary)] text-xs">
+                  Please click the link inside the email to confirm your address.
+                </p>
+              </div>
+              <div className="flex flex-col items-center gap-3 pt-4 border-t border-[var(--border)]">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 border-2 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin" />
+                  <span className="text-xs text-[var(--text-secondary)]">Waiting for confirmation...</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPendingConfirmation(false)}
+                  className="text-xs text-[var(--pink)] hover:underline mt-2"
+                >
+                  Back to Sign Up
+                </button>
+              </div>
             </div>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          ) : (
+            <>
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-xl text-center">
+                  {error}
+                </div>
+              )}
+              <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div className="space-y-2">
               <label className="text-sm font-semibold ml-1">Full Name</label>
@@ -154,7 +189,9 @@ export default function SignupPage() {
               )}
             </button>
           </form>
-        </div>
+        </>
+      )}
+    </div>
 
         <p className="text-center mt-8 text-sm text-[var(--text-secondary)]">
           Already have an account? <Link to="/login" className="text-[var(--pink)] font-semibold hover:underline">Log in</Link>

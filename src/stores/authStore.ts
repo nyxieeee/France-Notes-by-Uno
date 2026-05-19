@@ -8,7 +8,7 @@ interface AuthState {
   isLoading: boolean
   isInitialLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  signup: (name: string, email: string, password: string, school?: string, yearLevel?: string) => Promise<void>
+  signup: (name: string, email: string, password: string, school?: string, yearLevel?: string) => Promise<{ confirmationRequired: boolean }>
   loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
   updateProfile: (updates: Partial<UserProfile>) => void
@@ -115,8 +115,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
     }
     if (data.user) {
       const u = data.user
+      const session = data.session
       set({
-        user: {
+        user: session ? {
           id: u.id,
           full_name: name,
           email: u.email || '',
@@ -125,11 +126,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
           year_level: yearLevel,
           school,
           created_at: u.created_at,
-        },
-        isAuthenticated: true,
+        } : null,
+        isAuthenticated: !!session,
         isLoading: false,
       })
+      return { confirmationRequired: !session }
     }
+    return { confirmationRequired: false }
   },
 
   loginWithGoogle: async () => {
