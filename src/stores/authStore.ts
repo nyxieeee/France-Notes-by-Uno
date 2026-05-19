@@ -117,11 +117,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
       if (error) {
         throw new Error(error.message)
       }
-      if (data?.user) {
-        const u = data.user
-        const session = data.session
+
+      const session = data?.session || null
+      const u = data?.user || null
+
+      if (session && u) {
         set({
-          user: session ? {
+          user: {
             id: u.id,
             full_name: name,
             email: u.email || '',
@@ -130,12 +132,17 @@ export const useAuthStore = create<AuthState>()((set) => ({
             year_level: yearLevel,
             school,
             created_at: u.created_at,
-          } : null,
-          isAuthenticated: !!session,
+          },
+          isAuthenticated: true,
         })
-        return { confirmationRequired: !session }
+        return { confirmationRequired: false }
+      } else {
+        set({
+          user: null,
+          isAuthenticated: false,
+        })
+        return { confirmationRequired: true }
       }
-      return { confirmationRequired: false }
     } finally {
       set({ isLoading: false })
     }
