@@ -7,13 +7,25 @@ import { motion } from 'framer-motion'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const { login, isLoading } = useAuthStore()
+  const [error, setError] = useState('')
+  const { login, loginWithGoogle, isLoading } = useAuthStore()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await login(email, password)
-    navigate('/home')
+    setError('')
+    try {
+      await login(email, password)
+      navigate('/home')
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please check your credentials.')
+    }
+  }
+
+  const handleGoogle = async () => {
+    setError('')
+    await loginWithGoogle()
+    // Redirect is handled automatically by Supabase OAuth flow
   }
 
   return (
@@ -96,7 +108,15 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            <button className="btn-secondary flex items-center justify-center gap-2 py-2.5">
+            {error && (
+              <p className="text-xs text-red-400 text-center -mt-2">{error}</p>
+            )}
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={isLoading}
+              className="btn-secondary flex items-center justify-center gap-2 py-2.5"
+            >
               <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
               <span className="text-sm">Continue with Google</span>
             </button>
