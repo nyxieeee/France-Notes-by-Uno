@@ -229,7 +229,7 @@ export default function StudyBoxPage() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col justify-between p-6 relative bg-gradient-to-br from-white to-[var(--secondary-bg)]/20">
+                  <div className="w-full h-full flex flex-col justify-between p-6 relative bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20">
                     <div className="space-y-2 w-full opacity-60">
                       <div className="h-2.5 bg-[var(--border)] rounded-full w-3/4"></div>
                       <div className="h-2 bg-[var(--border)] rounded-full w-5/6"></div>
@@ -701,7 +701,7 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 flex gap-4 border-b border-[var(--border)] bg-gradient-to-br from-white to-[var(--secondary-bg)]/20 relative items-center">
+        <div className="p-6 flex gap-4 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative items-center">
           <button 
             onClick={onClose}
             className="absolute top-6 right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors text-xs font-bold"

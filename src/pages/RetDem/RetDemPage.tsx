@@ -639,7 +639,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Checklist & Info */}
         <div className="space-y-6">
-           <div className="fn-card p-6 bg-gradient-to-br from-white to-[var(--secondary-bg)]/20">
+           <div className="fn-card p-6 bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20">
               <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
                  <ListChecks className="text-[var(--pink)]" size={20} />
                  Materials Checklist

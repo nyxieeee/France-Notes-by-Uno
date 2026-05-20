@@ -555,7 +555,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         className="bg-[var(--card)] w-full max-w-5xl max-h-[90vh] md:h-[85vh] rounded-[2.5rem] shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col my-auto"
       >
         {/* Header */}
-        <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6 border-b border-[var(--border)] bg-gradient-to-br from-white to-[var(--secondary-bg)]/20 relative">
+        <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative">
           <button 
             onClick={onClose}
             className="absolute top-6 right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"

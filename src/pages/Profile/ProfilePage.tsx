@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import Cropper, { Area, Point } from 'react-easy-crop'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
@@ -50,6 +51,12 @@ export default function ProfilePage() {
     marketing: false
   })
 
+  // Cropper State
+  const [selectedImageToCrop, setSelectedImageToCrop] = useState<string | null>(null)
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+
   const { items, topics } = useStudyBoxStore()
   const { quizzes } = useQuizStore()
   const { reviewers } = useReviewerStore()
@@ -66,39 +73,61 @@ export default function ProfilePage() {
       const reader = new FileReader()
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          // Resize the image so it fits in Supabase user_metadata
-          const img = new Image()
-          img.onload = () => {
-            const canvas = document.createElement('canvas')
-            const MAX_SIZE = 150 // Small profile picture size
-            let width = img.width
-            let height = img.height
-
-            if (width > height) {
-              if (width > MAX_SIZE) {
-                height *= MAX_SIZE / width
-                width = MAX_SIZE
-              }
-            } else {
-              if (height > MAX_SIZE) {
-                width *= MAX_SIZE / height
-                height = MAX_SIZE
-              }
-            }
-
-            canvas.width = width
-            canvas.height = height
-            const ctx = canvas.getContext('2d')
-            ctx?.drawImage(img, 0, 0, width, height)
-            
-            // Compress heavily to ensure it fits in JWT limits
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6)
-            updateProfile({ avatar_url: compressedBase64 })
-          }
-          img.src = reader.result
+          setSelectedImageToCrop(reader.result)
+          setCrop({ x: 0, y: 0 })
+          setZoom(1)
         }
       }
       reader.readAsDataURL(file)
+      // Reset input so same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const onCropComplete = (croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels)
+  }
+
+  const handleCropSave = async () => {
+    if (!selectedImageToCrop || !croppedAreaPixels) return
+
+    try {
+      const img = new Image()
+      img.src = selectedImageToCrop
+      
+      await new Promise((resolve) => {
+        img.onload = resolve
+      })
+
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      
+      const MAX_SIZE = 150
+      canvas.width = MAX_SIZE
+      canvas.height = MAX_SIZE
+      
+      if (ctx) {
+        ctx.drawImage(
+          img,
+          croppedAreaPixels.x,
+          croppedAreaPixels.y,
+          croppedAreaPixels.width,
+          croppedAreaPixels.height,
+          0,
+          0,
+          MAX_SIZE,
+          MAX_SIZE
+        )
+        
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8)
+        updateProfile({ avatar_url: compressedBase64 })
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSelectedImageToCrop(null)
     }
   }
 
@@ -523,6 +552,57 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Crop Modal */}
+      <AnimatePresence>
+        {selectedImageToCrop && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fn-card w-full max-w-md relative z-10 overflow-hidden flex flex-col bg-[var(--card)] p-6"
+            >
+              <h3 className="font-heading font-bold text-lg mb-4 text-center">Adjust Profile Picture</h3>
+              
+              <div className="relative w-full h-64 bg-black/10 rounded-2xl overflow-hidden mb-6 shadow-inner">
+                <Cropper
+                  image={selectedImageToCrop}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setSelectedImageToCrop(null)}
+                  className="flex-1 btn-ghost border border-[var(--border)] bg-transparent hover:bg-[var(--bg)]"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleCropSave}
+                  className="flex-1 btn-primary"
+                >
+                  Save Picture
+                </button>
               </div>
             </motion.div>
           </div>
