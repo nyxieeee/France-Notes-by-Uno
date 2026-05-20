@@ -372,7 +372,7 @@ export default function ProfilePage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fn-card w-full max-w-md relative z-10 overflow-hidden flex flex-col max-h-[85vh]"
+              className="fn-card w-full max-w-md relative z-10 flex flex-col max-h-[85vh]"
             >
               <div className="flex items-center justify-between p-6 border-b border-[var(--border)] bg-gradient-to-r from-[var(--secondary-bg)]/20 to-transparent">
                 <h3 className="font-heading font-bold text-lg">{activeSetting}</h3>
