@@ -25,9 +25,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   initAuth: async () => {
     set({ isInitialLoading: true })
+    const searchParams = new URLSearchParams(window.location.search)
     const hasHash = window.location.hash.includes('access_token=') || 
                     window.location.hash.includes('id_token=') || 
-                    window.location.search.includes('code=')
+                    searchParams.has('code')
 
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.user) {

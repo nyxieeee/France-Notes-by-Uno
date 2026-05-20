@@ -16,6 +16,13 @@ export default function LoginPage() {
     if (isAuthenticated) {
       navigate('/home')
     }
+    
+    // Check for OAuth errors in the URL
+    const searchParams = new URLSearchParams(window.location.search)
+    const urlError = searchParams.get('error_description') || searchParams.get('error')
+    if (urlError) {
+      setError(urlError.replace(/\+/g, ' '))
+    }
   }, [isAuthenticated, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {

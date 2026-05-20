@@ -23,9 +23,11 @@ import PlannerPage from '@/pages/Planner/PlannerPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isInitialLoading } = useAuthStore()
+  
+  const searchParams = new URLSearchParams(window.location.search)
   const isOAuthCallback = window.location.hash.includes('access_token=') || 
                           window.location.hash.includes('id_token=') || 
-                          window.location.search.includes('code=')
+                          searchParams.has('code')
 
   if (isInitialLoading || isOAuthCallback) {
     return (

@@ -154,11 +154,12 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       `
       
       const randomSeed = Math.random().toString(36).substring(7)
-      const prompt = `Generate a fresh, unique, and completely new new clinical quiz now. 
+      const prompt = `Generate a fresh, unique, and completely new clinical quiz now. 
       Random seed: ${randomSeed}-${new Date().getTime()}.
+      CRITICAL INSTRUCTION: You MUST generate EXACTLY ${config.size} questions. Please count them as you generate: 1, 2, ..., ${config.size}. Do NOT stop generating until you have exactly ${config.size} questions. If you generate fewer than ${config.size}, you fail the task.
       CRITICAL DIVERSITY INSTRUCTION: Ensure that all questions, scenario profiles, lab values, and clinical settings are completely different from prior quizzes. Explore a different sub-focus within this topic area (e.g. drug side effects, priority assessments, post-op instructions, or ethical nurse dilemmas) to keep it fully dynamic!`
 
-      const result = await generateJSON(prompt, systemPrompt, 'quiz', 0.85)
+      const result = await generateJSON(prompt, systemPrompt, 'quiz', 0.85, 12000)
       const generatedQuestions = (result.questions || [])
         .filter((q: any) => q && typeof q.question === 'string')
         .map((q: any) => ({
