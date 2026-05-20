@@ -192,7 +192,6 @@
 /* Markdown Content Styling for France Notes */
 .markdown-content {
   font-family: inherit;
-  color: var(--text-secondary);
 }
 
 .markdown-content p {
@@ -223,7 +222,6 @@
   margin-bottom: 0.6rem !important;
   padding-left: 0.25rem !important;
   line-height: 1.6 !important;
-  color: var(--text-secondary);
 }
 
 .markdown-content li::marker {
@@ -234,14 +232,12 @@
 
 .markdown-content strong {
   font-weight: 700;
-  color: var(--text);
 }
 
 .markdown-content h1, 
 .markdown-content h2, 
 .markdown-content h3, 
 .markdown-content h4 {
-  color: var(--text);
   font-weight: 700;
   margin-top: 1.75rem;
   margin-bottom: 0.75rem;

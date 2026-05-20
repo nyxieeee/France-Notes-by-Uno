@@ -11,7 +11,7 @@ interface AuthState {
   signup: (name: string, email: string, password: string, school?: string, yearLevel?: string) => Promise<{ confirmationRequired: boolean }>
   loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
-  updateProfile: (updates: Partial<UserProfile>) => void
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>
   initAuth: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   updatePassword: (password: string) => Promise<void>
@@ -166,10 +166,26 @@ export const useAuthStore = create<AuthState>()((set) => ({
     window.location.href = '/login'
   },
 
-  updateProfile: (updates) => {
-    set(state => ({
-      user: state.user ? { ...state.user, ...updates } : null,
-    }))
+  updateProfile: async (updates) => {
+    set({ isLoading: true })
+    try {
+      // For avatar sizes that exceed JWT limits (8kb), we shouldn't save the full base64 in metadata
+      // Ideally we would use Supabase Storage, but for now we'll update the metadata directly
+      // and hope it's a small resized image (we should resize it before uploading to be safe)
+      const { error } = await supabase.auth.updateUser({
+        data: updates
+      })
+      
+      if (error) throw error
+
+      set(state => ({
+        user: state.user ? { ...state.user, ...updates } : null,
+      }))
+    } catch (e) {
+      console.error("Failed to update profile in Supabase:", e)
+    } finally {
+      set({ isLoading: false })
+    }
   },
 
   resetPassword: async (email: string) => {

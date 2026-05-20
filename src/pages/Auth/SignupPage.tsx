@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Sparkles, Mail, Lock, User, ArrowRight, GraduationCap, BookOpen, Eye, EyeOff } from 'lucide-react'
+import { Sparkles, Mail, Lock, User, ArrowRight, GraduationCap, BookOpen, Eye, EyeOff, ChevronDown } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { motion } from 'framer-motion'
 
@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [school, setSchool] = useState('')
   const [yearLevel, setYearLevel] = useState('')
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false)
   const [error, setError] = useState('')
   const [isPendingConfirmation, setIsPendingConfirmation] = useState(false)
   const { signup, isLoading, isAuthenticated } = useAuthStore()
@@ -169,23 +170,54 @@ export default function SignupPage() {
             </div>
 
             {/* Year Level */}
-            <div className="space-y-2">
+            <div className="space-y-2 relative z-20">
               <label className="text-sm font-semibold ml-1">Year Level</label>
-              <div className="relative">
+              <div 
+                className="relative cursor-pointer"
+                onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+              >
                 <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 z-10" size={18} />
-                <select
-                  className="fn-input pl-11 appearance-none bg-[var(--card)]"
-                  value={yearLevel}
-                  onChange={(e) => setYearLevel(e.target.value)}
-                >
-                  <option value="">Select year level</option>
-                  <option value="1st Year">1st Year</option>
-                  <option value="2nd Year">2nd Year</option>
-                  <option value="3rd Year">3rd Year</option>
-                  <option value="4th Year">4th Year</option>
-                  <option value="RN">Registered Nurse</option>
-                </select>
+                <div className={`fn-input pl-11 flex items-center bg-[var(--card)] ${!yearLevel ? 'text-[var(--text-secondary)]/70' : 'text-[var(--text)]'}`}>
+                  {yearLevel ? [
+                    { value: '1st Year', label: '1st Year' },
+                    { value: '2nd Year', label: '2nd Year' },
+                    { value: '3rd Year', label: '3rd Year' },
+                    { value: '4th Year', label: '4th Year' },
+                    { value: 'RN', label: 'Registered Nurse' }
+                  ].find(o => o.value === yearLevel)?.label : "Select year level"}
+                </div>
+                <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} size={18} />
               </div>
+              
+              {isYearDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsYearDropdownOpen(false)}></div>
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute z-50 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden"
+                  >
+                    {[
+                      { value: '1st Year', label: '1st Year' },
+                      { value: '2nd Year', label: '2nd Year' },
+                      { value: '3rd Year', label: '3rd Year' },
+                      { value: '4th Year', label: '4th Year' },
+                      { value: 'RN', label: 'Registered Nurse' }
+                    ].map(option => (
+                      <div
+                        key={option.value}
+                        className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${yearLevel === option.value ? 'bg-[var(--pink)]/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
+                        onClick={() => {
+                          setYearLevel(option.value)
+                          setIsYearDropdownOpen(false)
+                        }}
+                      >
+                        {option.label}
+                      </div>
+                    ))}
+                  </motion.div>
+                </>
+              )}
             </div>
 
             <button 

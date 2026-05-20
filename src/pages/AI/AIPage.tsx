@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useChatStore } from '@/stores/chatStore'
+import { useAuthStore } from '@/stores/authStore'
 import { 
   Send, 
   Sparkles, 
@@ -18,6 +19,7 @@ import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function AIPage() {
   const { messages, isTyping, sendMessage, clearHistory } = useChatStore()
+  const { user } = useAuthStore()
   const { isFrance, aiAssistantName, greetingName } = usePersonalization()
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -114,9 +116,13 @@ export default function AIPage() {
                   msg.role === 'user' ? "bg-[var(--secondary-bg)] text-[var(--text-secondary)]" : ""
                 )}>
                   {msg.role === 'user' ? (
-                    <div className="w-full h-full flex items-center justify-center bg-[var(--secondary-bg)] text-[var(--text-secondary)]">
-                      <User size={20} />
-                    </div>
+                    user?.avatar_url ? (
+                      <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-[var(--secondary-bg)] text-[var(--text-secondary)] font-bold text-lg">
+                        {user?.full_name ? user.full_name.charAt(0) : <User size={20} />}
+                      </div>
+                    )
                   ) : (
                     <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover" />
                   )}

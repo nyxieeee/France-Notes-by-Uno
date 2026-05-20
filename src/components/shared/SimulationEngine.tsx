@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Mic, MicOff, Send, User, BrainCircuit, Loader2, ShieldAlert, Activity } from 'lucide-react'
 import { useSimulationStore } from '@/stores/simulationStore'
+import { useAuthStore } from '@/stores/authStore'
 import { generateChatCompletion, generateJSON } from '@/lib/groq'
 import { getRecitationPrompt, getRetDemPrompt, getSimulationEvaluationPrompt } from '@/lib/simulationPrompts'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,7 @@ export function SimulationEngine() {
 function SimulationSession() {
   const { isFrance, aiAssistantName } = usePersonalization()
   const { activeMode, topic, difficulty, messages, addMessage, endSession, setScores, sourceName } = useSimulationStore()
+  const { user } = useAuthStore()
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [isListening, setIsListening] = useState(false)
@@ -165,11 +167,15 @@ ${formattedTranscript}`
       <div className="flex-1 overflow-y-auto fn-card p-6 mb-4 space-y-6">
         {messages.map(m => (
           <div key={m.id} className={cn("flex gap-4 max-w-[85%]", m.role === 'user' ? "ml-auto flex-row-reverse" : "")}>
-            <div className={cn("w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-sm border border-[var(--pink)]/10", m.role === 'user' ? "bg-[var(--bg)]" : "")}>
+            <div className={cn("w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-sm border border-[var(--pink)]/10", m.role === 'user' ? "bg-[var(--bg)] text-[var(--text-secondary)]" : "")}>
               {m.role === 'user' ? (
-                <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--text-secondary)]">
-                  <User size={16} />
-                </div>
+                user?.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--text-secondary)] font-bold text-sm">
+                    {user?.full_name ? user.full_name.charAt(0) : <User size={16} />}
+                  </div>
+                )
               ) : (
                 <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover" />
               )}

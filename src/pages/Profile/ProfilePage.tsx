@@ -16,6 +16,7 @@ import {
   Calendar, 
   GraduationCap,
   ChevronRight,
+  ChevronDown,
   Shield,
   Bell,
   Palette,
@@ -37,6 +38,7 @@ export default function ProfilePage() {
   const { isFrance, appName, aiAssistantName, greetingName, studyBoxName } = usePersonalization()
 
   const [activeSetting, setActiveSetting] = useState<string | null>(null)
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false)
   const [editForm, setEditForm] = useState({
     full_name: user?.full_name || '',
     school: user?.school || '',
@@ -64,7 +66,36 @@ export default function ProfilePage() {
       const reader = new FileReader()
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          updateProfile({ avatar_url: reader.result })
+          // Resize the image so it fits in Supabase user_metadata
+          const img = new Image()
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            const MAX_SIZE = 150 // Small profile picture size
+            let width = img.width
+            let height = img.height
+
+            if (width > height) {
+              if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width
+                width = MAX_SIZE
+              }
+            } else {
+              if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height
+                height = MAX_SIZE
+              }
+            }
+
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            ctx?.drawImage(img, 0, 0, width, height)
+            
+            // Compress heavily to ensure it fits in JWT limits
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6)
+            updateProfile({ avatar_url: compressedBase64 })
+          }
+          img.src = reader.result
         }
       }
       reader.readAsDataURL(file)
@@ -234,7 +265,7 @@ export default function ProfilePage() {
 
           {/* Settings Section */}
           <div className="fn-card overflow-hidden">
-             <div className="p-6 border-b border-[var(--border)] bg-gradient-to-r from-white to-[var(--secondary-bg)]/10">
+             <div className="p-6 border-b border-[var(--border)] bg-gradient-to-r from-[var(--pink)]/10 to-transparent">
                 <h3 className="font-heading font-bold text-lg flex items-center gap-2">
                    <Settings className="text-[var(--pink)]" size={20} />
                    Settings & Preferences
@@ -347,19 +378,53 @@ export default function ProfilePage() {
                         placeholder="University Name"
                       />
                     </div>
-                    <div>
+                    <div className="relative z-20">
                       <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1 mb-1 block">Year Level</label>
-                      <select 
-                        value={editForm.year_level}
-                        onChange={(e) => setEditForm({ ...editForm, year_level: e.target.value })}
-                        className="fn-input appearance-none bg-white"
+                      <div 
+                        className="relative cursor-pointer"
+                        onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
                       >
-                        <option value="1st Year">1st Year</option>
-                        <option value="2nd Year">2nd Year</option>
-                        <option value="3rd Year">3rd Year</option>
-                        <option value="4th Year">4th Year</option>
-                        <option value="RN">Registered Nurse</option>
-                      </select>
+                        <div className={`fn-input flex items-center bg-[var(--card)] ${!editForm.year_level ? 'text-[var(--text-secondary)]/70' : 'text-[var(--text)]'}`}>
+                          {editForm.year_level ? [
+                            { value: '1st Year', label: '1st Year' },
+                            { value: '2nd Year', label: '2nd Year' },
+                            { value: '3rd Year', label: '3rd Year' },
+                            { value: '4th Year', label: '4th Year' },
+                            { value: 'RN', label: 'Registered Nurse' }
+                          ].find(o => o.value === editForm.year_level)?.label : "Select year level"}
+                        </div>
+                        <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                      </div>
+                      
+                      {isYearDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setIsYearDropdownOpen(false)}></div>
+                          <motion.div 
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="absolute z-50 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden"
+                          >
+                            {[
+                              { value: '1st Year', label: '1st Year' },
+                              { value: '2nd Year', label: '2nd Year' },
+                              { value: '3rd Year', label: '3rd Year' },
+                              { value: '4th Year', label: '4th Year' },
+                              { value: 'RN', label: 'Registered Nurse' }
+                            ].map(option => (
+                              <div
+                                key={option.value}
+                                className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${editForm.year_level === option.value ? 'bg-[var(--pink)]/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
+                                onClick={() => {
+                                  setEditForm({ ...editForm, year_level: option.value })
+                                  setIsYearDropdownOpen(false)
+                                }}
+                              >
+                                {option.label}
+                              </div>
+                            ))}
+                          </motion.div>
+                        </>
+                      )}
                     </div>
                     <button 
                       onClick={() => {
