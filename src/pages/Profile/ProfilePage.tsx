@@ -431,7 +431,7 @@ export default function ProfilePage() {
                           <motion.div 
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="absolute z-50 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden"
+                            className="absolute z-50 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl max-h-48 overflow-y-auto"
                           >
                             {[
                               { value: '1st Year', label: '1st Year' },
