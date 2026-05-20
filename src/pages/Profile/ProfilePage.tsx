@@ -172,8 +172,8 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Card */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="fn-card p-8 text-center relative overflow-hidden">
+                <div className="lg:col-span-1 space-y-1">
+          <div className="fn-card p-4 text-center relative overflow-hidden">
              <div className="absolute top-0 right-0 p-4 opacity-5">
                 <Settings size={80} />
              </div>

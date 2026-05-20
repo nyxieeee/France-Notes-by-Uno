@@ -40,8 +40,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
           email: u.email || '',
           avatar_url: u.user_metadata?.avatar_url || null,
           theme_preference: 'light',
-          year_level: '',
-          school: '',
+          year_level: u.user_metadata?.year_level || '',
+          school: u.user_metadata?.school || '',
           created_at: u.created_at,
         },
         isAuthenticated: true,
@@ -64,8 +64,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
             email: u.email || '',
             avatar_url: u.user_metadata?.avatar_url || null,
             theme_preference: 'light',
-            year_level: '',
-            school: '',
+            year_level: u.user_metadata?.year_level || '',
+            school: u.user_metadata?.school || '',
             created_at: u.created_at,
           },
           isAuthenticated: true,
@@ -177,6 +177,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
       })
       
       if (error) throw error
+
+      // Refresh JWT to include new metadata
+      await supabase.auth.refreshSession()
 
       set(state => ({
         user: state.user ? { ...state.user, ...updates } : null,
