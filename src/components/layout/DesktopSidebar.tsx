@@ -85,7 +85,7 @@ export default function DesktopSidebar() {
         />
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <nav className="space-y-1">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -109,7 +109,7 @@ export default function DesktopSidebar() {
       </nav>
 
       {/* Sweet AI interactive card with instant framer-motion text transition */}
-      <div className="p-2">
+      <div className="mt-4 p-2">
         <div className="bg-[var(--bg)] rounded-3xl p-4 border border-[var(--border)] transition-all hover:border-[var(--pink)]/30 group cursor-default overflow-hidden relative">
           <p className="text-xs font-semibold text-[var(--pink)] mb-1.5 uppercase tracking-wider flex items-center gap-1">
             {aiAssistantName} {isFrance ? '🩺' : '👩‍⚕️'}
@@ -131,6 +131,8 @@ export default function DesktopSidebar() {
           </div>
         </div>
       </div>
+      
+      <div className="flex-1" />
     </div>
   )
 }
