@@ -426,33 +426,30 @@ export default function ProfilePage() {
                       </div>
                       
                       {isYearDropdownOpen && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setIsYearDropdownOpen(false)}></div>
-                          <motion.div 
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="absolute z-50 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl max-h-48 overflow-y-auto"
-                          >
-                            {[
-                              { value: '1st Year', label: '1st Year' },
-                              { value: '2nd Year', label: '2nd Year' },
-                              { value: '3rd Year', label: '3rd Year' },
-                              { value: '4th Year', label: '4th Year' },
-                              { value: 'RN', label: 'Registered Nurse' }
-                            ].map(option => (
-                              <div
-                                key={option.value}
-                                className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${editForm.year_level === option.value ? 'bg-[var(--pink)]/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
-                                onClick={() => {
-                                  setEditForm({ ...editForm, year_level: option.value })
-                                  setIsYearDropdownOpen(false)
-                                }}
-                              >
-                                {option.label}
-                              </div>
-                            ))}
-                          </motion.div>
-                        </>
+                        <motion.div
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl max-h-48 overflow-y-auto"
+                        >
+                          {[
+                            { value: '1st Year', label: '1st Year' },
+                            { value: '2nd Year', label: '2nd Year' },
+                            { value: '3rd Year', label: '3rd Year' },
+                            { value: '4th Year', label: '4th Year' },
+                            { value: 'RN', label: 'Registered Nurse' }
+                          ].map(option => (
+                            <div
+                              key={option.value}
+                              className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${editForm.year_level === option.value ? 'bg-[var(--pink)]/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
+                              onClick={() => {
+                                setEditForm({ ...editForm, year_level: option.value });
+                                setIsYearDropdownOpen(false);
+                              }}
+                            >
+                              {option.label}
+                            </div>
+                          ))}
+                        </motion.div>
                       )}
                     </div>
                     <button 
