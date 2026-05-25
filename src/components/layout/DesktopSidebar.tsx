@@ -108,8 +108,10 @@ export default function DesktopSidebar() {
         ))}
       </nav>
 
+      <div className="flex-1" />
+
       {/* Sweet AI interactive card with instant framer-motion text transition */}
-      <div className="mt-4 p-2">
+      <div className="p-2 pb-2">
         <div className="bg-[var(--bg)] rounded-3xl p-4 border border-[var(--border)] transition-all hover:border-[var(--pink)]/30 group cursor-default overflow-hidden relative">
           <p className="text-xs font-semibold text-[var(--pink)] mb-1.5 uppercase tracking-wider flex items-center gap-1">
             {aiAssistantName} {isFrance ? '🩺' : '👩‍⚕️'}
@@ -131,8 +133,6 @@ export default function DesktopSidebar() {
           </div>
         </div>
       </div>
-      
-      <div className="flex-1" />
     </div>
   )
 }
