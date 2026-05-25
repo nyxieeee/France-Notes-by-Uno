@@ -123,7 +123,16 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       `
       
       const response = await generateCompletion(prompt, DOC_UNO_SYSTEM_PROMPT, 'chat')
-      return response
+      
+      // Clean up third-person narration, meta-instructions, and parenthetical/asterisk comments
+      const cleanedResponse = response
+        .replace(/\*[^*]*\*/g, '')
+        .replace(/\([^)]*\)/g, '')
+        .replace(/\s+/g, ' ')
+        .replace(/\s+([.,!?;:])/g, '$1')
+        .trim();
+
+      return cleanedResponse
     } catch (error) {
       console.error('Chat Error:', error)
       return `Oh no! 🌸 I'm having a little trouble connecting right now. Can we try again in a moment, ${greetingName}? 🩺✨`

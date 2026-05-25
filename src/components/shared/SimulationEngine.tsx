@@ -93,7 +93,16 @@ function SimulationSession() {
       if (!response || !response.trim()) {
         throw new Error('Empty response received from Groq.')
       }
-      addMessage('assistant', response)
+      
+      // Clean up third-person narration, meta-instructions, and parenthetical/asterisk comments
+      const cleanedResponse = response
+        .replace(/\*[^*]*\*/g, '')
+        .replace(/\([^)]*\)/g, '')
+        .replace(/\s+/g, ' ')
+        .replace(/\s+([.,!?;:])/g, '$1')
+        .trim();
+
+      addMessage('assistant', cleanedResponse)
     } catch (e) {
       console.error('Chat API failure:', e)
       addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment! 🌸")
