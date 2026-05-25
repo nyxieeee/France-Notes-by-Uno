@@ -559,7 +559,7 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
 }
 
 function QuizEngine() {
-  const { isFrance, aiAssistantName } = usePersonalization()
+  const { isFrance, greetingName, aiAssistantName } = usePersonalization()
   const { 
     activeQuiz, 
     questions, 
@@ -864,7 +864,7 @@ function QuizEngine() {
                   {isCorrect ? (
                     <div className="flex items-center gap-2 text-[var(--success)] font-bold">
                       <CheckCircle2 size={20} />
-                      <span>Correct! Amazing job, France! ✨</span>
+                      <span>{isFrance ? "Correct! Amazing job, France! ✨" : `Correct! Amazing job, ${greetingName}! ✨`}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-[var(--error)] font-bold">

@@ -6,6 +6,7 @@ import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
 import { Award } from 'lucide-react'
+import { usePersonalization } from '@/hooks/usePersonalization'
 
 type BadgeItem = {
   id: string
@@ -28,7 +29,21 @@ const sweetMessages: Record<string, string> = {
   nclex_survivor: "NCLEX style quiz done! 🏆 So tough, but you survived! You're amazing! 🧸"
 }
 
+const professionalMessages: Record<string, string> = {
+  first_step: "Excellent work on generating your first reviewer! 🩺 A great first step in your review.",
+  quiz_whiz: "Outstanding! A perfect 100% score demonstrates exceptional mastery. 🧪🩺",
+  clinical_explorer: "You have successfully generated a clinical procedure review! 🌸",
+  scholar: "5 notes uploaded! 📚 Your dedication to studying is highly commendable.",
+  pathology_master: "3 quizzes completed! 🧠 Excellent progress on mastering key clinical concepts! ✨",
+  board_topnotcher: "Average score >= 85%! 🎀 Fantastic consistency in your study scores. Keep it up! 📈",
+  night_duty: "Duty reminder is set! 🏥 Stay safe during your night shift duty. ☕",
+  unos_favorite: "5+ favorited materials! 🩺 Excellent organization of your high-yield study resources.",
+  fast_learner: "Presentation slides created! 🦦 A great way to visually review and summarize. 🚀",
+  nclex_survivor: "NCLEX style quiz completed! 🏆 Excellent practice for high-level board questions. 🩺"
+}
+
 export default function XboxAchievementNotifier() {
+  const { isFrance } = usePersonalization()
   const { items, topics } = useStudyBoxStore()
   const { quizzes } = useQuizStore()
   const { reviewers } = useReviewerStore()
@@ -123,7 +138,10 @@ export default function XboxAchievementNotifier() {
                   {activeNotification.label}
                 </h4>
                 <p className="text-[10px] italic font-semibold text-[var(--text-secondary)] leading-relaxed line-clamp-2">
-                  {sweetMessages[activeNotification.id] || "You're doing amazing, babe! Keep it up! 🌸"}
+                  {isFrance 
+                    ? (sweetMessages[activeNotification.id] || "You're doing amazing, babe! Keep it up! 🌸")
+                    : (professionalMessages[activeNotification.id] || "You're doing amazing! Keep up the great work! 🩺")
+                  }
                 </p>
               </div>
             </div>
