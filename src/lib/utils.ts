@@ -18,8 +18,14 @@ export function formatTime(dateStr: string): string {
 export function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr)
   const now = new Date()
-  const diff = date.getTime() - now.getTime()
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
+  
+  // Set to midnight local time to calculate calendar days difference
+  const dDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const dNow = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  
+  const diff = dDate.getTime() - dNow.getTime()
+  const days = Math.round(diff / (1000 * 60 * 60 * 24))
+  
   if (days === 0) return 'Today'
   if (days === 1) return 'Tomorrow'
   if (days === -1) return 'Yesterday'
