@@ -77,11 +77,11 @@ export default function DesktopSidebar() {
 
   return (
     <div className="h-full flex flex-col bg-[var(--card)] border-r border-[var(--border)] p-4 shadow-sm">
-      <div className="flex items-center justify-center -mt-4 -mx-4 px-4 pt-3 pb-1 mb-2 border-b border-[var(--border)]/60">
+      <div className="flex items-center justify-center -mt-4 -mx-4 px-4 pt-4 pb-2 mb-3 border-b border-[var(--border)]/60">
         <img 
           src="/france-notes-horizontal-logo.png" 
           alt={`${appName} Logo`} 
-          className="h-16 w-auto object-contain" 
+          className="h-18 w-auto object-contain" 
         />
       </div>
 
