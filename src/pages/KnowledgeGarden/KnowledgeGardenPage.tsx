@@ -182,30 +182,17 @@ export default function KnowledgeGardenPage() {
                         </span>
                       )}
                     </div>
-                    {(() => {
-                      let displayTitle = result.title.trim()
-                      if (
-                        displayTitle.toLowerCase().startsWith('http') ||
-                        /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(displayTitle)
-                      ) {
-                        displayTitle = `${result.source} Reference`
-                      }
-                      return (
-                        <>
-                          <h3 className="text-xl font-bold mb-1 group-hover:text-[var(--pink)] transition-colors">
-                            {displayTitle}
-                          </h3>
-                          <a 
-                            href={result.url} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-xs text-[var(--pink)] hover:underline truncate max-w-lg block mb-4 font-semibold"
-                          >
-                            {result.url}
-                          </a>
-                        </>
-                      )
-                    })()}
+                    <h3 className="text-xl font-bold mb-1 group-hover:text-[var(--pink)] transition-colors">
+                      {result.title}
+                    </h3>
+                    <a 
+                      href={result.url} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="text-xs text-[var(--pink)] hover:underline truncate max-w-lg block mb-4 font-semibold"
+                    >
+                      Read on {result.source || 'source website'} ↗
+                    </a>
                     <p className="text-[var(--text-secondary)] leading-relaxed mb-6">
                       {result.description}
                     </p>

@@ -328,22 +328,23 @@ export async function callGeminiGroundedSearch(
   // If we got real grounding chunks, build structured results from them
   if (groundingChunks.length > 0) {
     const results: GroundedSearchResult[] = groundingChunks
-      .slice(0, 10)
+      .slice(0, 8)
       .map((chunk: any, index: number) => {
         const web = chunk.web || {}
-        let url = web.uri || ''
-        let title = web.title || `Result ${index + 1}`
+        const url = web.uri || ''
+        const title = web.title || `Result ${index + 1}`
 
         const isVertexRedirect = url.includes('vertexaisearch.cloud.google.com')
 
-        // Determine source name from URL
+        // Determine source name from URL or title
         const urlObj = (() => { try { return new URL(url) } catch { return null } })()
         let hostname = urlObj?.hostname?.replace('www.', '') || 'Unknown Source'
-
+        
         if (isVertexRedirect) {
-          hostname = 'Google Health Index'
-          title = `Clinical Reference on "${query}"`
-          url = `https://www.google.com/search?q=${encodeURIComponent(query + ' medical guidelines')}`
+          // If it is a vertex redirect, use the web.title as the hostname if it is a domain, e.g. "nih.gov"
+          hostname = title.toLowerCase().includes('.gov') || title.toLowerCase().includes('.org') || title.toLowerCase().includes('.uk') || title.toLowerCase().includes('.edu')
+            ? title 
+            : 'Google Health Index'
         }
 
         // Categorize based on URL/title
@@ -360,11 +361,11 @@ export async function callGeminiGroundedSearch(
           category = 'nursing'
         }
 
-        // Trust flag — known trusted domains
+        // Trust flag
         const trustedDomains = ['who.int', 'cdc.gov', 'nih.gov', 'ncbi.nlm.nih.gov', 'pubmed', 'mayo', 'cochrane', 'bmj.com', 'jama', 'nejm', 'doh.gov.ph', 'medscape', 'drugs.com', 'fda.gov', 'ana', 'ncsbn']
         const is_trusted = trustedDomains.some(d => lowerUrl.includes(d))
 
-        // Find relevant AI description for this chunk from grounding supports
+        // Find relevant AI description for this chunk
         const support = groundingSupports.find((s: any) =>
           s.groundingChunkIndices?.includes(index)
         )
@@ -373,16 +374,57 @@ export async function callGeminiGroundedSearch(
           : `Evidence-based reference from ${hostname} on: ${query}`
 
         return {
-          title: title.length > 100 ? title.substring(0, 97) + '...' : title,
+          title,
           description: description.length > 300 ? description.substring(0, 297) + '...' : description,
           source: hostname,
           url,
-          search_url: `https://www.google.com/search?q=${encodeURIComponent(title)}`,
+          search_url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
           category,
           is_trusted,
         }
       })
-      .filter((r: GroundedSearchResult) => r.url) // remove empty URLs
+      .filter((r: GroundedSearchResult) => r.url)
+
+    // 2. Semantic post-processing using Gemini to extract the actual article titles from description snippets
+    if (results.length > 0) {
+      try {
+        const titlesPrompt = `
+          Analyze these medical search results. Extract or infer the actual, specific, professional article title for each result based on its description snippet and source.
+          Make them sound like real, descriptive medical/nursing article titles (e.g. "Pathophysiology and Stages of Chronic Kidney Disease" instead of "nih.gov"). Do NOT include the source domain name in the generated title.
+          
+          Search Query: "${query}"
+          
+          Results:
+          ${results.map((r, i) => `Result ${i + 1}: [Source: ${r.source}] [Snippet: ${r.description}]`).join('\n')}
+          
+          Output strictly in JSON format matching this schema:
+          { "titles": ["Title for Result 1", "Title for Result 2", ...] }
+        `
+        const responseText = await callGemini(
+          [{ role: 'user', content: titlesPrompt }],
+          'gemini-2.5-flash',
+          0.2,
+          2000,
+          true
+        )
+        const parsed = JSON.parse(responseText)
+        if (parsed && Array.isArray(parsed.titles)) {
+          parsed.titles.forEach((t: string, idx: number) => {
+            if (results[idx] && t) {
+              results[idx].title = t.trim()
+            }
+          })
+        }
+      } catch (e) {
+        console.error("Error post-processing titles:", e)
+        // Fallback: clean up
+        results.forEach(r => {
+          if (r.title.toLowerCase().includes('vertexaisearch') || r.title === 'Google Health Index') {
+            r.title = `Clinical Reference on "${query}"`
+          }
+        })
+      }
+    }
 
     return results
   }
