@@ -636,17 +636,17 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
       .split('\n')
       .map(line => {
         const trimmed = line.trim()
-        if (!trimmed) return '<div class="h-3"></div>'
-        if (/^[A-Z][A-Z\s&,]+$/.test(trimmed) && trimmed.length > 3) {
-          return `<h2 class="section-heading">${trimmed}</h2>`
+        if (!trimmed) return '<div style="height:8px"></div>'
+        if (/^[A-Z][A-Z0-9\s&,()/-]+$/.test(trimmed) && trimmed.length > 3 && !trimmed.endsWith(':')) {
+          return `<h2 style="font-size:15px;font-weight:700;color:#ff8fa3;margin:16px 0 6px">${trimmed}</h2>`
         }
         if (/^\d+[.)]\s/.test(trimmed)) {
-          return `<li class="list-item numbered">${trimmed.replace(/^\d+[.)]\s*/, '')}</li>`
+          return `<div style="margin:0 0 3px 20px">${trimmed}</div>`
         }
         if (/^[-•]\s/.test(trimmed)) {
-          return `<li class="list-item bullet">${trimmed.replace(/^[-•]\s*/, '')}</li>`
+          return `<div style="margin:0 0 3px 20px">${trimmed.replace(/^[-•]\s*/, '• ')}</div>`
         }
-        return `<p class="text-paragraph">${trimmed}</p>`
+        return `<p style="margin:0 0 4px">${trimmed}</p>`
       })
       .join('\n')
   }
@@ -708,142 +708,105 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
     const assistantName = isFrance ? 'Doc Uno' : aiAssistantName
 
     w.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${getDocTitle()} - ${assistantName}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #fef6f8;
-      color: #1a1a2e;
-      padding: 40px 20px;
-      line-height: 1.7;
-    }
-    .print-page { max-width: 800px; margin: 0 auto; }
-    .print-header { text-align: center; margin-bottom: 32px; }
-    .type-badge {
-      display: inline-block;
-      background: #ff8fa3;
-      color: white;
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 6px 16px;
-      border-radius: 20px;
-      margin-bottom: 12px;
-    }
-    .doc-title {
-      font-size: 26px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #ff8fa3, #f7a8b8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .doc-date { font-size: 11px; color: #888; font-weight: 600; margin-top: 6px; letter-spacing: 0.5px; }
-    .doc-card, .summary-card {
-      background: white;
-      border: 1px solid #f0e0e4;
-      border-radius: 24px;
-      padding: 32px 36px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 20px rgba(255, 143, 163, 0.08);
-    }
-    .summary-card {
-      background: linear-gradient(135deg, #fff9fa, #fff0f2);
-      border-color: #ffcad3;
-      border-width: 2px;
-    }
-    .card-label {
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: #aaa;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #f0e0e4;
-    }
-    .summary-label { color: #ff8fa3; border-bottom-color: #ffcad3; }
-    .card-body { font-size: 14px; color: #333; }
-    .section-heading {
-      font-size: 15px;
-      font-weight: 700;
-      color: #ff8fa3;
-      margin: 20px 0 8px;
-      letter-spacing: 0.3px;
-    }
-    .section-heading:first-child { margin-top: 0; }
-    .text-paragraph { margin-bottom: 6px; }
-    .list-item { margin-left: 20px; margin-bottom: 4px; }
-    .card-footer {
-      display: flex;
-      justify-content: space-between;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #bbb;
-      padding-top: 16px;
-      margin-top: 20px;
-      border-top: 1px solid #f0e0e4;
-    }
-    .signature {
-      margin-top: 24px;
-      padding-top: 16px;
-      border-top: 1px solid #ffcad3;
-      text-align: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: #ff8fa3;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .signature-date { font-size: 10px; color: #bbb; font-weight: 600; letter-spacing: 0.5px; }
-    @media print {
-      body { padding: 0; background: white; }
-      .doc-card, .summary-card { box-shadow: none; break-inside: avoid; }
-    }
-  </style>
-</head>
-<body>${content}</body>
-</html>`)
+<html><head>
+<meta charset="utf-8">
+<title>${getDocTitle()} - ${assistantName}</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fef6f8; color: #1a1a2e; line-height: 1.7;
+}
+.print-page { max-width: 750px; margin: 0 auto; }
+.print-header { text-align: center; margin-bottom: 24px; }
+.type-badge {
+  display: inline-block; background: #ff8fa3; color: white;
+  font-size: 11px; font-weight: 800; letter-spacing: 2px;
+  text-transform: uppercase; padding: 6px 20px; border-radius: 20px;
+  margin-bottom: 10px;
+}
+.doc-title {
+  font-size: 24px; font-weight: 800; margin: 0 0 4px;
+  background: linear-gradient(135deg, #ff8fa3, #f7a8b8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.doc-date { font-size: 12px; color: #999; font-weight: 600; margin: 0; letter-spacing: 0.5px; }
+.doc-card, .summary-card {
+  background: white; border: 1px solid #f0e0e4;
+  border-radius: 16px; padding: 28px 32px; margin-bottom: 20px;
+}
+.summary-card {
+  background: linear-gradient(135deg, #fff9fa, #fff0f2);
+  border-color: #ffcad3; border-width: 2px;
+}
+.card-label {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 2px; color: #aaa;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid #f0e0e4;
+}
+.summary-label { color: #ff8fa3; border-bottom-color: #ffcad3; }
+.card-body { font-size: 14px; color: #333; }
+.section-heading {
+  font-size: 15px; font-weight: 700; color: #ff8fa3;
+  margin: 18px 0 6px; letter-spacing: 0.3px;
+}
+.section-heading:first-child { margin-top: 0; }
+.text-paragraph { margin: 0 0 4px; }
+.list-item { margin: 0 0 3px 20px; }
+.card-footer {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: #bbb;
+  padding-top: 14px; margin-top: 18px;
+  border-top: 1px solid #f0e0e4;
+  display: flex; justify-content: space-between;
+}
+.signature {
+  margin-top: 20px; padding-top: 14px;
+  border-top: 1px solid #ffcad3; text-align: center;
+  font-size: 12px; font-weight: 700; color: #ff8fa3;
+}
+.signature-date { font-size: 10px; color: #bbb; font-weight: 600; display: block; margin-top: 4px; }
+@media print {
+  @page { margin: 15mm; }
+  body { background: white; padding: 0 !important; }
+  .doc-card, .summary-card { box-shadow: none; break-inside: avoid; }
+}
+</style></head><body>${content}</body></html>`)
     w.document.close()
-    w.focus()
-    setTimeout(() => w.print(), 500)
+    w.document.addEventListener('DOMContentLoaded', () => w.print())
   }
 
   const handleDownloadFullPDF = () => {
     const content = buildPrintContent()
     const assistantName = isFrance ? 'Doc Uno' : aiAssistantName
+    const windowWidth = window.innerWidth
 
     const containerId = 'pdf-capture-container'
-    let container = document.getElementById(containerId)
+    let container = document.getElementById(containerId) as HTMLElement
     if (!container) {
       container = document.createElement('div')
       container.id = containerId
-      container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fef6f8;padding:40px 20px;z-index:-1'
       document.body.appendChild(container)
     }
+    container.style.cssText = `position:fixed;top:0;left:0;width:800px;background:#fef6f8;padding:24px 20px;z-index:999999;opacity:0;pointer-events:none;overflow:visible`
     container.innerHTML = content
 
     const opt = {
       margin: [8, 8, 8, 8],
       filename: `${getDocTitle().replace(/\s+/g, '_')}_${assistantName.replace(/\s+/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
+      html2canvas: { scale: 2, useCORS: true, logging: false, width: 800 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }
 
     const run = () => {
       (window as any).html2pdf().from(container).set(opt).save().then(() => {
+        container!.style.display = 'none'
         container!.innerHTML = ''
       }).catch((err: any) => {
         console.error('PDF generation failed:', err)
+        container!.style.display = 'none'
         container!.innerHTML = ''
       })
     }
