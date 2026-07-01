@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import type { Quiz, QuizQuestion, QuizSetupConfig } from '@/types'
 import { shuffleArray, checkAnswerCorrectness } from '@/lib/utils'
-import { generateJSON, getPersonalizationConfig } from '@/lib/groq'
+import { generateJSON } from '@/lib/groq'
+import { getPersonalizationConfig } from '@/lib/personalization'
+import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
 
 interface QuizState {
@@ -74,7 +76,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
     }
 
     try {
-      const configDetails = getPersonalizationConfig()
+      const configDetails = getPersonalizationConfig(useAuthStore.getState().user)
       const { isFrance, greetingName, aiAssistantName } = configDetails
 
       let systemPrompt = ""
@@ -285,5 +287,3 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
   }
 }))
 
-// Initial fetch
-useQuizStore.getState().fetchQuizzes()

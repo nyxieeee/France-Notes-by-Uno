@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { ChatMessage } from '@/types'
-import { generateCompletion, getPersonalizationConfig, DOC_UNO_SYSTEM_PROMPT } from '@/lib/groq'
+import { generateCompletion, DOC_UNO_SYSTEM_PROMPT } from '@/lib/groq'
+import { getPersonalizationConfig } from '@/lib/personalization'
 import { useStudyBoxStore } from './studyBoxStore'
 import { useReviewerStore } from './reviewerStore'
 import { useAuthStore } from './authStore'
@@ -262,7 +263,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   getDocUnoResponse: async (userMessage: string) => {
-    const config = getPersonalizationConfig()
+    const config = getPersonalizationConfig(useAuthStore.getState().user)
     const { greetingName, aiAssistantName } = config
 
     try {
@@ -307,8 +308,3 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   }
 }))
 
-// Initial fetch on app load
-const user = useAuthStore.getState().user
-if (user?.id) {
-  useChatStore.getState().fetchSessions()
-}

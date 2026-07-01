@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { RetDemProcedure, RecitationMode } from '@/types'
-import { generateJSON, getPersonalizationConfig } from '@/lib/groq'
+import { generateJSON } from '@/lib/groq'
+import { getPersonalizationConfig } from '@/lib/personalization'
+import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
 
 export type UploadedFile = {
@@ -125,7 +127,7 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
   generateProcedure: async (topic: string) => {
     set({ isGenerating: true })
     try {
-      const config = getPersonalizationConfig()
+      const config = getPersonalizationConfig(useAuthStore.getState().user)
       const { aiAssistantName } = config
 
       const systemPrompt = `
@@ -187,7 +189,7 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
     if (!uploadedFiles.length) throw new Error('No uploaded files')
     set({ isGenerating: true })
     try {
-      const config = getPersonalizationConfig()
+      const config = getPersonalizationConfig(useAuthStore.getState().user)
       const { aiAssistantName } = config
 
       const combinedText = uploadedFiles
@@ -230,35 +232,39 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
         user_id: session.user.id
       }
 
-      // Save upload history to Supabase
-      const uploadHistoryInserts = uploadedFiles.map((f) => ({
-        name: f.name,
-        text: f.text,
-        user_id: session.user.id
-      }))
+      // Save individual upload history entries (handle partial failures)
+      const savedHistories: HistoryFile[] = []
+      for (const file of uploadedFiles) {
+        try {
+          const { data } = await supabase
+            .from('retdem_upload_history')
+            .insert([{ name: file.name, text: file.text, user_id: session.user.id }])
+            .select()
+            .single()
+          if (data) savedHistories.push(data as HistoryFile)
+        } catch (e) {
+          console.error(`Error saving upload history for ${file.name}:`, e)
+        }
+      }
 
-      const { data: savedHistories, error: historyError } = await supabase
-        .from('retdem_upload_history')
-        .insert(uploadHistoryInserts)
-        .select()
-
-      if (historyError) console.error('Error saving upload history:', historyError)
-
-      const { data: savedProcedure, error: procedureError } = await supabase
-        .from('retdem_procedures')
-        .insert([newProcedureData])
-        .select()
-        .single()
-
-      if (procedureError) console.error('Error saving uploaded procedure:', procedureError)
-
-      const procedure = savedProcedure as RetDemProcedure || { ...newProcedureData, id: 'temp-id', created_at: new Date().toISOString() } as any
-      const histories = (savedHistories as HistoryFile[]) || []
+      let procedure: RetDemProcedure
+      try {
+        const { data: savedProcedure, error: procedureError } = await supabase
+          .from('retdem_procedures')
+          .insert([newProcedureData])
+          .select()
+          .single()
+        if (procedureError) throw procedureError
+        procedure = savedProcedure as RetDemProcedure
+      } catch (e) {
+        console.error('Error saving uploaded procedure, using local fallback:', e)
+        procedure = { ...newProcedureData, id: `temp-${Math.random().toString(36).substring(7)}`, created_at: new Date().toISOString() } as RetDemProcedure
+      }
 
       set((state) => ({
         procedures: [procedure, ...state.procedures],
         activeProcedure: procedure,
-        uploadHistory: [...histories, ...state.uploadHistory],
+        uploadHistory: [...savedHistories, ...state.uploadHistory],
         uploadedFiles: [],
         isGenerating: false
       }))
@@ -271,6 +277,3 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
   }
 }))
 
-// Initial fetch
-useRetDemStore.getState().fetchProcedures()
-useRetDemStore.getState().fetchUploadHistory()

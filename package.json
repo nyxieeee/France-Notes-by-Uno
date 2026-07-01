@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "node api/dev.mjs",
+    "dev:all": "concurrently -n api,vite -c blue,green \"node api/dev.mjs\" \"vite\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -16,7 +18,6 @@
     "clsx": "^2.1.1",
     "docx": "^9.6.1",
     "framer-motion": "^12.38.0",
-    "groq-sdk": "^1.2.0",
     "jimp": "^1.6.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.16.0",
@@ -36,6 +37,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.4",
+    "@vercel/node": "^5.1.14",
+    "concurrently": "^9.1.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",

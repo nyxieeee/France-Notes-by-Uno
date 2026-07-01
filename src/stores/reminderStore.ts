@@ -117,5 +117,3 @@ export const useReminderStore = create<ReminderState>()((set, get) => ({
   }
 }))
 
-// Initial fetch
-useReminderStore.getState().fetchReminders()

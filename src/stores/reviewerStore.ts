@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import type { ReviewerItem } from '@/types'
-import { generateJSON, getPersonalizationConfig } from '@/lib/groq'
+import { generateJSON } from '@/lib/groq'
+import { getPersonalizationConfig } from '@/lib/personalization'
 import { useStudyBoxStore } from './studyBoxStore'
+import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
 
 interface ReviewerState {
@@ -56,7 +58,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
 
   generateReviewer: async (sourceItemIds: string[], topicId?: string | null) => {
     set({ isGeneratingReviewer: true, isGenerating: true })
-    const config = getPersonalizationConfig()
+    const config = getPersonalizationConfig(useAuthStore.getState().user)
     const { isFrance, greetingName, aiAssistantName } = config
 
     try {
@@ -194,7 +196,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
 
   generatePresentation: async (sourceItemIds: string[], topicId?: string | null) => {
     set({ isGeneratingPresentation: true, isGenerating: true })
-    const config = getPersonalizationConfig()
+    const config = getPersonalizationConfig(useAuthStore.getState().user)
     const { isFrance, greetingName, aiAssistantName } = config
 
     try {
@@ -307,5 +309,3 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
   getFavorites: () => get().reviewers.filter(r => r.is_favorite),
 }))
 
-// Initial fetch
-useReviewerStore.getState().fetchReviewers()

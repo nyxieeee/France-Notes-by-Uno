@@ -2,15 +2,11 @@ import { jsPDF } from 'jspdf'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
 import type { ReviewerItem } from '@/types'
 import { useAuthStore } from '@/stores/authStore'
+import { isFranceUser } from '@/lib/personalization'
 
 export const exportToPDF = async (reviewer: ReviewerItem) => {
   const { user } = useAuthStore.getState()
-  const FRANCE_EMAILS = [
-    'franceregraceceles@gmail.com',
-    'fraceles@gbox.ncf.edu.ph',
-    'regraceceles97@gmail.com',
-  ]
-  const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
+  const isFrance = isFranceUser(user)
   const aiAssistantName = isFrance ? 'Doc Uno' : 'Nurse Florence'
 
   try {
@@ -147,12 +143,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
 
 export const exportToDOCX = async (reviewer: ReviewerItem) => {
   const { user } = useAuthStore.getState()
-  const FRANCE_EMAILS = [
-    'franceregraceceles@gmail.com',
-    'fraceles@gbox.ncf.edu.ph',
-    'regraceceles97@gmail.com',
-  ]
-  const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
+  const isFrance = isFranceUser(user)
   const aiAssistantName = isFrance ? 'Doc Uno' : 'Nurse Florence'
 
   const children: any[] = [
@@ -239,12 +230,7 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     pptx.layout = 'LAYOUT_16x9'
 
     const { user } = useAuthStore.getState()
-    const FRANCE_EMAILS = [
-      'franceregraceceles@gmail.com',
-      'fraceles@gbox.ncf.edu.ph',
-      'regraceceles97@gmail.com',
-    ]
-    const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
+    const isFrance = isFranceUser(user)
 
     // Brand Palette
     const bgColor = 'FFF8F6'
@@ -404,12 +390,7 @@ export const printFlashcards = (reviewer: ReviewerItem) => {
   }
 
   const { user } = useAuthStore.getState()
-  const FRANCE_EMAILS = [
-    'franceregraceceles@gmail.com',
-    'fraceles@gbox.ncf.edu.ph',
-    'regraceceles97@gmail.com',
-  ]
-  const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
+  const isFrance = isFranceUser(user)
 
   // Build the print HTML
   const htmlContent = `

@@ -1,8 +1,11 @@
 import { DifficultyMode } from '@/stores/simulationStore'
-import { getPersonalizationConfig } from '@/lib/groq'
+import { getPersonalizationConfig } from '@/lib/personalization'
+import { useAuthStore } from '@/stores/authStore'
+
+const _getConfig = () => getPersonalizationConfig(useAuthStore.getState().user)
 
 export const getRecitationPrompt = (topic: string, difficulty: DifficultyMode, sourceText?: string) => {
-  const config = getPersonalizationConfig()
+  const config = _getConfig()
   const { isFrance, greetingName, aiAssistantName } = config
 
   const assistantName = isFrance ? aiAssistantName : 'Nurse Florence'
@@ -82,7 +85,7 @@ export const getRecitationPrompt = (topic: string, difficulty: DifficultyMode, s
 }
 
 export const getSimulationEvaluationPrompt = () => {
-  const config = getPersonalizationConfig()
+  const config = _getConfig()
   const { greetingName } = config
   return `
     You are an expert Clinical Nursing Instructor evaluating ${config.isFrance ? 'France' : greetingName}'s performance in a clinical simulation.
@@ -106,7 +109,7 @@ export const getSimulationEvaluationPrompt = () => {
 }
 
 export const getRetDemPrompt = (procedure: string, difficulty: DifficultyMode, sourceText?: string) => {
-  const config = getPersonalizationConfig()
+  const config = _getConfig()
   const { isFrance, greetingName, aiAssistantName } = config
 
   const assistantName = isFrance ? aiAssistantName : 'Nurse Florence'

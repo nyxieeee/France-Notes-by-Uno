@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuthStore } from '@/stores/authStore'
 import AppShell from '@/components/layout/AppShell'
 import { PersonalizationProvider } from '@/context/PersonalizationContext'
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 
 // Pages
 import LoginPage from '@/pages/Auth/LoginPage'
@@ -64,6 +65,7 @@ function App() {
 
   return (
     <PersonalizationProvider>
+      <ErrorBoundary>
       <Router>
         <Routes>
           {/* Auth Routes */}
@@ -99,6 +101,7 @@ function App() {
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </Router>
+      </ErrorBoundary>
     </PersonalizationProvider>
   )
 }

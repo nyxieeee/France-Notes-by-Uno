@@ -1,16 +1,9 @@
-import Groq from 'groq-sdk'
 import { useAuthStore } from '@/stores/authStore'
+import { getPersonalizationConfig, type PersonalizationConfig } from '@/lib/personalization'
 
-// ─── API Keys ─────────────────────────────────────────────────────────────────
-const GROQ_API_KEY    = import.meta.env.VITE_GROQ_API_KEY
-const MISTRAL_API_KEY = import.meta.env.VITE_MISTRAL_API_KEY
-const GEMINI_API_KEY  = import.meta.env.VITE_GEMINI_API_KEY
+export type { PersonalizationConfig }
 
-// ─── Groq Client ──────────────────────────────────────────────────────────────
-export const groq = new Groq({
-  apiKey: GROQ_API_KEY || 'dummy-key',
-  dangerouslyAllowBrowser: true,
-})
+const API_BASE = '/api'
 
 // ─── Model Registry ───────────────────────────────────────────────────────────
 export const DEFAULT_MODEL = 'llama-3.3-70b-versatile'
@@ -65,40 +58,9 @@ const FEATURE_ROUTES: Record<AIFeature, RouteConfig> = {
 }
 
 // ─── Personalization ──────────────────────────────────────────────────────────
-export interface PersonalizationConfig {
-  isFrance: boolean
-  appName: string
-  aiAssistantName: string
-  greetingName: string
-  studyBoxName: string
-  knowledgeGardenName: string
-  retdemName: string
-  mascotName: string
-  aiTone: 'affectionate_supportive' | 'professional_supportive'
-}
-
-export function getPersonalizationConfig(): PersonalizationConfig {
-  const user = useAuthStore.getState().user
-  const FRANCE_EMAILS = [
-    'franceregraceceles@gmail.com',
-    'fraceles@gbox.ncf.edu.ph',
-    'regraceceles97@gmail.com',
-  ]
-  const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
-  const firstName = user?.full_name?.split(' ')[0] || 'Student'
-
-  return {
-    isFrance,
-    appName: isFrance ? 'France Notes' : 'Nurse Notes',
-    aiAssistantName: isFrance ? 'Doc Uno' : 'Nurse Florence',
-    greetingName: isFrance ? 'babe' : firstName,
-    studyBoxName: isFrance ? "France's Study Box" : 'Study Box',
-    knowledgeGardenName: isFrance ? "France's Knowledge Garden" : 'Knowledge Garden',
-    retdemName: isFrance ? "France's RetDem Practice" : 'Clinical Practice',
-    mascotName: isFrance ? 'Doc Uno' : 'Nurse Florence',
-    aiTone: isFrance ? 'affectionate_supportive' : 'professional_supportive',
-  }
-}
+// Imported from @/lib/personalization (single source of truth)
+// Use: `const config = getPersonalizationConfig(useAuthStore.getState().user)`
+// Instead of: `const config = getPersonalizationConfig()`
 
 export const getAiSystemPrompt = (config: PersonalizationConfig) => {
   const { isFrance, greetingName, aiAssistantName } = config
@@ -172,34 +134,9 @@ async function callGroq(
   maxTokens = 4000,
   jsonMode = false,
 ): Promise<string> {
-  if (!GROQ_API_KEY) throw new Error('Groq API key not found. Add VITE_GROQ_API_KEY to your .env')
-
-  const response = await groq.chat.completions.create({
-    messages: messages as any,
-    model,
-    temperature,
-    max_tokens: maxTokens,
-    ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
-  })
-
-  return response.choices[0]?.message?.content || ''
-}
-
-async function callMistral(
-  messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-  model: string,
-  temperature = 0.85,
-  maxTokens = 12000,
-  jsonMode = false,
-): Promise<string> {
-  if (!MISTRAL_API_KEY) throw new Error('Mistral API key not found. Add VITE_MISTRAL_API_KEY to your .env')
-
-  const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+  const response = await fetch(`${API_BASE}/groq`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${MISTRAL_API_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model,
       messages,
@@ -210,8 +147,36 @@ async function callMistral(
   })
 
   if (!response.ok) {
-    const err = await response.json()
-    throw new Error(`Mistral error: ${err.message || response.statusText}`)
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || `Groq API error: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  return data.choices[0]?.message?.content || ''
+}
+
+async function callMistral(
+  messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+  model: string,
+  temperature = 0.85,
+  maxTokens = 12000,
+  jsonMode = false,
+): Promise<string> {
+  const response = await fetch(`${API_BASE}/mistral`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+      ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || `Mistral API error: ${response.statusText}`)
   }
 
   const data = await response.json()
@@ -225,18 +190,18 @@ async function callGemini(
   maxTokens = 4000,
   jsonMode = false,
 ): Promise<string> {
-  if (!GEMINI_API_KEY) throw new Error('Gemini API key not found. Add VITE_GEMINI_API_KEY to your .env')
-
   const systemMsg = messages.find(m => m.role === 'system')
   const chatMessages = messages.filter(m => m.role !== 'system')
 
-  const geminiMessages = chatMessages.map(m => ({
+  const contents = chatMessages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }))
 
   const body: any = {
-    contents: geminiMessages,
+    model,
+    contents,
+    ...(systemMsg ? { systemInstruction: { parts: [{ text: systemMsg.content }] } } : {}),
     generationConfig: {
       temperature,
       maxOutputTokens: maxTokens,
@@ -244,22 +209,15 @@ async function callGemini(
     },
   }
 
-  if (systemMsg) {
-    body.systemInstruction = { parts: [{ text: systemMsg.content }] }
-  }
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }
-  )
+  const response = await fetch(`${API_BASE}/gemini`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 
   if (!response.ok) {
-    const err = await response.json()
-    throw new Error(`Gemini error: ${err.error?.message || response.statusText}`)
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || `Gemini API error: ${response.statusText}`)
   }
 
   const data = await response.json()
@@ -285,9 +243,8 @@ export async function callGeminiGroundedSearch(
   systemPrompt: string,
   page = 1,
 ): Promise<GroundedSearchResult[]> {
-  if (!GEMINI_API_KEY) throw new Error('Gemini API key not found. Add VITE_GEMINI_API_KEY to your .env')
-
   const body = {
+    model: 'gemini-2.5-flash',
     contents: [{
       role: 'user',
       parts: [{ text: `${query} (page ${page})` }],
@@ -304,18 +261,15 @@ export async function callGeminiGroundedSearch(
     },
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }
-  )
+  const response = await fetch(`${API_BASE}/gemini`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 
   if (!response.ok) {
-    const err = await response.json()
-    throw new Error(`Gemini Grounded Search error: ${err.error?.message || response.statusText}`)
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || `Gemini Grounded Search error: ${response.statusText}`)
   }
 
   const data = await response.json()
@@ -487,7 +441,7 @@ export async function generateCompletion(
   systemPrompt?: string,
   feature: AIFeature = 'chat',
 ): Promise<string> {
-  const config = getPersonalizationConfig()
+  const config = getPersonalizationConfig(useAuthStore.getState().user)
   const sysPrompt = (!systemPrompt || systemPrompt === DOC_UNO_SYSTEM_PROMPT)
     ? getAiSystemPrompt(config)
     : systemPrompt
@@ -512,7 +466,7 @@ export async function generateJSON(
   temperature = 0.2,
   maxTokens?: number,
 ): Promise<any> {
-  const config = getPersonalizationConfig()
+  const config = getPersonalizationConfig(useAuthStore.getState().user)
   const sysPrompt = (!systemPrompt || systemPrompt === DOC_UNO_SYSTEM_PROMPT)
     ? getAiSystemPrompt(config)
     : systemPrompt
@@ -545,33 +499,35 @@ export async function generateJSON(
 // ─── Vision (Groq only) ───────────────────────────────────────────────────────
 
 export async function visionExtractText(imageBase64: string): Promise<string> {
-  if (!GROQ_API_KEY) throw new Error('Groq API key not found.')
-
   try {
-    const response = await groq.chat.completions.create({
-      model: VISION_MODEL,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Extract all handwritten or typed text from this image. If it is a nursing or medical diagram, describe the key concepts clearly. Output ONLY the extracted text and concepts.',
-            },
-            {
-              type: 'image_url',
-              image_url: { url: imageBase64 },
-            },
-          ],
-        },
-      ] as any,
-      temperature: 0.2,
-      max_tokens: 1500,
+    const response = await fetch(`${API_BASE}/groq`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: VISION_MODEL,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Extract all handwritten or typed text from this image. If it is a nursing or medical diagram, describe the key concepts clearly. Output ONLY the extracted text and concepts.' },
+              { type: 'image_url', image_url: { url: imageBase64 } },
+            ],
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 1500,
+      }),
     })
 
-    return response.choices[0]?.message?.content || 'No text extracted.'
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.error || 'Vision API error')
+    }
+
+    const data = await response.json()
+    return data.choices[0]?.message?.content || 'No text extracted.'
   } catch (error) {
     console.error('Vision API Error:', error)
-    return 'Vision extraction failed. Please check your Groq API key and try again. 🌸'
+    return 'Vision extraction failed. Please check your API configuration and try again. 🌸'
   }
 }

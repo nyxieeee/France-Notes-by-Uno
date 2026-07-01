@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import type { StudyBoxItem, Topic, KnowledgeSearchResult } from '@/types'
 import { extractTextFromFile } from '@/lib/extractor'
-import { generateJSON, DOC_UNO_SYSTEM_PROMPT, generateCompletion, getPersonalizationConfig } from '@/lib/groq'
+import { generateJSON, DOC_UNO_SYSTEM_PROMPT, generateCompletion } from '@/lib/groq'
+import { getPersonalizationConfig } from '@/lib/personalization'
+import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
 
 interface StudyBoxState {
@@ -187,7 +189,7 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
     let summaryText = ''
     if (extractedText.trim() && !extractedText.startsWith('[SYSTEM MESSAGE')) {
       try {
-        const config = getPersonalizationConfig()
+        const config = getPersonalizationConfig(useAuthStore.getState().user)
         const { isFrance, greetingName, aiAssistantName } = config
 
         let summaryPrompt = ""
@@ -480,6 +482,3 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       .slice(0, count),
 }))
 
-// Initial fetches
-useStudyBoxStore.getState().fetchItems()
-useStudyBoxStore.getState().fetchSavedKnowledge()
