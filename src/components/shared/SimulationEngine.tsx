@@ -144,7 +144,7 @@ ${formattedTranscript}`
         { accuracy: 82, safety: 85, reasoning: 80, confidence: 85 },
         { 
           correct: [
-            "France kept a calm clinical demeanor throughout the questions.",
+            `${isFrance ? "France" : "You"} kept a calm clinical demeanor throughout the questions.`,
             "Demonstrated solid initial safety principles and patient care steps."
           ], 
           missed: [

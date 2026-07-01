@@ -22,7 +22,7 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
-      name: 'france-notes-theme',
+      name: 'app-theme',
       onRehydrateStorage: () => (state) => {
         if (state?.theme === 'dark') {
           document.documentElement.classList.add('dark')

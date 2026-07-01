@@ -57,7 +57,7 @@ function App() {
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin" />
-          <p className="text-[var(--text-secondary)] text-sm font-body">Loading France Notes...</p>
+          <p className="text-[var(--text-secondary)] text-sm font-body">Loading...</p>
         </div>
       </div>
     )

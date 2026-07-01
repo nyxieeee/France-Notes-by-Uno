@@ -1,9 +1,11 @@
 import { useAuthStore } from '@/stores/authStore'
 import { getGreeting } from '@/lib/utils'
+import { usePersonalization } from '@/hooks/usePersonalization'
 import { motion } from 'framer-motion'
 
 export default function GreetingHeader() {
   const { user } = useAuthStore()
+  const { isFrance, greetingName } = usePersonalization()
   const greeting = getGreeting()
 
   return (
@@ -13,10 +15,13 @@ export default function GreetingHeader() {
       className="mb-8"
     >
       <h1 className="text-3xl md:text-4xl font-bold text-[var(--text)] mb-2 tracking-tight">
-        {greeting}, <span className="gradient-text">{user?.full_name?.split(' ')[0]}!</span> ✨
+        {greeting}, <span className="gradient-text">{greetingName}!</span> {isFrance ? '🩷' : '✨'}
       </h1>
       <p className="text-[var(--text-secondary)] font-medium">
-        Ready to make progress on your nursing goals today? 🩺🌸
+        {isFrance
+          ? "Ready to make progress on your nursing goals today? 🩺🌸"
+          : "Ready to make progress on your nursing goals today? 🩺"
+        }
       </p>
     </motion.div>
   )
