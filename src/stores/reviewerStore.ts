@@ -102,12 +102,17 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
         ${personalityRule}
         CRITICAL RULE: If the text provided is a [SYSTEM MESSAGE] stating that text extraction failed or the document is empty, DO NOT generate a study guide. Instead, output a summary explaining that the document could not be read, and leave the flashcards, mnemonics, and key points arrays EMPTY.
         Your output must be a valid JSON object with the following fields:
-        1. "summary": A markdown string of about 1200-1800 words containing a detailed clinical study guide with exactly these 5 headings: ### 🧬 Clinical Pathophysiology & Concepts Overview, ### 📋 High-Yield Clinical Assessment & Laboratory Findings, ### 💊 Pharmacological & Medical Management, ### 🩺 Exhaustive Nursing Care Priorities & Scientific Rationales, ### 🎯 Board Appraisal & Test-Taking Strategies.
+        1. "summary": A plain text string of about 1200-1800 words containing a detailed clinical study guide. Use EXACTLY these 5 sections with simple uppercase headings (NO markdown #, ##, or ### symbols):
+           - CLINICAL PATHOPHYSIOLOGY & CONCEPTS OVERVIEW
+           - HIGH-YIELD CLINICAL ASSESSMENT & LABORATORY FINDINGS
+           - PHARMACOLOGICAL & MEDICAL MANAGEMENT
+           - EXHAUSTIVE NURSING CARE PRIORITIES & SCIENTIFIC RATIONALES
+           - BOARD APPRAISAL & TEST-TAKING STRATEGIES
         2. "key_points": A JSON array of 12-18 detailed clinical takeaway strings.
         3. "flashcards": A JSON array of 15-25 objects each with "front" and "back" keys.
         4. "mnemonics": A JSON array of 3-6 objects each with "title" and "content" keys.
         5. "simplified_explanation": A simple analogy or explanation string.
-        CRITICAL FORMATTING RULES: Do NOT use markdown tables anywhere. Do NOT include key_points, flashcards, or mnemonics inside the "summary" field.
+        CRITICAL FORMATTING RULES: Do NOT use any markdown formatting symbols anywhere (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings, simple line breaks, and standard bullet points (-) or numbered lists. Do NOT include key_points, flashcards, or mnemonics inside the "summary" field.
         Output strictly as a JSON object.
       `
 

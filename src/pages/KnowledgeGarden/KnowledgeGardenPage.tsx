@@ -13,7 +13,7 @@ import {
 import { cn, generateId } from '@/lib/utils'
 import type { KnowledgeSearchResult } from '@/types'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
-import { Check, Heart } from 'lucide-react'
+import { Check, Heart, Loader2 } from 'lucide-react'
 import { callGeminiGroundedSearch, generateJSON } from '@/lib/groq'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
@@ -22,6 +22,7 @@ export default function KnowledgeGardenPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [results, setResults] = useState<KnowledgeSearchResult[]>([])
   const [page, setPage] = useState(1)
+  const [savingIds, setSavingIds] = useState<string[]>([])
   const { savedKnowledge, saveKnowledge, removeKnowledge } = useStudyBoxStore()
   const [savedToast, setSavedToast] = useState<{ title: string; action: 'saved' | 'removed' } | null>(null)
   
@@ -32,14 +33,24 @@ export default function KnowledgeGardenPage() {
     setTimeout(() => setSavedToast(null), 2800)
   }
 
-  const handleToggleSave = (result: KnowledgeSearchResult) => {
-    const alreadySaved = savedKnowledge.some(k => k.id === result.id)
+  const handleToggleSave = async (result: KnowledgeSearchResult) => {
+    const alreadySaved = savedKnowledge.some(k => k.id === result.id || k.url === result.url)
     if (alreadySaved) {
-      removeKnowledge(result.id)
-      showToast(result.title, 'removed')
+      const savedItem = savedKnowledge.find(k => k.id === result.id || k.url === result.url)
+      if (savedItem) {
+        removeKnowledge(savedItem.id)
+        showToast(result.title, 'removed')
+      }
     } else {
-      saveKnowledge(result)
-      showToast(result.title, 'saved')
+      setSavingIds(prev => [...prev, result.id])
+      try {
+        await saveKnowledge(result)
+        showToast(result.title, 'saved')
+      } catch (err) {
+        console.error("Save knowledge failed:", err)
+      } finally {
+        setSavingIds(prev => prev.filter(id => id !== result.id))
+      }
     }
   }
  
@@ -218,12 +229,15 @@ export default function KnowledgeGardenPage() {
                       )}
                       <button 
                         onClick={() => handleToggleSave(result)}
+                        disabled={savingIds.includes(result.id)}
                         className={cn(
                           "btn-secondary px-4 py-2 text-xs flex items-center gap-2 transition-all",
-                          savedKnowledge.some(k => k.id === result.id) && "bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/30"
+                          savedKnowledge.some(k => k.id === result.id || k.url === result.url) && "bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/30"
                         )}
                       >
-                        {savedKnowledge.some(k => k.id === result.id) ? (
+                        {savingIds.includes(result.id) ? (
+                          <><Loader2 size={12} className="animate-spin" /> Saving...</>
+                        ) : savedKnowledge.some(k => k.id === result.id || k.url === result.url) ? (
                           <><Check size={12} /> Saved</>
                         ) : (
                           <><Heart size={12} /> Save Reference</>

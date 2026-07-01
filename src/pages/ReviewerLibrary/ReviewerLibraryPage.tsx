@@ -770,9 +770,9 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
               {reviewer.content.slides && reviewer.content.slides.length > 0 && (
                 <button 
                   onClick={() => exportToPPTX(reviewer)}
-                  className="btn-secondary px-4 py-2 text-xs flex items-center gap-2 border-[var(--pink)]/30 text-[var(--pink)] hover:bg-[var(--pink)]/5 shadow-sm"
+                  className="btn-primary px-4 py-2 text-xs flex items-center gap-2 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-white font-bold"
                 >
-                  <Download size={14} /> PPTX
+                  <Download size={14} /> Download PPTX
                 </button>
               )}
                <button 

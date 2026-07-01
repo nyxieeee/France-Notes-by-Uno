@@ -39,8 +39,8 @@ export default function StudyBoxPage() {
     isUploading, 
     isProcessing,
     addItem, 
-    toggleFavorite, 
     removeItem,
+    toggleFavorite, 
     getFilteredItems,
     searchQuery,
     setSearchQuery,
@@ -48,16 +48,18 @@ export default function StudyBoxPage() {
     setSelectedTopic,
     selectedItemIds,
     toggleItemSelection,
-    clearSelection
+    clearSelection,
+    addGeneratedItem
   } = useStudyBoxStore()
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const filteredItems = getFilteredItems()
   
   const [isCameraOpen, setIsCameraOpen] = useState(false)
+  const [isCaseModalOpen, setIsCaseModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<StudyBoxItem | null>(null)
 
-  const { isFrance, aiAssistantName, studyBoxName } = usePersonalization()
+  const { isFrance, aiAssistantName, studyBoxName, greetingName } = usePersonalization()
   const { generatePresentation, generateReviewer, isGeneratingReviewer, isGeneratingPresentation } = useReviewerStore()
   const navigate = useNavigate()
   const { user } = useAuthStore()
@@ -106,8 +108,16 @@ export default function StudyBoxPage() {
         </div>
         <div className="flex items-center gap-2">
           <button 
+            onClick={() => setIsCaseModalOpen(true)}
+            className="btn-primary flex items-center gap-2 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-xs sm:text-sm px-3 sm:px-4"
+            disabled={isUploading || isProcessing}
+          >
+            <Sparkles size={18} />
+            <span>Generate Case Study</span>
+          </button>
+          <button 
             onClick={() => setIsCameraOpen(true)}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4"
             disabled={isUploading || isProcessing}
           >
             <Camera size={18} />
@@ -115,7 +125,7 @@ export default function StudyBoxPage() {
           </button>
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="btn-primary flex items-center gap-2"
+            className="btn-secondary flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4"
             disabled={isUploading || isProcessing}
           >
             <Upload size={18} />
@@ -410,6 +420,17 @@ export default function StudyBoxPage() {
           <CameraModal 
             onCapture={handleCapture}
             onClose={() => setIsCameraOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isCaseModalOpen && (
+          <CaseStudyModal 
+            onClose={() => setIsCaseModalOpen(false)}
+            addGeneratedItem={addGeneratedItem}
+            greetingName={greetingName}
+            aiAssistantName={aiAssistantName}
           />
         )}
       </AnimatePresence>
@@ -760,8 +781,8 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
                 <BookOpen size={16} className="text-[var(--pink)]" />
                 <span className="text-xs font-bold uppercase tracking-wider">Document Reader</span>
               </div>
-              <div className="text-sm md:text-base text-[var(--text)] font-medium leading-relaxed whitespace-pre-wrap font-sans">
-                {formatDocumentText(currentItem.extracted_text)}
+              <div className="text-sm md:text-base text-[var(--text)] leading-relaxed font-sans select-text">
+                <MarkdownText content={currentItem.extracted_text} />
               </div>
             </div>
 
@@ -964,5 +985,250 @@ function Archive(props: any) {
       <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
       <path d="M10 12h4" />
     </svg>
+  )
+}
+
+function CaseStudyModal({ 
+  onClose, 
+  addGeneratedItem, 
+  greetingName, 
+  aiAssistantName 
+}: { 
+  onClose: () => void, 
+  addGeneratedItem: (title: string, content: string, type: 'case-study' | 'pathophysiology') => Promise<void>,
+  greetingName: string,
+  aiAssistantName: string
+}) {
+  const [topic, setTopic] = useState('')
+  const [scenario, setScenario] = useState('')
+  const [genType, setGenType] = useState<'case-study' | 'pathophysiology'>('case-study')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleGenerate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!topic.trim()) return
+    setIsGenerating(true)
+    setError(null)
+
+    try {
+      let prompt = ''
+      if (genType === 'case-study') {
+        prompt = `
+          You are a professional clinical educator and nursing case analyst.
+          Generate a textbook-grade, highly-detailed Nursing Case Study / Case Presentation for the topic: "${topic}".
+          
+          Scenario/Condition details provided by student:
+          "${scenario || 'No custom scenario details provided.'}"
+          
+          STRUCTURE:
+          Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
+          
+          CASE PROFILE & CLINICAL PRESENTATION
+          Detailed profile of the patient (age, gender, history), chief complaint, and detailed narrative of the clinical scenario.
+          
+          NURSING PHYSICAL ASSESSMENT (BY SYSTEM)
+          Exhaustive system-by-system findings relevant to the condition (Neurological, Cardiovascular, Respiratory, Gastrointestinal, Genitourinary, Integumentary).
+          
+          DIAGNOSTIC & LABORATORY MATRIX
+          Main tests (labs, imaging, ECG, etc.) with values, interpretation, and nursing rationales for why they were ordered.
+          
+          PHARMACOLOGICAL & MEDICAL THERAPIES
+          Active medications, intravenous fluids, and clinical treatments, specifying classification, mechanism, dosage, and nursing considerations.
+          
+          NURSING CARE PLAN (NCP)
+          At least 3 specific nursing diagnoses, goals, evidence-based nursing interventions, and logical scientific rationales.
+          
+          CLINICAL QUESTIONS & CRITICAL DISCUSSION
+          3 high-yield clinical discussion questions with detailed, expert-level rationales for nursing review.
+          
+          Style: Strictly formal, clinical-grade, academic, and extremely detailed. Keep it in clear clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 800-1200 words.
+        `
+      } else {
+        prompt = `
+          You are a clinical pathophysiology specialist and nursing educator.
+          Generate a comprehensive, step-by-step Pathophysiology & Disease Mechanism guide for the condition: "${topic}".
+          
+          Patient Scenario/Condition context provided by student:
+          "${scenario || 'No custom scenario/condition context provided.'}"
+          
+          STRUCTURE:
+          Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
+          
+          DISEASE OVERVIEW & DEFINITION
+          Clear clinical definition, classifications, and primary homeostatic disruptions.
+          
+          ETIOLOGY & CLINICAL RISK FACTORS
+          Predisposing factors, precipitating events, and direct etiologies categorized clearly.
+          
+          STEP-BY-STEP PATHOPHYSIOLOGY PATHWAY
+          A detailed, sequential, step-by-step description of the cellular and physiological mechanism from the initial insult/insulting agent to systemic manifestations.
+          
+          CLINICAL CORRELATIONS & SYMPTOM PATHWAYS
+          Explain exactly HOW the pathophysiological changes lead to the classic signs and symptoms (e.g., why ischemia causes chest pain, why heart failure causes crackles).
+          
+          PREVENTATIVE & CLINICAL INFLUENCES
+          Key medical and nursing actions that directly interrupt this pathway to restore homeostasis.
+          
+          Style: Strictly formal, academic, and highly detailed. Keep it in clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 800-1200 words.
+        `
+      }
+
+      const articleContent = await generateCompletion(
+        prompt, 
+        `You are ${aiAssistantName}, a professional nursing clinical instructor drafting textbook-grade clinical materials for ${greetingName}.`, 
+        'knowledge'
+      )
+
+      if (!articleContent) {
+        throw new Error("Failed to generate content from AI model.")
+      }
+
+      await addGeneratedItem(topic, articleContent, genType)
+      onClose()
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || "An unexpected error occurred. Please try again.")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-[var(--secondary-bg)] w-full max-w-2xl rounded-3xl p-6 sm:p-8 border border-[var(--border)] shadow-2xl relative my-8"
+      >
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text)] text-2xl font-bold w-10 h-10 flex items-center justify-center rounded-full hover:bg-[var(--border)]/20 transition-all"
+        >
+          &times;
+        </button>
+
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-[var(--pink)]/15 rounded-2xl flex items-center justify-center text-[var(--pink)] shadow-sm">
+            <Sparkles size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">AI Clinical Generator 🩺✨</h2>
+            <p className="text-xs text-[var(--text-secondary)]">Create a detailed case study or detailed pathophysiology guide.</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 text-red-600 rounded-2xl text-xs border border-red-500/20 font-medium">
+            ⚠️ {error}
+          </div>
+        )}
+
+        {isGenerating ? (
+          <div className="py-12 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 border-4 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin mb-6"></div>
+            <h3 className="font-bold text-lg mb-2 text-[var(--pink)] animate-pulse">Drafting Clinical Document...</h3>
+            <p className="text-xs text-[var(--text-secondary)] max-w-md">
+              {genType === 'case-study' 
+                ? "Nurse Florence is conducting physical assessments, mapping diagnostics, and detailing the Nursing Care Plans..." 
+                : "Doc Uno is tracing cell injury pathways, homeostatic changes, and clinical symptom correlations..."
+              }
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleGenerate} className="space-y-5">
+            {/* Generator Type Selector */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
+                Generation Category
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setGenType('case-study')}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all text-center gap-1.5",
+                    genType === 'case-study' 
+                      ? "border-[var(--pink)] bg-[var(--pink)]/5 text-[var(--pink)] font-bold shadow-sm"
+                      : "border-[var(--border)] hover:bg-[var(--border)]/20 text-[var(--text-secondary)]"
+                  )}
+                >
+                  <BookOpen size={20} />
+                  <span className="text-sm font-semibold">Clinical Case Study</span>
+                  <span className="text-[10px] opacity-75">Patient profile, labs, meds, care plan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGenType('pathophysiology')}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all text-center gap-1.5",
+                    genType === 'pathophysiology' 
+                      ? "border-[var(--pink)] bg-[var(--pink)]/5 text-[var(--pink)] font-bold shadow-sm"
+                      : "border-[var(--border)] hover:bg-[var(--border)]/20 text-[var(--text-secondary)]"
+                  )}
+                >
+                  <BrainCircuit size={20} />
+                  <span className="text-sm font-semibold">Pathophysiology Guide</span>
+                  <span className="text-[10px] opacity-75">Cellular pathways, risk factors, etiologies</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Medical Topic/Condition */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+                Medical Condition / Topic Name
+              </label>
+              <input
+                type="text"
+                required
+                value={topic}
+                onChange={e => setTopic(e.target.value)}
+                placeholder="e.g. Myocardial Infarction, Acute Appendicitis, Chronic Kidney Disease"
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--pink)] transition-all font-semibold"
+              />
+            </div>
+
+            {/* Scenario Textarea */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2 flex justify-between">
+                <span>Patient Scenario / Clinical Details (Optional)</span>
+                <span className="text-[10px] font-normal lowercase tracking-normal text-[var(--text-secondary)]/60">help custom-tailor the content</span>
+              </label>
+              <textarea
+                value={scenario}
+                onChange={e => setScenario(e.target.value)}
+                placeholder={
+                  genType === 'case-study'
+                    ? "e.g., A 56-year-old female presenting with crushing retrosternal chest pain radiating to the left shoulder, diaphoresis, and blood pressure of 150/90 mmHg. History of hypertension..."
+                    : "e.g., Explain the mechanism of ischemic injury, necrosis pathways, cardiac enzyme release (troponin), and ventricular remodeling..."
+                }
+                rows={5}
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--pink)] transition-all leading-relaxed"
+              />
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="pt-2 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-secondary px-6 py-2.5 text-xs font-bold uppercase tracking-wider"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn px-6 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+              >
+                Generate Document <ArrowRight size={14} />
+              </button>
+            </div>
+          </form>
+        )}
+      </motion.div>
+    </div>
   )
 }

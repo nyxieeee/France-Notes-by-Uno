@@ -32,6 +32,7 @@ interface StudyBoxState {
   saveKnowledge: (result: KnowledgeSearchResult) => Promise<void>
   removeKnowledge: (id: string) => Promise<void>
   addTopic: (title: string, description: string, color: string) => Topic
+  addGeneratedItem: (title: string, content: string, type: 'case-study' | 'pathophysiology') => Promise<void>
   getFilteredItems: () => StudyBoxItem[]
   getFavorites: () => StudyBoxItem[]
   getRecentItems: (count?: number) => StudyBoxItem[]
@@ -339,7 +340,7 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
         5. MEDICAL & PHARMACOLOGICAL TREATMENTS (Main therapies, fluids, medications, and surgical/interventional procedures)
         6. ESSENTIAL NURSING DIAGNOSES & EVIDENCE-BASED INTERVENTIONS (At least 3 distinct care plan lines with clear rationales, including vital monitoring, positioning, comfort, and patient education)
         
-        Style: Strictly formal, academic, clear, and highly detailed. Ensure all information is 100% evidence-based and clinical-grade. Keep it in high-yield medical English. Do not write a summary; write the full article. Aim for a comprehensive length of 600-800 words.
+        Style: Strictly formal, academic, clear, and highly detailed. Ensure all information is 100% evidence-based and clinical-grade. Keep it in high-yield medical English. Do NOT use any markdown formatting symbols anywhere (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings, simple line breaks, and standard bullet points (-) or numbered lists. Do not write a summary; write the full article. Aim for a comprehensive length of 600-800 words.
       `
       const articleContent = await generateCompletion(prompt, "You are a specialized clinical database librarian generating textbook-grade clinical references.", 'knowledge')
       if (articleContent) {
@@ -398,10 +399,52 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
   },
 
   removeKnowledge: async (id: string) => {
+    const target = get().savedKnowledge.find(k => k.id === id)
     set((state) => ({
-      savedKnowledge: state.savedKnowledge.filter(k => k.id !== id)
+      savedKnowledge: state.savedKnowledge.filter(k => k.id !== id),
+      items: target ? state.items.filter(item => !item.file_name.includes(target.title)) : state.items
     }))
     await supabase.from('saved_knowledge').delete().eq('id', id)
+    if (target) {
+      await supabase.from('study_materials').delete().filter('file_name', 'like', `%${target.title}%`)
+    }
+  },
+
+  addGeneratedItem: async (title: string, content: string, type: 'case-study' | 'pathophysiology') => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) throw new Error("No active session found")
+
+    const file_name = type === 'case-study' 
+      ? `[Case Study] ${title.trim()}.txt` 
+      : `[Pathophysiology] ${title.trim()}.txt`
+
+    const newItem = {
+      file_name,
+      file_type: 'txt',
+      file_size: 0,
+      extracted_text: content,
+      preview_image: null,
+      topic_id: null,
+      is_favorite: false,
+      tags: ['generated', type],
+      user_id: session.user.id
+    }
+
+    const { data: insertedItem, error } = await supabase
+      .from('study_materials')
+      .insert([newItem])
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    if (insertedItem) {
+      set((state) => ({
+        items: [insertedItem as StudyBoxItem, ...state.items]
+      }))
+    }
   },
 
   addTopic: (title: string, description: string, color: string) => {
