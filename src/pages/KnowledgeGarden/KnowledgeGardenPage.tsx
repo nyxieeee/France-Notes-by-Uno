@@ -197,10 +197,10 @@ export default function KnowledgeGardenPage() {
                       </a>
                       {(result as any).search_url && (
                         <a 
-                          href={(result as any).search_url} 
+                          href={`https://www.google.com/search?q=${encodeURIComponent(query)}`} 
                           target="_blank" 
                           rel="noreferrer"
-                          title={`Search for "${result.title}" on Google`}
+                          title={`Search for "${query}" on Google`}
                           className="btn-secondary px-4 py-2 text-xs flex items-center gap-1.5"
                         >
                           Find on Google <Search size={14} />
