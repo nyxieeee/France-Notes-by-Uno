@@ -3,97 +3,261 @@ import type { ChatMessage } from '@/types'
 import { generateCompletion, getPersonalizationConfig, DOC_UNO_SYSTEM_PROMPT } from '@/lib/groq'
 import { useStudyBoxStore } from './studyBoxStore'
 import { useReviewerStore } from './reviewerStore'
+import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
+import { generateId } from '@/lib/utils'
+
+export interface ChatSession {
+  id: string
+  title: string
+  messages: ChatMessage[]
+  created_at: string
+}
 
 interface ChatState {
-  messages: ChatMessage[]
+  sessions: ChatSession[]
+  activeSessionId: string | null
+  isSidebarOpen: boolean
   isTyping: boolean
   isLoading: boolean
   error: string | null
 
+  fetchSessions: () => Promise<void>
   fetchMessages: () => Promise<void>
+  setActiveSession: (sessionId: string | null) => void
+  createNewSession: (initialMessage?: string) => string
+  deleteSession: (sessionId: string) => Promise<void>
+  setSidebarOpen: (isOpen: boolean) => void
   sendMessage: (content: string) => Promise<void>
   clearHistory: () => Promise<void>
   getDocUnoResponse: (userMessage: string) => Promise<string>
 }
 
 export const useChatStore = create<ChatState>()((set, get) => ({
-  messages: [],
+  sessions: [],
+  activeSessionId: null,
+  isSidebarOpen: false,
   isTyping: false,
   isLoading: false,
   error: null,
 
   fetchMessages: async () => {
+    await get().fetchSessions()
+  },
+
+  fetchSessions: async () => {
     set({ isLoading: true, error: null })
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) {
-      set({ messages: [], isLoading: false })
+      set({ sessions: [], activeSessionId: null, isLoading: false })
       return
     }
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: true })
 
-    if (error) {
-      console.error('Error fetching chat messages:', error)
-      set({ error: error.message, messages: [], isLoading: false })
-    } else {
-      set({ messages: data as ChatMessage[], isLoading: false })
+    const userId = session.user.id
+    const storageKey = `france_notes_chat_sessions_${userId}`
+    const localData = localStorage.getItem(storageKey)
+
+    if (localData) {
+      try {
+        const parsed = JSON.parse(localData) as ChatSession[]
+        set({ 
+          sessions: parsed, 
+          activeSessionId: parsed.length > 0 ? parsed[0].id : null,
+          isLoading: false 
+        })
+        return
+      } catch (e) {
+        console.error('Failed to parse local chat sessions:', e)
+      }
     }
+
+    // Migration / Fallback: If no local sessions, fetch existing single thread from Supabase
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+
+      if (!error && data && data.length > 0) {
+        // Create a default session containing these messages
+        const defaultSession: ChatSession = {
+          id: generateId(),
+          title: data[0].content ? data[0].content.substring(0, 30) + (data[0].content.length > 30 ? '...' : '') : 'Study Companion Chat',
+          messages: data as ChatMessage[],
+          created_at: data[0].created_at || new Date().toISOString()
+        }
+        
+        const initialSessions = [defaultSession]
+        localStorage.setItem(storageKey, JSON.stringify(initialSessions))
+        
+        set({ 
+          sessions: initialSessions, 
+          activeSessionId: defaultSession.id,
+          isLoading: false 
+        })
+      } else {
+        // No past messages, start with a fresh template
+        set({ sessions: [], activeSessionId: null, isLoading: false })
+      }
+    } catch (err) {
+      console.error('Error during Supabase messages migration:', err)
+      set({ sessions: [], activeSessionId: null, isLoading: false })
+    }
+  },
+
+  setActiveSession: (sessionId: string | null) => {
+    set({ activeSessionId: sessionId })
+  },
+
+  createNewSession: (initialMessage?: string) => {
+    const { sessions } = get()
+    const newSession: ChatSession = {
+      id: generateId(),
+      title: initialMessage 
+        ? initialMessage.substring(0, 30) + (initialMessage.length > 30 ? '...' : '') 
+        : 'New Chat',
+      messages: [],
+      created_at: new Date().toISOString()
+    }
+
+    const updatedSessions = [newSession, ...sessions]
+    set({ sessions: updatedSessions, activeSessionId: newSession.id })
+
+    const user = useAuthStore.getState().user
+    if (user?.id) {
+      localStorage.setItem(`france_notes_chat_sessions_${user.id}`, JSON.stringify(updatedSessions))
+    }
+
+    return newSession.id
+  },
+
+  deleteSession: async (sessionId: string) => {
+    const { sessions, activeSessionId } = get()
+    const updatedSessions = sessions.filter(s => s.id !== sessionId)
+    
+    let nextActiveId = activeSessionId
+    if (activeSessionId === sessionId) {
+      nextActiveId = updatedSessions.length > 0 ? updatedSessions[0].id : null
+    }
+
+    set({ sessions: updatedSessions, activeSessionId: nextActiveId })
+
+    const user = useAuthStore.getState().user
+    if (user?.id) {
+      localStorage.setItem(`france_notes_chat_sessions_${user.id}`, JSON.stringify(updatedSessions))
+    }
+  },
+
+  setSidebarOpen: (isOpen: boolean) => {
+    set({ isSidebarOpen: isOpen })
   },
 
   sendMessage: async (content: string) => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) return
+    const { sessions, activeSessionId } = get()
+    const user = useAuthStore.getState().user
+    if (!user?.id) return
 
-    const userMsg = {
+    let currentSessionId = activeSessionId
+    
+    // Automatically create a new session if none is active
+    if (!currentSessionId) {
+      currentSessionId = get().createNewSession(content)
+    }
+
+    const userMsg: ChatMessage = {
+      id: generateId(),
       role: 'user',
       content,
-      user_id: session.user.id
+      created_at: new Date().toISOString()
     }
 
-    set((state) => ({
-      isTyping: true,
-      // Optimistically add user message (will be replaced by DB record, but good for UX)
-      messages: [...state.messages, { ...userMsg, id: 'temp-user', created_at: new Date().toISOString() } as ChatMessage]
-    }))
+    // Optimistically update session messages
+    set((state) => {
+      const updated = state.sessions.map((s) => {
+        if (s.id === currentSessionId) {
+          // If first message, auto-title the session
+          const title = s.messages.length === 0 
+            ? content.substring(0, 30) + (content.length > 30 ? '...' : '')
+            : s.title
+          
+          return {
+            ...s,
+            title,
+            messages: [...s.messages, userMsg]
+          }
+        }
+        return s
+      })
+      
+      localStorage.setItem(`france_notes_chat_sessions_${user.id}`, JSON.stringify(updated))
+      return { sessions: updated, isTyping: true }
+    })
 
-    // Save user message to DB
-    await supabase.from('chat_messages').insert([userMsg])
+    // Back up to Supabase 'chat_messages' table (optional, for safety)
+    try {
+      await supabase.from('chat_messages').insert([{
+        role: 'user',
+        content,
+        user_id: user.id
+      }])
+    } catch (e) {
+      console.warn('Backup of message to Supabase failed:', e)
+    }
 
-    // Fetch fresh to get real ID
-    await get().fetchMessages()
-
-    // Simulate AI thinking
+    // Get Doc Uno / AI response
     const responseContent = await get().getDocUnoResponse(content)
-    
-    const assistantMsg = {
+
+    const assistantMsg: ChatMessage = {
+      id: generateId(),
       role: 'assistant',
       content: responseContent,
-      user_id: session.user.id
+      created_at: new Date().toISOString()
     }
 
-    // Save assistant message to DB
-    await supabase.from('chat_messages').insert([assistantMsg])
+    // Update session with AI message
+    set((state) => {
+      const updated = state.sessions.map((s) => {
+        if (s.id === currentSessionId) {
+          return {
+            ...s,
+            messages: [...s.messages, assistantMsg]
+          }
+        }
+        return s
+      })
+      
+      localStorage.setItem(`france_notes_chat_sessions_${user.id}`, JSON.stringify(updated))
+      return { sessions: updated, isTyping: false }
+    })
 
-    // Fetch fresh to get real ID
-    await get().fetchMessages()
-    set({ isTyping: false })
+    // Back up AI response to Supabase
+    try {
+      await supabase.from('chat_messages').insert([{
+        role: 'assistant',
+        content: responseContent,
+        user_id: user.id
+      }])
+    } catch (e) {
+      console.warn('Backup of AI response to Supabase failed:', e)
+    }
   },
 
   clearHistory: async () => {
-    set({ messages: [] })
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) return
-    const { error } = await supabase
-      .from('chat_messages')
-      .delete()
-      .eq('user_id', session.user.id)
+    set({ sessions: [], activeSessionId: null })
+    const user = useAuthStore.getState().user
+    if (!user?.id) return
 
-    if (error) {
-      console.error('Error clearing chat history:', error)
+    localStorage.removeItem(`france_notes_chat_sessions_${user.id}`)
+
+    // Clear backups in Supabase
+    try {
+      await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('user_id', user.id)
+    } catch (e) {
+      console.warn('Supabase chat logs clear failed:', e)
     }
   },
 
@@ -108,7 +272,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       const recentNotes = studyBox.items.slice(0, 5).map(i => i.file_name).join(', ')
       const recentReviewers = reviewerLibrary.reviewers.slice(0, 5).map(r => r.title).join(', ')
       
-      const history = get().messages.slice(-5).map((m) => `${m.role === 'user' ? greetingName : aiAssistantName}: ${m.content}`).join('\n')
+      // Get conversation history of current active session
+      const activeSession = get().sessions.find(s => s.id === get().activeSessionId)
+      const currentMessages = activeSession ? activeSession.messages : []
+      const history = currentMessages.slice(-5).map((m) => `${m.role === 'user' ? greetingName : aiAssistantName}: ${m.content}`).join('\n')
       
       const prompt = `
         CONTEXT (${greetingName}'s current study materials):
@@ -140,5 +307,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   }
 }))
 
-// Initial fetch
-useChatStore.getState().fetchMessages()
+// Initial fetch on app load
+const user = useAuthStore.getState().user
+if (user?.id) {
+  useChatStore.getState().fetchSessions()
+}

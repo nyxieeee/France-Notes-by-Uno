@@ -18,8 +18,13 @@ const PersonalizationContext = createContext<PersonalizationConfig | undefined>(
 export function PersonalizationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthStore()
 
-  // Detection rule: email contains 'france' (case-insensitive)
-  const isFrance = !!user?.email?.toLowerCase().includes('france')
+  // Exact email allowlist — France's dashboard only activates for her accounts
+  const FRANCE_EMAILS = [
+    'franceregraceceles@gmail.com',
+    'fraceles@gbox.ncf.edu.ph',
+    'regraceceles97@gmail.com',
+  ]
+  const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
   const firstName = user?.full_name?.split(' ')[0] || 'Student'
 
   const config: PersonalizationConfig = {

@@ -87,11 +87,11 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
           The quiz questions must be HIGHLY DETAILED and emulate real board exam levels (PNLE, NCLEX-RN). 
           - For multiple choice/SATA/clinical judgment, write rich clinical scenarios or situational case studies describing a patient's condition, lab values, symptoms, or medication profile.
           - The 'rationale' field MUST be extremely detailed and educational: explain the pathophysiology of the condition, state exactly why the correct choice is correct, and provide clear clinical explanations for why EACH incorrect choice is wrong.
-          - The 'clinical_logic' field should provide high-yield test-taking tips, priority clinical indicators, or memorization cues in Taglish to help France easily recall it during her exams.
+          - The 'clinical_logic' field should provide high-yield test-taking tips, priority clinical indicators, or memorization cues in clear English to help France easily recall it during her exams.
 
           CUTE AESTHETIC & PERSONALITY RULE:
           - Write rationales with cute emojis (🌸, 🩺, 🧸, 🩹, ✨, 🌷, 🦦) to make the text visually pleasing!
-          - Intersperse warm, cute boyfriend encouraging words in Taglish (e.g. calling her "babe", reassuring her) inside the 'rationale' and 'clinical_logic' fields so it feels like a sweet, private review session!
+          - Intersperse warm, encouraging English boyfriend words (e.g. calling her "babe", cheering her on) inside the 'rationale' and 'clinical_logic' fields so it feels like a sweet, private review session — in pure English only, no Tagalog!
 
           CRITICAL DIVERSITY & DYNAMIC VARIETY RULE:
           - Every single time a quiz is generated, it MUST be completely unique and highly dynamic!

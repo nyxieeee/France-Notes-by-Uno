@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   ArrowRight,
   Filter,
-  Sparkles
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react'
 import { cn, generateId } from '@/lib/utils'
 import type { KnowledgeSearchResult } from '@/types'
@@ -24,8 +25,25 @@ export default function KnowledgeGardenPage() {
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [page, setPage] = useState(1)
   const { savedKnowledge, saveKnowledge, removeKnowledge } = useStudyBoxStore()
+  const [savedToast, setSavedToast] = useState<{ title: string; action: 'saved' | 'removed' } | null>(null)
   
   const { isFrance, aiAssistantName, greetingName, knowledgeGardenName } = usePersonalization()
+
+  const showToast = (title: string, action: 'saved' | 'removed') => {
+    setSavedToast({ title, action })
+    setTimeout(() => setSavedToast(null), 2800)
+  }
+
+  const handleToggleSave = (result: KnowledgeSearchResult) => {
+    const alreadySaved = savedKnowledge.some(k => k.id === result.id)
+    if (alreadySaved) {
+      removeKnowledge(result.id)
+      showToast(result.title, 'removed')
+    } else {
+      saveKnowledge(result)
+      showToast(result.title, 'saved')
+    }
+  }
  
   const handleSearch = async (e?: React.FormEvent, isLoadMore = false) => {
     if (e) e.preventDefault()
@@ -109,25 +127,25 @@ export default function KnowledgeGardenPage() {
 
       <div className="max-w-2xl mx-auto mb-12">
         <form onSubmit={handleSearch} className="relative group">
-          <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-[var(--text-secondary)] group-focus-within:text-[var(--pink)] transition-colors">
-            <Search size={20} />
+          <div className="absolute inset-y-0 left-4 sm:left-5 flex items-center pointer-events-none text-[var(--text-secondary)] group-focus-within:text-[var(--pink)] transition-colors">
+            <Search size={18} />
           </div>
           <input 
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Explain hypovolemic shock..."
-            className="w-full bg-[var(--card)] border-2 border-[var(--border)] rounded-[2.5rem] py-5 pl-14 pr-32 focus:border-[var(--pink)] focus:ring-4 focus:ring-[var(--pink)]/10 outline-none transition-all text-lg shadow-sm"
+            className="w-full bg-[var(--card)] border-2 border-[var(--border)] rounded-[2.5rem] py-3.5 sm:py-5 pl-11 sm:pl-14 pr-14 sm:pr-32 focus:border-[var(--pink)] focus:ring-4 focus:ring-[var(--pink)]/10 outline-none transition-all text-base sm:text-lg shadow-sm"
           />
           <button 
             type="submit"
             disabled={isSearching}
-            className="absolute right-3 top-2.5 bottom-2.5 px-6 bg-[var(--pink)] text-white rounded-full font-bold hover:bg-[var(--pink-hover)] transition-all flex items-center gap-2 disabled:opacity-50"
+            className="absolute right-2 sm:right-3 top-2 bottom-2 sm:top-2.5 sm:bottom-2.5 px-3 sm:px-6 bg-[var(--pink)] text-white rounded-full font-bold hover:bg-[var(--pink-hover)] transition-all flex items-center gap-2 disabled:opacity-50"
           >
             {isSearching ? (
-              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             ) : (
-              <>Search <ArrowRight size={18} /></>
+              <><span className="hidden sm:inline">Search</span> <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px]" /></>
             )}
           </button>
         </form>
@@ -204,18 +222,21 @@ export default function KnowledgeGardenPage() {
                       >
                         Read Article <ExternalLink size={14} />
                       </a>
-                      <a 
-                        href={(result as any).search_url} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="btn-secondary px-4 py-2 text-xs flex items-center gap-1.5"
-                      >
-                        Search {result.source} <Search size={14} />
-                      </a>
+                      {(result as any).search_url && (
+                        <a 
+                          href={(result as any).search_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          title={`Search for "${query}" directly on ${result.source}`}
+                          className="btn-secondary px-4 py-2 text-xs flex items-center gap-1.5"
+                        >
+                          Find on {result.source} <Search size={14} />
+                        </a>
+                      )}
                       <button 
-                        onClick={() => savedKnowledge.some(k => k.id === result.id) ? removeKnowledge(result.id) : saveKnowledge(result)}
+                        onClick={() => handleToggleSave(result)}
                         className={cn(
-                          "btn-secondary px-4 py-2 text-xs flex items-center gap-2",
+                          "btn-secondary px-4 py-2 text-xs flex items-center gap-2 transition-all",
                           savedKnowledge.some(k => k.id === result.id) && "bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/30"
                         )}
                       >
@@ -273,6 +294,45 @@ export default function KnowledgeGardenPage() {
           </motion.div>
         )}
       </div>
+
+      {/* Save / Remove Toast */}
+      <AnimatePresence>
+        {savedToast && (
+          <motion.div
+            key="save-toast"
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+            className={cn(
+              "fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-fn-md border backdrop-blur-md max-w-sm w-[calc(100vw-2rem)]",
+              savedToast.action === 'saved'
+                ? "bg-[var(--success)]/10 border-[var(--success)]/30 text-[var(--success)]"
+                : "bg-[var(--secondary-bg)] border-[var(--border)] text-[var(--text-secondary)]"
+            )}
+          >
+            <div className={cn(
+              "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+              savedToast.action === 'saved' ? "bg-[var(--success)]/20" : "bg-[var(--border)]"
+            )}>
+              {savedToast.action === 'saved' ? (
+                <CheckCircle2 size={16} />
+              ) : (
+                <Heart size={16} />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm">
+                {savedToast.action === 'saved'
+                  ? isFrance ? 'Reference saved to your garden, babe! 🌷' : 'Reference saved to your garden! 🌱'
+                  : 'Reference removed from your garden.'
+                }
+              </p>
+              <p className="text-[11px] opacity-70 truncate mt-0.5">{savedToast.title}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

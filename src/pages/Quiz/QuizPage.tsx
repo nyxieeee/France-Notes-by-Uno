@@ -914,25 +914,25 @@ const getCuteBoyfriendResponse = (score: number) => {
   if (score === 100) {
     return {
       emoji: "🥺❤️✨🏆",
-      message: "GRABE BABE! perfect score! Ang galing-galing naman ng future RN ko! I'm super proud of you, babe! Let's celebrate, treat kita of whatever you want! I love you so much! 🥰🍰✨",
+      message: "OH MY GOSH, babe! A perfect score! You are absolutely brilliant — my future RN is unstoppable! I'm so incredibly proud of you! Let's celebrate, I'll treat you to whatever you want! I love you so much! 🥰🍰✨",
       sticker: "🎀"
     }
   } else if (score >= 90) {
     return {
       emoji: "🎉🌸🧸💖",
-      message: "Hala, halos perfect, babe! Sobrang talino talaga ng girlfriend ko. Konting-konti na lang, topnotcher na sa PNLE! Kiss kita pag-uwi, okay? I love you! 😘🩹✨",
+      message: "Almost perfect, babe! You are SO smart — a little more and you'll be a PNLE topnotcher for sure! You deserve all the hugs, okay? I love you! 😘🩹✨",
       sticker: "🩺"
     }
   } else if (score >= 75) {
     return {
       emoji: "🩹🌸🌷🧸",
-      message: "Passed, babe! Ang husay! Kakayanin talaga natin 'tong nursing, tiwala lang. Proud na proud si Doc Uno sa'yo! Cuddle muna tayo bago mag-review ulit? 🥰❤️",
+      message: "You passed, babe! So proud of you! We are absolutely going to get through nursing school together, I believe in you. Doc Uno is cheering for you always! Let's take a quick break before we review again! 🥰❤️",
       sticker: "🦦"
     }
   } else {
     return {
       emoji: "🧸🩹🧁❤️",
-      message: "Okay lang 'yan, aking future RN! Review pa tayo, handang-handa akong turuan ka gabi-gabi. Wag ka mapapagod ha? Nandito lang si Uno para sa'yo palagi. I love you, babe! Drink water muna! 🍼🌸",
+      message: "It's okay, my future RN! We'll review together — I'm always ready to help you study, every single day. Don't ever give up, okay? Doc Uno is always right here for you. I love you, babe! Drink some water first! 🍼🌸",
       sticker: "🩹"
     }
   }

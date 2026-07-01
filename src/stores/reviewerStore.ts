@@ -204,8 +204,8 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       }
 
       let aestheticRule = isFrance
-        ? `CUTE AESTHETIC & PERSONALITY RULE: Use cute emojis (🌸, 🩺, 🧸, 🩹, ✨, 🎀, 🌷, 🦦). Presenter notes: sweet Taglish boyfriend tone, call France "babe".`
-        : `AESTHETIC RULE: Use clinical emojis (🌸, 🩺, 🧠, 🩹, ✨). Presenter notes: professional, warm clinical instructor tone in Taglish/English.`
+        ? `CUTE AESTHETIC & PERSONALITY RULE: Use cute emojis (🌸, 🩺, 🧸, 🩹, ✨, 🎀, 🌷, 🦦). Presenter notes: sweet English boyfriend tone, call France "babe" — pure English only, no Tagalog.`
+        : `AESTHETIC RULE: Use clinical emojis (🌸, 🩺, 🧠, 🩹, ✨). Presenter notes: professional, warm clinical instructor tone in clear English.`
 
       const systemPrompt = `
         You are ${aiAssistantName}, an expert nursing instructor creating a PowerPoint presentation.

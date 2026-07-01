@@ -5,7 +5,12 @@ import { useAuthStore } from '@/stores/authStore'
 
 export const exportToPDF = async (reviewer: ReviewerItem) => {
   const { user } = useAuthStore.getState()
-  const isFrance = !!user?.email?.toLowerCase().includes('france')
+  const FRANCE_EMAILS = [
+    'franceregraceceles@gmail.com',
+    'fraceles@gbox.ncf.edu.ph',
+    'regraceceles97@gmail.com',
+  ]
+  const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
   const aiAssistantName = isFrance ? 'Doc Uno' : 'Nurse Florence'
 
   try {
@@ -142,7 +147,12 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
 
 export const exportToDOCX = async (reviewer: ReviewerItem) => {
   const { user } = useAuthStore.getState()
-  const isFrance = !!user?.email?.toLowerCase().includes('france')
+  const FRANCE_EMAILS = [
+    'franceregraceceles@gmail.com',
+    'fraceles@gbox.ncf.edu.ph',
+    'regraceceles97@gmail.com',
+  ]
+  const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
   const aiAssistantName = isFrance ? 'Doc Uno' : 'Nurse Florence'
 
   const children: any[] = [
@@ -196,7 +206,7 @@ export const exportToDOCX = async (reviewer: ReviewerItem) => {
     children: [
       new TextRun({ 
         text: isFrance 
-          ? "Prepared with love by Doc Uno. Kaya mo 'yan, babe! <3" 
+          ? "Prepared with love by Doc Uno. You've got this, babe! <3" 
           : `Prepared with care by ${aiAssistantName}. Wish you the best in your study!`, 
         italics: true, 
         color: isFrance ? "EC4899" : "3B82F6" 

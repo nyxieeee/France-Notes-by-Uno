@@ -145,7 +145,7 @@ export default function ProfilePage() {
     { icon: '🎀', label: 'Board Topnotcher', desc: 'Average quiz score >= 85%', unlocked: quizzes.length > 0 && (quizzes.reduce((acc, q) => acc + (q.score || 0), 0) / quizzes.length) >= 85 },
     { icon: '🏥', label: 'Night Duty', desc: 'Active duty reminder set', unlocked: reminders.some(r => r.reminder_type === 'duty') },
     { icon: '💖', label: isFrance ? "Uno's Favorite" : "Starred Scholar", desc: 'Favorited 5+ materials', unlocked: favoritesCount >= 5 },
-    { icon: ' Otter ', label: 'Fast Learner', desc: 'Created slides presentation', unlocked: reviewers.some(r => r.content.slides && r.content.slides.length > 0) },
+    { icon: '🦦', label: 'Fast Learner', desc: 'Created slides presentation', unlocked: reviewers.some(r => r.content.slides && r.content.slides.length > 0) },
     { icon: '🏆', label: 'NCLEX Survivor', desc: 'Finished NCLEX style quiz', unlocked: quizzes.some(q => q.question_type === 'nclex' && q.completed) }
   ]
   const badgesCount = badgesList.filter(b => b.unlocked).length
@@ -250,22 +250,22 @@ export default function ProfilePage() {
              <div className="p-4 bg-[var(--pink)]/5 rounded-2xl border border-[var(--pink)]/10 text-center">
                 <p className="text-sm italic leading-relaxed text-[var(--text-secondary)] font-medium">
                    {items.length === 0 ? (
-                     isFrance 
-                       ? `"Babe, hindi ko pa nakikita ang mga materials mo sa Study Box! 📂 Upload your notes now so I can turn them into beautiful clinical reviewers. I believe in you! 🩺🌸"`
-                       : `"I haven't seen any study materials in your Study Box yet! 📂 Please upload your nursing notes so I can generate comprehensive clinical study guides for you. Let's excel together! 👩‍⚕️✨"`
-                   ) : quizzes.length > 0 ? (
-                     isFrance
-                       ? `"${greetingName}, you've completed ${quizzes.filter(q => q.completed).length} quiz${quizzes.filter(q => q.completed).length > 1 ? 'zes' : ''} already! Ang galing mo talaga. You're getting closer to that RN title. Drink some water and keep going! 💧🌷"`
-                       : `"${greetingName}, you've completed ${quizzes.filter(q => q.completed).length} quiz${quizzes.filter(q => q.completed).length > 1 ? 'zes' : ''}! Excellent dedication. You are making steady progress toward your RN certification. Keep studying! 🩺✨"`
-                   ) : reviewers.length > 0 ? (
-                     isFrance
-                       ? `"Ang sipag mo naman mag-study, babe! 📚 May ${reviewers.length} custom reviewers ka na. Subukan nating mag-generate ng Quiz or RetDem para lalo nating ma-master ang clinical flow! Proud of you! 💕"`
-                       : `"Excellent study habits, ${greetingName}! 📚 You have generated ${reviewers.length} study guides. Let's create a custom quiz or clinical simulation next to test your recall! 👩‍⚕️✨"`
-                   ) : (
-                     isFrance
-                       ? `"${greetingName}, you've uploaded ${items.length} notes to your Study Box! That's incredible. Let's start generating clinical reviewers to master the board exams together! 🌸🩺"`
-                       : `"${greetingName}, you have uploaded ${items.length} notes to your Study Box. Outstanding! Let's start generating custom clinical study guides to master your nursing curriculum! 🩺✨"`
-                   )}
+                      isFrance 
+                        ? `"Babe, I haven't seen your materials in the Study Box yet! 📂 Upload your notes now so I can turn them into beautiful clinical reviewers. I believe in you! 🩺🌸"`
+                        : `"I haven't seen any study materials in your Study Box yet! 📂 Please upload your nursing notes so I can generate comprehensive clinical study guides for you. Let's excel together! 👩‍⚕️✨"`
+                    ) : quizzes.length > 0 ? (
+                      isFrance
+                        ? `"${greetingName}, you've completed ${quizzes.filter(q => q.completed).length} quiz${quizzes.filter(q => q.completed).length > 1 ? 'zes' : ''} already! You are so brilliant, babe. You're getting closer to that RN title every single day. Drink some water and keep going! 💧🌷"`
+                        : `"${greetingName}, you've completed ${quizzes.filter(q => q.completed).length} quiz${quizzes.filter(q => q.completed).length > 1 ? 'zes' : ''}! Excellent dedication. You are making steady progress toward your RN certification. Keep studying! 🩺✨"`
+                    ) : reviewers.length > 0 ? (
+                      isFrance
+                        ? `"You are so dedicated to studying, babe! 📚 You already have ${reviewers.length} custom reviewers. Let's generate a Quiz or RetDem to master the clinical flow even more! I'm so proud of you! 💕"`
+                        : `"Excellent study habits, ${greetingName}! 📚 You have generated ${reviewers.length} study guides. Let's create a custom quiz or clinical simulation next to test your recall! 👩‍⚕️✨"`
+                    ) : (
+                      isFrance
+                        ? `"${greetingName}, you've uploaded ${items.length} notes to your Study Box! That's incredible. Let's start generating clinical reviewers to master the board exams together! 🌸🩺"`
+                        : `"${greetingName}, you have uploaded ${items.length} notes to your Study Box. Outstanding! Let's start generating custom clinical study guides to master your nursing curriculum! 🩺✨"`
+                    )}
                 </p>
              </div>
           </div>
@@ -328,21 +328,27 @@ export default function ProfilePage() {
                 <h3 className="font-heading font-bold text-lg">Unlocked Badges ({badgesCount}/{badgesList.length})</h3>
                 <span className="text-xs font-bold text-[var(--pink)] hover:underline cursor-pointer">View Roadmap</span>
              </div>
-             <div className="flex flex-wrap gap-6">
-                {badgesList.map((badge, i) => (
-                  <div key={badge.label} className="flex flex-col items-center gap-2 group cursor-help relative" title={badge.desc}>
+             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                {badgesList.map((badge) => (
+                  <div
+                    key={badge.label}
+                    className="group cursor-help relative flex flex-col items-center gap-1.5"
+                    title={badge.desc}
+                  >
                      <div className={cn(
-                       "w-14 h-14 bg-[var(--bg)] rounded-[1.5rem] border-2 flex items-center justify-center text-2xl transition-all shadow-sm",
+                       "w-full aspect-square bg-[var(--bg)] rounded-[1.5rem] border-2 flex items-center justify-center text-2xl transition-all shadow-sm",
                        badge.unlocked 
-                         ? "border-[var(--pink)] bg-[var(--pink)]/5 scale-105" 
-                         : "border-dashed border-[var(--border)] grayscale opacity-45 group-hover:opacity-70"
+                         ? "border-[var(--pink)] bg-[var(--pink)]/5 ring-2 ring-[var(--pink)]/20" 
+                         : "border-dashed border-[var(--border)] grayscale opacity-40 group-hover:opacity-65"
                      )}>
                         {badge.icon}
                      </div>
-                     <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tight">{badge.label}</span>
+                     <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-tight text-center leading-tight line-clamp-2 w-full px-0.5">
+                       {badge.label}
+                     </span>
                      
                      {/* Premium hover description popup */}
-                     <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 p-2 bg-black/80 backdrop-blur-md text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center shadow-lg z-30 font-medium">
+                     <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-44 p-2 bg-black/80 backdrop-blur-md text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none text-center shadow-lg z-30 font-medium">
                        <p className="font-bold text-[var(--pink)] mb-0.5">{badge.label}</p>
                        <p className="text-gray-300 leading-normal">{badge.desc}</p>
                        <p className={cn("text-[9px] mt-1 font-bold", badge.unlocked ? "text-[var(--success)]" : "text-amber-400")}>
