@@ -207,14 +207,15 @@ export default function KnowledgeGardenPage() {
                     <p className="text-[var(--text-secondary)] leading-relaxed mb-6">
                       {result.description}
                     </p>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-nowrap items-center gap-1.5 sm:gap-3 overflow-x-auto">
                       <a 
                         href={result.url} 
                         target="_blank" 
                         rel="noreferrer"
-                        className="btn-primary px-4 py-2 text-xs flex items-center gap-1.5 shadow-fn"
+                        className="btn-primary px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 shadow-fn whitespace-nowrap"
                       >
-                        Read Article <ExternalLink size={14} />
+                        <ExternalLink size={12} />
+                        <span>Read Article</span>
                       </a>
                       {(result as any).search_url && (
                         <a 
@@ -222,25 +223,26 @@ export default function KnowledgeGardenPage() {
                           target="_blank" 
                           rel="noreferrer"
                           title={`Search for "${query}" on Google`}
-                          className="btn-secondary px-4 py-2 text-xs flex items-center gap-1.5"
+                          className="btn-secondary px-2 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 whitespace-nowrap"
                         >
-                          Find on Google <Search size={14} />
+                          <Search size={12} />
+                          <span className="hidden sm:inline">Find on Google</span>
                         </a>
                       )}
                       <button 
                         onClick={() => handleToggleSave(result)}
                         disabled={savingIds.includes(result.id)}
                         className={cn(
-                          "btn-secondary px-4 py-2 text-xs flex items-center gap-2 transition-all",
+                          "btn-secondary px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2 transition-all whitespace-nowrap",
                           savedKnowledge.some(k => k.id === result.id || k.url === result.url) && "bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/30"
                         )}
                       >
                         {savingIds.includes(result.id) ? (
-                          <><Loader2 size={12} className="animate-spin" /> Saving...</>
+                          <><Loader2 size={10} className="animate-spin" /> <span>Saving</span></>
                         ) : savedKnowledge.some(k => k.id === result.id || k.url === result.url) ? (
-                          <><Check size={12} /> Saved</>
+                          <><Check size={10} /> <span>Saved</span></>
                         ) : (
-                          <><Heart size={12} /> Save Reference</>
+                          <><Heart size={10} /> <span>Save</span></>
                         )}
                       </button>
                     </div>
@@ -297,12 +299,12 @@ export default function KnowledgeGardenPage() {
         {savedToast && (
           <motion.div
             key="save-toast"
-            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
             className={cn(
-              "fixed bottom-36 md:bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-fn-md border backdrop-blur-md max-w-sm w-[calc(100vw-2rem)]",
+              "fixed bottom-40 md:bottom-6 left-0 right-0 mx-auto z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-fn-md border backdrop-blur-md max-w-sm w-[calc(100vw-2rem)]",
               savedToast.action === 'saved'
                 ? "bg-[var(--success)]/10 border-[var(--success)]/30 text-[var(--success)]"
                 : "bg-[var(--secondary-bg)] border-[var(--border)] text-[var(--text-secondary)]"

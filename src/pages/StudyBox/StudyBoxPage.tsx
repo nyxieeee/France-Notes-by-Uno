@@ -128,7 +128,7 @@ export default function StudyBoxPage() {
             disabled={isUploading || isProcessing}
           >
             <Camera size={16} />
-            <span className="hidden sm:inline">Take Photo</span>
+            <span className="text-[10px] sm:text-xs">Take Photo</span>
           </button>
           <button 
             onClick={() => fileInputRef.current?.click()}
@@ -136,7 +136,7 @@ export default function StudyBoxPage() {
             disabled={isUploading || isProcessing}
           >
             <Upload size={16} />
-            <span className="hidden sm:inline">Upload Files</span>
+            <span className="text-[10px] sm:text-xs">Upload Files</span>
           </button>
           <input 
             type="file" 
@@ -397,27 +397,27 @@ export default function StudyBoxPage() {
                     navigate('/quiz', { state: { selectedItemIds } })
                     clearSelection()
                   }}
-                  className="btn-secondary px-2 sm:px-6 py-2 sm:py-2.5 text-xs flex items-center gap-1 sm:gap-2"
+                  className="btn-secondary px-2 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2"
                 >
-                  <BrainCircuit size={16} />
-                  <span className="hidden sm:inline">Quiz</span>
+                  <BrainCircuit size={14} />
+                  Quiz
                 </button>
                 <button 
                   onClick={handleGeneratePresentation}
                   disabled={isGeneratingReviewer || isGeneratingPresentation}
-                  className="btn-secondary px-2 sm:px-6 py-2 sm:py-2.5 text-xs flex items-center gap-1 sm:gap-2"
+                  className="btn-secondary px-2 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2"
                 >
-                  <FileText size={16} />
-                  <span className="hidden sm:inline">{isGeneratingPresentation ? 'Generating...' : 'PPTX'}</span>
+                  <FileText size={14} />
+                  {isGeneratingPresentation ? 'Generating...' : 'PPTX'}
                 </button>
                 <button 
                   onClick={handleGenerateReviewer}
                   disabled={isGeneratingReviewer || isGeneratingPresentation}
-                  className="btn-primary px-3 sm:px-6 py-2 sm:py-2.5 text-xs flex items-center gap-1 sm:gap-2"
+                  className="btn-primary px-3 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2"
                 >
-                  <Sparkles size={16} />
-                  <span className="hidden sm:inline">{isGeneratingReviewer ? 'Generating...' : 'AI Reviewer'}</span>
-                  <ArrowRight size={14} className="hidden sm:inline" />
+                  <Sparkles size={14} />
+                  {isGeneratingReviewer ? 'Generating...' : 'AI'}
+                  <ArrowRight size={12} />
                 </button>
               </div>
             </div>
@@ -993,20 +993,20 @@ body {
                 const sourceName = sourceMatch?.[1]?.trim()
                 if (!sourceUrl && !sourceName) return null
                 return (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 sm:p-4 bg-[var(--secondary-bg)]/20 border border-[var(--border)] rounded-xl mb-4">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Globe size={14} className="text-[var(--pink)] shrink-0" />
+                  <div className="flex items-center gap-2 p-2 bg-[var(--secondary-bg)]/20 border border-[var(--border)] rounded-xl mb-4">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <Globe size={12} className="text-[var(--pink)] shrink-0" />
                       {sourceUrl ? (
                         <a 
                           href={sourceUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs font-semibold text-[var(--pink)] hover:underline truncate max-w-full"
+                          className="text-[11px] font-semibold text-[var(--pink)] hover:underline truncate"
                         >
                           {sourceName || sourceUrl}
                         </a>
                       ) : (
-                        <span className="text-xs font-semibold text-[var(--text-secondary)] truncate">
+                        <span className="text-[11px] font-semibold text-[var(--text-secondary)] truncate">
                           {sourceName}
                         </span>
                       )}
@@ -1016,9 +1016,10 @@ body {
                         href={sourceUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="btn-secondary px-3 py-1.5 text-[10px] font-bold rounded-lg flex items-center gap-1.5 shrink-0 self-end sm:self-auto whitespace-nowrap"
+                        className="btn-secondary px-2 py-1 text-[9px] font-bold rounded-lg flex items-center gap-1 shrink-0 whitespace-nowrap"
                       >
-                        Visit Source <ExternalLink size={10} />
+                        <ExternalLink size={9} />
+                        Source
                       </a>
                     )}
                   </div>
@@ -1082,19 +1083,19 @@ body {
                   <button 
                     onClick={handleGenerateSummary}
                     disabled={isGeneratingSummary}
-                    className="btn-secondary py-2 px-2 sm:px-4 text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl border-[var(--pink)]/30 hover:bg-[var(--pink)]/10 text-[var(--pink)] font-bold transition-all shadow-sm"
+                    className="btn-secondary py-1.5 sm:py-2 px-2 sm:px-4 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl border-[var(--pink)]/30 hover:bg-[var(--pink)]/10 text-[var(--pink)] font-bold transition-all shadow-sm"
                     title={isGeneratingSummary ? 'Regenerating...' : 'Regenerate Summary'}
                   >
-                    <RefreshCw size={13} className={isGeneratingSummary ? "animate-spin" : ""} />
-                    <span className="hidden sm:inline">{isGeneratingSummary ? 'Regenerating...' : 'Regenerate'}</span>
+                    <RefreshCw size={12} className={isGeneratingSummary ? "animate-spin" : ""} />
+                    {isGeneratingSummary ? '...' : 'Regenerate'}
                   </button>
                   <button 
                     onClick={handleDownloadSummary}
-                    className="btn-secondary download-notes-btn py-2 px-2 sm:px-4 text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl border-[var(--pink)]/30 hover:bg-[var(--pink)]/10 text-[var(--pink)] font-bold transition-all shadow-sm"
+                    className="btn-secondary download-notes-btn py-1.5 sm:py-2 px-2 sm:px-4 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl border-[var(--pink)]/30 hover:bg-[var(--pink)]/10 text-[var(--pink)] font-bold transition-all shadow-sm"
                     title={`Download ${isFrance ? "Doc Uno's Study Guide" : 'Study Guide'} as a PDF!`}
                   >
-                    <Download size={13} />
-                    <span className="hidden sm:inline">Download Notes</span>
+                    <Download size={12} />
+                    Download
                   </button>
                 </div>
               )}
@@ -1186,46 +1187,46 @@ body {
             Delete Note
           </button>
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 justify-end w-full sm:w-auto">
-            <button onClick={onClose} className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-xs rounded-xl">
+            <button onClick={onClose} className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs rounded-xl">
               Close
             </button>
             <button 
               onClick={handlePrint}
-              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl"
               title="Print this document"
             >
-              <FileText size={13} /> 
-              <span className="hidden sm:inline">Print</span>
+              <FileText size={12} /> 
+              <span>Print</span>
             </button>
             <button 
               onClick={handleDownloadFullPDF}
-              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl"
               title="Download as PDF"
             >
-              <Download size={13} /> 
-              <span className="hidden sm:inline">Download PDF</span>
+              <Download size={12} /> 
+              <span>PDF</span>
             </button>
             <button 
               onClick={handleModalGeneratePresentation}
               disabled={isGeneratingReviewer || isGeneratingPresentation}
-              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl"
               title="Generate PPTX"
             >
-              <FileText size={13} /> 
-              <span className="hidden sm:inline">{isGeneratingPresentation ? 'Generating...' : 'Generate PPTX'}</span>
+              <FileText size={12} /> 
+              <span>{isGeneratingPresentation ? '...' : 'PPTX'}</span>
             </button>
             <button 
               onClick={handleModalGenerateReviewer}
               disabled={isGeneratingReviewer || isGeneratingPresentation}
-              className="btn-primary px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 rounded-xl shadow-sm"
+              className="btn-primary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl shadow-sm"
               title="Make Reviewer"
             >
-              <Sparkles size={13} /> 
-              <span className="hidden sm:inline">{isGeneratingReviewer ? 'Generating...' : 'Make Reviewer'}</span>
+              <Sparkles size={12} /> 
+              <span>{isGeneratingReviewer ? '...' : 'Reviewer'}</span>
             </button>
-            <button onClick={handleStartQuiz} title="Start Quiz" className="btn-primary bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 border-none text-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 shadow-sm rounded-xl">
-              <BrainCircuit size={13} /> 
-              <span className="hidden sm:inline">Start Quiz</span>
+            <button onClick={handleStartQuiz} title="Start Quiz" className="btn-primary bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 border-none text-white px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 shadow-sm rounded-xl">
+              <BrainCircuit size={12} /> 
+              <span>Quiz</span>
             </button>
           </div>
         </div>
@@ -1340,40 +1341,40 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
           REFERENCES
           List all sources cited throughout the document.
           
-          Style: Strictly formal, clinical-grade, academic, and extremely detailed. Keep it in clear clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 800-1200 words.
-        `
-      } else {
-        prompt = `
-          You are a clinical pathophysiology specialist and nursing educator.
-          Generate a comprehensive, step-by-step Pathophysiology & Disease Mechanism guide for the condition: "${topic}".
+           Style: Strictly formal, clinical-grade, academic, and extremely detailed. Keep it in clear clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, "|" for tables, or backticks). Use plain text capitalization for headings and standard line spacing. Present the DIAGNOSTIC & LABORATORY section using clean BULLET POINTS (not tables). Aim for 800-1200 words.
+         `
+       } else {
+         prompt = `
+           You are a clinical pathophysiology specialist and nursing educator.
+           Generate a comprehensive, step-by-step Pathophysiology & Disease Mechanism guide for the condition: "${topic}".
 
-          Patient Scenario/Condition context provided by student:
-          "${scenario || 'No custom scenario/condition context provided.'}"
-          ${referenceSection ? `\nReference materials provided by student (use these to tailor the content):\n${referenceSection}` : ''}
-          ${trustedSources}
+           Patient Scenario/Condition context provided by student:
+           "${scenario || 'No custom scenario/condition context provided.'}"
+           ${referenceSection ? `\nReference materials provided by student (use these to tailor the content):\n${referenceSection}` : ''}
+           ${trustedSources}
 
-          STRUCTURE:
-          Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
+           STRUCTURE:
+           Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, "|" for tables, or backticks):
 
-          DISEASE OVERVIEW & DEFINITION
-          Clear clinical definition, classifications, and primary homeostatic disruptions.
+           DISEASE OVERVIEW & DEFINITION
+           Clear clinical definition, classifications, and primary homeostatic disruptions.
 
-          ETIOLOGY & CLINICAL RISK FACTORS
-          Predisposing factors, precipitating events, and direct etiologies categorized clearly.
+           ETIOLOGY & CLINICAL RISK FACTORS
+           Predisposing factors, precipitating events, and direct etiologies categorized clearly.
 
-          STEP-BY-STEP PATHOPHYSIOLOGY PATHWAY
-          A detailed, sequential, step-by-step description of the cellular and physiological mechanism from the initial insult/insulting agent to systemic manifestations.
+           STEP-BY-STEP PATHOPHYSIOLOGY PATHWAY
+           A detailed, sequential, step-by-step description of the cellular and physiological mechanism from the initial insult/insulting agent to systemic manifestations.
 
-          CLINICAL CORRELATIONS & SYMPTOM PATHWAYS
-          Explain exactly HOW the pathophysiological changes lead to the classic signs and symptoms (e.g., why ischemia causes chest pain, why heart failure causes crackles).
+           CLINICAL CORRELATIONS & SYMPTOM PATHWAYS
+           Explain exactly HOW the pathophysiological changes lead to the classic signs and symptoms (e.g., why ischemia causes chest pain, why heart failure causes crackles).
 
-          PREVENTATIVE & CLINICAL INFLUENCES
-          Key medical and nursing actions that directly interrupt this pathway to restore homeostasis.
+           PREVENTATIVE & CLINICAL INFLUENCES
+           Key medical and nursing actions that directly interrupt this pathway to restore homeostasis.
 
-          REFERENCES
-          List all sources cited throughout the document.
+           REFERENCES
+           List all sources cited throughout the document.
 
-          Style: Strictly formal, academic, and highly detailed. Keep it in clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 800-1200 words.
+           Style: Strictly formal, academic, and highly detailed. Keep it in clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, "|" for tables, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 800-1200 words.
         `
       }
 
