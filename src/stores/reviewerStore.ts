@@ -230,7 +230,8 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
         You are ${aiAssistantName}, an expert nursing instructor creating a PowerPoint presentation.
         Analyze the following text and generate a structured, highly educational, board-ready slide deck.
         ${aestheticRule}
-        Output strictly as a JSON object: { "slides": [ { "title": "Slide Title", "bullet_points": ["point 1", "point 2"], "presenter_notes": "..." } ] }
+        Output strictly as a JSON object: { "slides": [ { "title": "Slide Title", "paragraph": "2-3 sentence detailed explanation that introduces and explains the concept in prose form so the student can read and understand it without relying on bullet points alone", "bullet_points": ["point 1", "point 2"], "presenter_notes": "..." } ] }
+        CRITICAL: Every slide MUST include both a "paragraph" field (a detailed prose explanation) AND "bullet_points" (key takeaways). The paragraph comes first to explain the concept thoroughly, then bullet points summarize the high-yield points.
         Generate as many highly detailed and comprehensive slides as necessary to exhaustively cover all of the information, data, definitions, clinical logic, and steps in the source material without omitting any details or summarizing heavily. There is no slide limit.
       `
 

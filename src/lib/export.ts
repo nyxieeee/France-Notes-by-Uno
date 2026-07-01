@@ -339,14 +339,30 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
         fill: { color: borderColor }
       })
 
+      // Paragraph explanation (prose)
+      let contentY = 1.9
+      if (slideData.paragraph) {
+        slide.addText(slideData.paragraph, {
+          x: 1.3, y: contentY, w: 10.7, h: 1.2,
+          fontSize: 12,
+          fontFace: 'Arial',
+          color: bodyTextColor,
+          lineSpacing: 18,
+          valign: 'top',
+          wrap: true,
+        })
+        contentY += 1.4
+      }
+
       // Content bullet points
       if (slideData.bullet_points && slideData.bullet_points.length > 0) {
         const bullets = slideData.bullet_points.map((pt: string) => {
           return { text: pt, options: { bullet: true, color: titleTextColor, fontSize: 13 } }
         })
 
+        const bulletHeight = Math.max(4.4 - (contentY - 1.9), 2.0)
         slide.addText(bullets, {
-          x: 1.3, y: 1.9, w: 10.7, h: 4.4,
+          x: 1.3, y: contentY, w: 10.7, h: bulletHeight,
           fontSize: 13,
           fontFace: 'Arial',
           lineSpacing: 22,

@@ -56,6 +56,7 @@ export type ReviewerContent = {
 export type PresentationSlide = {
   id: string
   title: string
+  paragraph?: string
   bullet_points: string[]
   presenter_notes: string
 }

@@ -1047,30 +1047,42 @@ function CaseStudyModal({
       } else {
         prompt = `
           You are a clinical pathophysiology specialist and nursing educator.
-          Generate a comprehensive, step-by-step Pathophysiology & Disease Mechanism guide for the condition: "${topic}".
-          
+          Generate a comprehensive Pathophysiology & Disease Mechanism guide for the condition: "${topic}".
+
           Patient Scenario/Condition context provided by student:
           "${scenario || 'No custom scenario/condition context provided.'}"
-          
+
           STRUCTURE:
           Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
-          
+
           DISEASE OVERVIEW & DEFINITION
           Clear clinical definition, classifications, and primary homeostatic disruptions.
-          
+
           ETIOLOGY & CLINICAL RISK FACTORS
           Predisposing factors, precipitating events, and direct etiologies categorized clearly.
-          
-          STEP-BY-STEP PATHOPHYSIOLOGY PATHWAY
-          A detailed, sequential, step-by-step description of the cellular and physiological mechanism from the initial insult/insulting agent to systemic manifestations.
-          
+
+          PATHOPHYSIOLOGY DIAGRAM (VISUAL FLOWCHART)
+          Instead of writing steps as paragraphs, create a visual text-based flowchart using arrows (→ ↓ ↑), indentation, and labeled boxes to trace the mechanism from initial insult to systemic manifestations. Use the vertical structure like:
+
+          INITIAL INSULT / TRIGGER
+               ↓
+          [Phase 1 Name] — brief description of what happens
+               ↓
+          [Phase 2 Name] — description
+               ↓
+          [Phase 3 Name] — description
+               ↓
+          SYSTEMIC MANIFESTATIONS
+
+          Include branches (e.g., "LOW CARDIAC OUTPUT → ↓ Tissue Perfusion → Organ Dysfunction") and feedback loops where appropriate. Make it visual and easy to scan.
+
           CLINICAL CORRELATIONS & SYMPTOM PATHWAYS
           Explain exactly HOW the pathophysiological changes lead to the classic signs and symptoms (e.g., why ischemia causes chest pain, why heart failure causes crackles).
-          
+
           PREVENTATIVE & CLINICAL INFLUENCES
           Key medical and nursing actions that directly interrupt this pathway to restore homeostasis.
-          
-          Style: Strictly formal, academic, and highly detailed. Keep it in clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 800-1200 words.
+
+          Style: Strictly formal, academic, and highly detailed. Keep it in clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 600-1000 words (the diagram can be compact).
         `
       }
 
@@ -1100,7 +1112,7 @@ function CaseStudyModal({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[var(--secondary-bg)] w-full max-w-2xl rounded-3xl p-6 sm:p-8 border border-[var(--border)] shadow-2xl relative my-8"
+        className="bg-[var(--card)] w-full max-w-2xl rounded-3xl p-6 sm:p-8 border border-[var(--border)] shadow-2xl relative my-8"
       >
         {/* Close Button */}
         <button 
