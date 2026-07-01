@@ -246,52 +246,71 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     ]
     const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
 
-    const primaryColor = isFrance ? 'EC4899' : '3B82F6'
-    const textColor = '1F2937'
+    // Brand Palette
+    const bgColor = 'FFF8F6'
+    const cardBgColor = 'FFFFFF'
+    const binderColor = 'F7A8B8'
+    const borderColor = 'F3D8DE'
+    const titleTextColor = '5B4636'
+    const bodyTextColor = '8C6A74'
 
     // 1. Cover Slide
     const coverSlide = pptx.addSlide()
     
-    // Decorative background color
+    // Set base background
     coverSlide.addShape(pptx.ShapeType.rect, {
-      x: 0,
-      y: 0,
-      w: '100%',
-      h: '100%',
-      fill: { color: isFrance ? 'FFF1F2' : 'F0F9FF' }
+      x: 0, y: 0, w: '100%', h: '100%',
+      fill: { color: bgColor }
+    })
+
+    // Left binder notebook strip
+    coverSlide.addShape(pptx.ShapeType.rect, {
+      x: 0, y: 0, w: 0.4, h: 7.5,
+      fill: { color: binderColor }
+    })
+
+    // Main Cover Card (looks like a clean, premium note card)
+    coverSlide.addShape(pptx.ShapeType.rect, {
+      x: 0.8, y: 0.6, w: 11.7, h: 6.3,
+      fill: { color: cardBgColor },
+      line: { color: borderColor, width: 1.5 }
+    })
+
+    // Decorative stethoscope emoji
+    coverSlide.addText(isFrance ? "🩺 🌸 🧸 🎀" : "🩺 🧠 👩‍⚕️ ✨", {
+      x: 9.5, y: 0.9, w: 2.5,
+      fontSize: 18,
+      align: 'right'
     })
 
     // Cover title
     coverSlide.addText(reviewer.title, {
-      x: 0.8,
-      y: 2.0,
-      w: 11.5,
-      fontSize: 32,
+      x: 1.3, y: 1.8, w: 10.7, h: 1.6,
+      fontSize: 30,
       bold: true,
-      color: primaryColor,
+      color: titleTextColor,
       fontFace: 'Arial'
     })
 
-    coverSlide.addText(`Source: ${reviewer.source_file}`, {
-      x: 0.8,
-      y: 3.5,
-      w: 11.5,
-      fontSize: 14,
-      color: '6B7280',
+    // Source description
+    coverSlide.addText(`Clinical Resource: ${reviewer.source_file}`, {
+      x: 1.3, y: 3.6, w: 10.7,
+      fontSize: 13,
+      bold: true,
+      color: bodyTextColor,
       fontFace: 'Arial'
     })
 
+    // Sweet footer note
     coverSlide.addText(
       isFrance 
-        ? 'Prepared with love by Doc Uno for France 🩺🌸' 
+        ? 'Prepared with love by Doc Uno for France 🌸🩺' 
         : 'Clinical Lecture Series • Prepared by Nurse Florence 🩺👩‍⚕️',
       {
-        x: 0.8,
-        y: 5.5,
-        w: 11.5,
+        x: 1.3, y: 5.6, w: 10.7,
         fontSize: 12,
         italic: true,
-        color: '4B5563',
+        color: bodyTextColor,
         fontFace: 'Arial'
       }
     )
@@ -300,38 +319,49 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     reviewer.content.slides.forEach((slideData) => {
       const slide = pptx.addSlide()
 
-      // Header bar shape
+      // Background
       slide.addShape(pptx.ShapeType.rect, {
-        x: 0,
-        y: 0,
-        w: '100%',
-        h: 0.8,
-        fill: { color: primaryColor }
+        x: 0, y: 0, w: '100%', h: '100%',
+        fill: { color: bgColor }
       })
 
-      // Header Title
+      // Left binder notebook strip
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 0, y: 0, w: 0.4, h: 7.5,
+        fill: { color: binderColor }
+      })
+
+      // Inner content card
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 0.8, y: 0.6, w: 11.7, h: 6.3,
+        fill: { color: cardBgColor },
+        line: { color: borderColor, width: 1.5 }
+      })
+
+      // Slide Title
       slide.addText(slideData.title, {
-        x: 0.5,
-        y: 0.15,
-        w: 12.0,
-        fontSize: 20,
+        x: 1.3, y: 0.9, w: 10.7, h: 0.6,
+        fontSize: 22,
         bold: true,
-        color: 'FFFFFF',
+        color: titleTextColor,
         fontFace: 'Arial'
+      })
+
+      // Title divider line
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 1.3, y: 1.6, w: 10.7, h: 0.03,
+        fill: { color: borderColor }
       })
 
       // Content bullet points
       if (slideData.bullet_points && slideData.bullet_points.length > 0) {
         const bullets = slideData.bullet_points.map((pt: string) => {
-          return { text: pt, options: { bullet: true, color: textColor, fontSize: 14 } }
+          return { text: pt, options: { bullet: true, color: titleTextColor, fontSize: 13 } }
         })
 
         slide.addText(bullets, {
-          x: 0.6,
-          y: 1.2,
-          w: 11.8,
-          h: 4.8,
-          fontSize: 14,
+          x: 1.3, y: 1.9, w: 10.7, h: 4.4,
+          fontSize: 13,
           fontFace: 'Arial',
           lineSpacing: 22,
           valign: 'top'
@@ -343,13 +373,11 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
         slide.addNotes(slideData.presenter_notes)
       }
 
-      // Small footer logo
-      slide.addText(isFrance ? "Doc Uno's Reviewer" : "France Notes App", {
-        x: 10.0,
-        y: 6.8,
-        w: 3.0,
+      // Footer branding
+      slide.addText(isFrance ? "Doc Uno's Reviewer 🌸" : "France Notes 🩺", {
+        x: 9.0, y: 6.4, w: 3.0,
         fontSize: 9,
-        color: '9CA3AF',
+        color: bodyTextColor,
         align: 'right',
         fontFace: 'Arial'
       })

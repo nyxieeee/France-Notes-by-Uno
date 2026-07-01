@@ -649,11 +649,23 @@ function QuizEngine() {
     const correct = checkAnswerCorrectness(question?.correct_answer, userAnswer, question?.question_type)
     setIsCorrect(correct)
     setShowRationale(true)
+    // Smooth scroll down to rationale card
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth'
+      })
+    }, 100)
   }
 
   const handleNext = () => {
     setShowRationale(false)
     setIsCorrect(null)
+    // Scroll back to top smoothly
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
     if (currentIndex === questions.length - 1) {
       finishQuiz()
     } else {
@@ -699,13 +711,13 @@ function QuizEngine() {
              </button>
            )}
            {activeQuiz?.timer_type === 'untimed' ? (
-              <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30 px-3 py-1.5 rounded-full">
                 <Clock size={13} />
                 <span>Untimed Mode ☕</span>
               </div>
             ) : (
               <div className={cn(
-                "hidden sm:flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-300",
+                "flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-300",
                 timeLeft <= 10 
                   ? "bg-red-100 text-red-600 animate-pulse" 
                   : "text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30"
@@ -715,20 +727,8 @@ function QuizEngine() {
                 {activeQuiz?.timer_type === 'per_question' && <span className="text-[9px] opacity-75">/ Q</span>}
               </div>
             )}
-           <button 
-              onClick={showRationale ? handleNext : handleCheckAnswer}
-              className={cn(
-                "py-2 px-6 text-sm rounded-full font-bold transition-all shadow-fn",
-                showRationale ? "bg-[var(--pink)] text-white" : "bg-[var(--secondary-bg)] text-[var(--pink)] border border-[var(--pink)]"
-              )}
-              disabled={!currentAnswer || (isSata && (currentAnswer as string[]).length === 0) || ((isTextInput || isEssayInput) && !(currentAnswer as string).trim())}
-           >
-              {showRationale 
-                ? (currentIndex === questions.length - 1 ? 'Finish' : 'Next Question') 
-                : 'Check Answer'}
-           </button>
-        </div>
-      </div>
+         </div>
+       </div>
 
       <div className="w-full h-1.5 bg-[var(--border)] rounded-full mb-8 overflow-hidden">
          <motion.div 
@@ -883,6 +883,24 @@ function QuizEngine() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Action Button inside card at the very bottom */}
+          <div className="mt-8 pt-6 border-t border-[var(--border)] flex justify-end">
+            <button 
+               onClick={showRationale ? handleNext : handleCheckAnswer}
+               className={cn(
+                 "py-3.5 px-8 text-sm rounded-2xl font-bold transition-all shadow-fn w-full sm:w-auto flex items-center justify-center gap-2",
+                 showRationale 
+                   ? "bg-[var(--pink)] text-white hover:bg-[var(--pink-hover)] active:scale-95" 
+                   : "bg-[var(--secondary-bg)] text-[var(--text)] hover:bg-[var(--accent)] active:scale-95 border border-[var(--border)] disabled:opacity-50 disabled:cursor-not-allowed"
+               )}
+               disabled={!currentAnswer || (isSata && (currentAnswer as string[]).length === 0) || ((isTextInput || isEssayInput) && !(currentAnswer as string).trim())}
+            >
+               {showRationale 
+                 ? (currentIndex === questions.length - 1 ? 'Finish' : 'Next Question') 
+                 : 'Check Answer'}
+            </button>
+          </div>
         </motion.div>
       </AnimatePresence>
 
