@@ -108,9 +108,9 @@ export default function ReviewerLibraryPage() {
             }
             setIsGenerateModalOpen(true)
           }}
-          className="btn-primary px-6 py-3 rounded-2xl flex items-center justify-center gap-2 self-start md:self-auto shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0"
+          className="btn-primary px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 self-stretch sm:self-auto shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 text-xs sm:text-sm"
         >
-          <Sparkles size={18} />
+          <Sparkles size={16} />
           <span>Generate Reviewer</span>
         </button>
       </div>
@@ -178,27 +178,29 @@ export default function ReviewerLibraryPage() {
                     <FileText size={12} /> Source: {reviewer.source_file}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3">
                    <button 
                      onClick={(e) => {
                        e.stopPropagation()
                        toggleFavorite(reviewer.id)
                      }}
                      className={cn(
-                       "p-2.5 rounded-xl transition-all",
+                       "p-2 sm:p-2.5 rounded-xl transition-all",
                        reviewer.is_favorite ? "text-[var(--pink)] bg-[var(--pink)]/10" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"
                      )}
+                     title={reviewer.is_favorite ? "Remove from favorites" : "Add to favorites"}
                    >
-                     <Heart size={20} fill={reviewer.is_favorite ? "currentColor" : "none"} />
+                     <Heart size={18} fill={reviewer.is_favorite ? "currentColor" : "none"} />
                    </button>
                    <button 
                      onClick={(e) => {
                        e.stopPropagation()
                        deleteReviewer(reviewer.id)
                      }}
-                     className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--error)]/10 transition-all"
+                     className="p-2 sm:p-2.5 rounded-xl text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--error)]/10 transition-all"
+                     title="Delete reviewer"
                    >
-                     <Trash2 size={20} />
+                     <Trash2 size={18} />
                    </button>
                    <button 
                       onClick={(e) => {
@@ -211,9 +213,10 @@ export default function ReviewerLibraryPage() {
                           }
                         })
                       }}
-                      className="btn-primary p-2.5 rounded-xl flex items-center justify-center"
+                      className="btn-primary p-2 sm:p-2.5 rounded-xl flex items-center justify-center"
+                      title="Start quiz from this reviewer"
                     >
-                      <Play size={20} fill="currentColor" />
+                      <Play size={18} fill="currentColor" />
                     </button>
                 </div>
               </div>
@@ -291,9 +294,9 @@ export default function ReviewerLibraryPage() {
                       setSelectedUploadIds([])
                       setIsGenerateModalOpen(false)
                     }}
-                    className="absolute top-6 right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"
+                    className="absolute top-4 md:top-6 right-4 md:right-6 p-1.5 md:p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"
                   >
-                    <X size={20} />
+                    <X size={16} />
                   </button>
 
                   <div>
@@ -314,25 +317,27 @@ export default function ReviewerLibraryPage() {
                         type="button"
                         onClick={() => setGenerationSourceType('topic')}
                         className={cn(
-                          "py-2.5 rounded-xl text-xs font-bold transition-all",
+                          "py-2.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all",
                           generationSourceType === 'topic' 
                             ? "bg-white text-[var(--pink)] shadow-sm border border-[var(--border)]" 
                             : "text-[var(--text-secondary)] hover:text-[var(--text)]"
                         )}
                       >
-                        By BSN Subject Topic
+                        <span className="sm:hidden">Subject Topic</span>
+                        <span className="hidden sm:inline">By BSN Subject Topic</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setGenerationSourceType('uploaded')}
                         className={cn(
-                          "py-2.5 rounded-xl text-xs font-bold transition-all",
+                          "py-2.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all",
                           generationSourceType === 'uploaded' 
                             ? "bg-white text-[var(--pink)] shadow-sm border border-[var(--border)]" 
                             : "text-[var(--text-secondary)] hover:text-[var(--text)]"
                         )}
                       >
-                        From Study Box Files
+                        <span className="sm:hidden">Study Box Files</span>
+                        <span className="hidden sm:inline">From Study Box Files</span>
                       </button>
                     </div>
                   </div>
@@ -507,7 +512,7 @@ export default function ReviewerLibraryPage() {
                         setSelectedUploadIds([])
                         setIsGenerateModalOpen(false)
                       }}
-                      className="btn-ghost flex-1 py-3 text-xs"
+                      className="btn-ghost flex-1 py-2.5 text-[10px] sm:text-xs"
                     >
                       Cancel
                     </button>
@@ -515,10 +520,11 @@ export default function ReviewerLibraryPage() {
                       type="button"
                       onClick={handleGenerateReviewer}
                       disabled={generationSourceType === 'uploaded' && selectedUploadIds.length === 0}
-                      className="btn-primary flex-1 py-3 text-xs flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="btn-primary flex-1 py-2.5 text-[10px] sm:text-xs flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <Sparkles size={14} />
-                      Generate Reviewer
+                      <Sparkles size={12} />
+                      <span className="sm:hidden">Generate</span>
+                      <span className="hidden sm:inline">Generate Reviewer</span>
                     </button>
                   </div>
                 </div>
@@ -555,7 +561,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         className="bg-[var(--card)] w-full max-w-5xl max-h-[90vh] md:h-[85vh] rounded-[2.5rem] shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col my-auto"
       >
         {/* Header */}
-        <div className="p-4 md:p-6 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative">
+        <div className="p-4 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative">
           <button 
             onClick={onClose}
             className="absolute top-4 md:top-6 right-4 md:right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"
@@ -632,7 +638,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
           </div>
  
           {/* Tab Content */}
-          <div className="flex-1 p-4 md:p-6 md:p-10 overflow-y-auto custom-scrollbar min-h-0">
+          <div className="flex-1 p-4 md:p-10 overflow-y-auto custom-scrollbar min-h-0">
              <AnimatePresence mode="wait">
                {activeTab === 'summary' && (
                  <motion.div 
@@ -752,35 +758,35 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 md:p-6 border-t border-[var(--border)] bg-[var(--bg)]/50 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-           <button onClick={onClose} className="btn-ghost w-full md:w-auto justify-center md:justify-start">Close Reviewer</button>
-           <div className="flex flex-wrap items-center gap-2">
+        <div className="p-3 md:p-6 border-t border-[var(--border)] bg-[var(--bg)]/50 flex flex-col md:flex-row gap-2 md:gap-3 md:items-center md:justify-between">
+           <button onClick={onClose} className="btn-ghost w-full md:w-auto justify-center md:justify-start text-xs">Close Reviewer</button>
+           <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
               <button 
                 onClick={() => exportToPDF(reviewer)}
-                className="btn-secondary px-3 md:px-4 py-2 text-[11px] md:text-xs flex items-center gap-1.5"
+                className="btn-secondary px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-xs flex items-center gap-1 md:gap-1.5"
               >
-                <Download size={13} /> PDF
+                <Download size={11} /> PDF
               </button>
               <button 
                 onClick={() => exportToDOCX(reviewer)}
-                className="btn-secondary px-3 md:px-4 py-2 text-[11px] md:text-xs flex items-center gap-1.5"
+                className="btn-secondary px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-xs flex items-center gap-1 md:gap-1.5"
               >
-                <FileText size={13} /> DOCX
+                <FileText size={11} /> DOCX
               </button>
               {reviewer.content.slides && reviewer.content.slides.length > 0 && (
                 <button 
                   onClick={() => exportToPPTX(reviewer)}
-                  className="btn-primary px-3 md:px-4 py-2 text-[11px] md:text-xs flex items-center gap-1.5 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-white font-bold"
+                  className="btn-primary px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-xs flex items-center gap-1 md:gap-1.5 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-white font-bold"
                 >
-                  <Download size={13} /> PPTX
+                  <Download size={11} /> PPTX
                 </button>
               )}
                <button 
                  onClick={() => printFlashcards(reviewer)}
                  disabled={!reviewer.content.flashcards || reviewer.content.flashcards.length === 0}
-                 className="btn-secondary px-3 md:px-4 py-2 text-[11px] md:text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                 className="btn-secondary px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-xs flex items-center gap-1 md:gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                >
-                 <Printer size={13} /> Print
+                 <Printer size={11} /> Print
                </button>
               <button 
                 onClick={() => {
@@ -793,9 +799,9 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                   })
                   onClose()
                 }}
-                className="btn-primary px-4 md:px-6 py-2 text-[11px] md:text-sm flex items-center gap-1.5"
+                className="btn-primary px-3 md:px-6 py-1.5 md:py-2 text-[10px] md:text-sm flex items-center gap-1 md:gap-1.5"
               >
-                <Play size={13} fill="currentColor" /> Quiz
+                <Play size={11} fill="currentColor" /> Quiz
               </button>
            </div>
         </div>
@@ -871,22 +877,22 @@ function SlideViewer({ slides }: { slides: any[] }) {
         </div>
         
         {/* Navigation Controls inside Slide */}
-        <div className="flex items-center justify-between mt-6 md:mt-8 border-t border-[var(--border)] pt-3 md:pt-4">
+        <div className="flex items-center justify-between mt-6 md:mt-8 border-t border-[var(--border)] pt-3 md:pt-4 gap-2">
           <button 
             disabled={currentSlideIdx === 0}
             onClick={() => setCurrentSlideIdx(prev => prev - 1)}
-            className="btn-secondary px-4 py-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs flex items-center gap-1"
+            className="btn-secondary px-3 md:px-4 py-1.5 md:py-2 disabled:opacity-30 disabled:cursor-not-allowed text-[10px] md:text-xs flex items-center gap-1"
           >
-            ← Previous
+            ← Prev
           </button>
           
-          <div className="flex gap-1.5">
+          <div className="flex gap-1 md:gap-1.5">
             {slides.map((_, idx) => (
               <span 
                 key={idx} 
                 className={cn(
-                  "w-2.5 h-2.5 rounded-full transition-all duration-300", 
-                  idx === currentSlideIdx ? "bg-[var(--pink)] w-5" : "bg-[var(--border)]"
+                  "w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-all duration-300", 
+                  idx === currentSlideIdx ? "bg-[var(--pink)] w-3 md:w-5" : "bg-[var(--border)]"
                 )}
               />
             ))}
@@ -895,7 +901,7 @@ function SlideViewer({ slides }: { slides: any[] }) {
           <button 
             disabled={currentSlideIdx === slides.length - 1}
             onClick={() => setCurrentSlideIdx(prev => prev + 1)}
-            className="btn-primary px-4 py-2 disabled:opacity-30 disabled:cursor-not-allowed text-xs flex items-center gap-1"
+            className="btn-primary px-3 md:px-4 py-1.5 md:py-2 disabled:opacity-30 disabled:cursor-not-allowed text-[10px] md:text-xs flex items-center gap-1"
           >
             Next →
           </button>

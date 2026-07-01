@@ -678,53 +678,53 @@ function QuizEngine() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* Progress Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-           <button onClick={prevQuestion} disabled={currentIndex === 0} className="btn-icon disabled:opacity-30">
+        <div className="flex items-start sm:items-center justify-between mb-6 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+           <button onClick={prevQuestion} disabled={currentIndex === 0} className="btn-icon disabled:opacity-30 shrink-0">
               <ArrowLeft size={20} />
            </button>
-           <div>
-              <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Question {currentIndex + 1} of {questions.length}</p>
-              <h3 className="font-bold text-sm">{activeQuiz?.title}</h3>
+           <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Q{currentIndex + 1}/{questions.length}</p>
+              <h3 className="font-bold text-xs sm:text-sm truncate">{activeQuiz?.title}</h3>
            </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
            {/* End Quiz button */}
            {confirmEnd ? (
-             <div className="flex items-center gap-2">
-               <span className="text-xs font-bold text-[var(--error)]">End quiz?</span>
+             <div className="flex items-center gap-1 sm:gap-2">
                <button
                  onClick={() => { setConfirmEnd(false); finishQuiz() }}
-                 className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[var(--error)] text-white hover:opacity-90 transition-opacity"
-               >Yes, end</button>
+                 className="text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[var(--error)] text-white hover:opacity-90 transition-opacity"
+               >End</button>
                <button
                  onClick={() => setConfirmEnd(false)}
-                 className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[var(--secondary-bg)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors"
+                 className="text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[var(--secondary-bg)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors"
                >Cancel</button>
              </div>
            ) : (
              <button
                onClick={() => setConfirmEnd(true)}
-               className="text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--error)] px-3 py-1.5 rounded-xl border border-[var(--border)] hover:border-[var(--error)]/40 transition-all"
+               className="text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--error)] px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-[var(--border)] hover:border-[var(--error)]/40 transition-all"
              >
-               End Quiz
+               End
              </button>
            )}
            {activeQuiz?.timer_type === 'untimed' ? (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30 px-3 py-1.5 rounded-full">
-                <Clock size={13} />
-                <span>Untimed Mode ☕</span>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full whitespace-nowrap">
+                <Clock size={11} />
+                <span className="hidden sm:inline">Untimed Mode ☕</span>
+                <span className="sm:hidden">∞</span>
               </div>
             ) : (
               <div className={cn(
-                "flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-300",
+                "flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 whitespace-nowrap",
                 timeLeft <= 10 
                   ? "bg-red-100 text-red-600 animate-pulse" 
                   : "text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30"
               )}>
-                <Clock size={13} className={timeLeft <= 10 ? "animate-spin-slow text-red-600" : ""} />
+                <Clock size={11} className={timeLeft <= 10 ? "animate-spin-slow text-red-600" : ""} />
                 <span>{formatTime(timeLeft)}</span>
-                {activeQuiz?.timer_type === 'per_question' && <span className="text-[9px] opacity-75">/ Q</span>}
+                {activeQuiz?.timer_type === 'per_question' && <span className="text-[8px] opacity-75">/Q</span>}
               </div>
             )}
          </div>

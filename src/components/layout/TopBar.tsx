@@ -236,7 +236,7 @@ export default function TopBar() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: -8 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}
-                className="md:absolute md:right-0 md:mt-3.5 md:w-80 md:origin-top-right max-md:fixed max-md:left-1/2 max-md:-translate-x-1/2 max-md:top-1/2 max-md:-translate-y-1/2 max-md:w-[calc(100vw-2rem)] max-md:max-w-sm bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn p-4 z-50 text-left"
+                className="md:absolute md:right-0 md:mt-3.5 md:w-80 md:origin-top-right max-md:fixed max-md:left-1/2 max-md:-translate-x-1/2 max-md:top-1/2 max-md:-translate-y-1/2 max-md:w-[calc(100vw-2rem)] max-md:max-w-sm max-md:origin-center bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn p-4 z-50 text-left"
               >
                 {/* Speech Bubble Arrow - desktop only */}
                 <div className="hidden md:block absolute -top-1.5 right-[13px] w-3 h-3 bg-[var(--card)] border-t border-l border-[var(--border)] rotate-45 z-40"></div>
