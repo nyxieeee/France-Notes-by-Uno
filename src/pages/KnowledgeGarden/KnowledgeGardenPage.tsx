@@ -7,7 +7,6 @@ import {
   BookOpen, 
   ShieldCheck, 
   ArrowRight,
-  Filter,
   Sparkles,
   CheckCircle2
 } from 'lucide-react'
@@ -22,7 +21,6 @@ export default function KnowledgeGardenPage() {
   const [query, setQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [results, setResults] = useState<KnowledgeSearchResult[]>([])
-  const [activeCategory, setActiveCategory] = useState<string>('all')
   const [page, setPage] = useState(1)
   const { savedKnowledge, saveKnowledge, removeKnowledge } = useStudyBoxStore()
   const [savedToast, setSavedToast] = useState<{ title: string; action: 'saved' | 'removed' } | null>(null)
@@ -100,14 +98,7 @@ export default function KnowledgeGardenPage() {
     }
   }
 
-  const categories = [
-    { id: 'all', label: 'All Garden', icon: Leaf },
-    { id: 'nursing', label: 'Nursing', icon: ShieldCheck },
-    { id: 'pharmacology', label: 'Pharmacology', icon: BookOpen },
-    { id: 'research', label: 'Medical Research', icon: Search },
-    { id: 'guidelines', label: 'Clinical Guidelines', icon: ShieldCheck },
-    { id: 'local', label: 'PH Local', icon: Filter },
-  ]
+
 
   return (
     <div className="page-container">
@@ -149,24 +140,6 @@ export default function KnowledgeGardenPage() {
             )}
           </button>
         </form>
-        
-        <div className="flex flex-wrap justify-center gap-3 mt-6">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={cn(
-                "px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 border",
-                activeCategory === cat.id 
-                  ? "bg-[var(--pink)] text-white border-[var(--pink)] shadow-fn" 
-                  : "bg-[var(--card)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--pink)]/50"
-              )}
-            >
-              <cat.icon size={14} />
-              {cat.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto">
