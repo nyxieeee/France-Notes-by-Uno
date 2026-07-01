@@ -555,39 +555,39 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         className="bg-[var(--card)] w-full max-w-5xl max-h-[90vh] md:h-[85vh] rounded-[2.5rem] shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col my-auto"
       >
         {/* Header */}
-        <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative">
+        <div className="p-4 md:p-6 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative">
           <button 
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"
+            className="absolute top-4 md:top-6 right-4 md:right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
 
           <div 
-            className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-white shadow-md shrink-0 mx-auto md:mx-0"
+            className="w-12 h-12 md:w-16 md:h-16 rounded-[1.5rem] flex items-center justify-center text-white shadow-md shrink-0 mx-auto md:mx-0"
             style={{ backgroundColor: getTopicColor(reviewer.topic_id) }}
           >
-            <BookOpen size={32} />
+            <BookOpen size={24} className="md:size-8" />
           </div>
 
-          <div className="text-center md:text-left">
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
+          <div className="text-center md:text-left min-w-0 pr-8 md:pr-0">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
               <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-white rounded-full text-[var(--text-secondary)] shadow-sm">
                 {getTopicTitle(reviewer.topic_id)}
               </span>
-              <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 font-medium">
+              <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 font-medium whitespace-nowrap">
                 <Clock size={12} /> {formatRelativeDate(reviewer.created_at)}
               </span>
             </div>
-            <h2 className="text-2xl font-bold tracking-tight mb-1">{reviewer.title}</h2>
-            <p className="text-sm text-[var(--text-secondary)] font-medium italic">Source: {reviewer.source_file}</p>
+            <h2 className="text-lg md:text-2xl font-bold tracking-tight truncate">{reviewer.title}</h2>
+            <p className="text-xs md:text-sm text-[var(--text-secondary)] font-medium italic truncate">Source: {reviewer.source_file}</p>
           </div>
         </div>
 
         {/* Content Tabs */}
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           {/* Sidebar Tabs */}
-          <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[var(--border)] p-4 bg-[var(--bg)]/30 overflow-y-auto custom-scrollbar md:max-h-none max-h-48 shrink-0">
+          <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[var(--border)] p-3 md:p-4 bg-[var(--bg)]/30 overflow-y-auto custom-scrollbar md:max-h-none max-h-40 shrink-0">
             <div className="space-y-2">
               {(() => {
                 const isPresentation = reviewer.content.slides && reviewer.content.slides.length > 0;
@@ -632,7 +632,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
           </div>
  
           {/* Tab Content */}
-          <div className="flex-1 p-6 md:p-10 overflow-y-auto custom-scrollbar min-h-0">
+          <div className="flex-1 p-4 md:p-6 md:p-10 overflow-y-auto custom-scrollbar min-h-0">
              <AnimatePresence mode="wait">
                {activeTab === 'summary' && (
                  <motion.div 
@@ -642,22 +642,22 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                    exit={{ opacity: 0, x: -10 }}
                    className="space-y-6 pb-10"
                  >
-                   <div>
-                     <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                       <FileText className="text-[var(--pink)]" size={20} />
-                       AI Summary
-                     </h3>
-                     <div className="text-[var(--text)] leading-relaxed">
-                       <MarkdownText content={reviewer.content.summary} />
-                     </div>
-                   </div>
-                   <div className="bg-[var(--secondary-bg)]/20 p-6 rounded-3xl border border-[var(--border)]">
-                      <h4 className="font-bold text-sm mb-3 uppercase tracking-widest text-[var(--pink)]">
-                        {isFrance ? "Doc Uno's Simple Explanation" : `${aiAssistantName}'s Clinical Breakdown`}
-                      </h4><div className="text-sm italic leading-relaxed text-[var(--text-secondary)]">
-                        <MarkdownText content={reviewer.content.simplified_explanation} />
+                    <div>
+                      <h3 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2">
+                        <FileText className="text-[var(--pink)]" size={20} />
+                        AI Summary
+                      </h3>
+                      <div className="text-sm md:text-base text-[var(--text)] leading-relaxed">
+                        <MarkdownText content={reviewer.content.summary} />
                       </div>
-                   </div>
+                    </div>
+                    <div className="bg-[var(--secondary-bg)]/20 p-4 md:p-6 rounded-3xl border border-[var(--border)]">
+                       <h4 className="font-bold text-xs md:text-sm mb-3 uppercase tracking-widest text-[var(--pink)]">
+                         {isFrance ? "Doc Uno's Simple Explanation" : `${aiAssistantName}'s Clinical Breakdown`}
+                       </h4><div className="text-sm md:text-base italic leading-relaxed text-[var(--text-secondary)]">
+                         <MarkdownText content={reviewer.content.simplified_explanation} />
+                       </div>
+                    </div>
                  </motion.div>
                )}
 
@@ -668,18 +668,18 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                    animate={{ opacity: 1, x: 0 }}
                    className="space-y-4 pb-10"
                  >
-                   <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                     <Sparkles className="text-[var(--pink)]" size={20} />
-                     Key Concepts
-                   </h3>
-                   <div className="space-y-3">
-                     {reviewer.content.key_points.map((point, i) => (
-                       <div key={i} className="flex gap-3 p-4 bg-white border border-[var(--border)] rounded-2xl shadow-sm">
-                          <div className="w-6 h-6 rounded-full bg-[var(--secondary-bg)] flex items-center justify-center shrink-0 text-[var(--pink)] text-xs font-bold">{i+1}</div>
-                          <p className="text-sm font-medium">{point}</p>
-                       </div>
-                     ))}
-                   </div>
+                    <h3 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2">
+                      <Sparkles className="text-[var(--pink)]" size={20} />
+                      Key Concepts
+                    </h3>
+                    <div className="space-y-3">
+                      {reviewer.content.key_points.map((point, i) => (
+                        <div key={i} className="flex gap-3 p-3 md:p-4 bg-white border border-[var(--border)] rounded-2xl shadow-sm">
+                           <div className="w-6 h-6 rounded-full bg-[var(--secondary-bg)] flex items-center justify-center shrink-0 text-[var(--pink)] text-xs font-bold">{i+1}</div>
+                           <p className="text-sm md:text-base font-medium">{point}</p>
+                        </div>
+                      ))}
+                    </div>
                  </motion.div>
                )}
 
@@ -691,11 +691,11 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                     className="space-y-6"
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold flex items-center gap-2">
+                      <h3 className="text-lg md:text-xl font-bold flex items-center gap-2">
                         <Zap className="text-[var(--pink)]" size={20} />
-                        Interactive Flashcards
+                        Flashcards
                       </h3>
-                      <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">Click card to flip</p>
+                      <p className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">Tap to flip</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-10">
                       {reviewer.content.flashcards.map((card) => (
@@ -712,13 +712,13 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                     animate={{ opacity: 1, x: 0 }}
                     className="space-y-6"
                   >
-                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <h3 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2">
                       <RotateCcw className="text-[var(--pink)]" size={20} />
                       Memory Aids
                     </h3>
                      <div className="space-y-4 pb-10">
-                       {reviewer.content.mnemonics.map((m) => (
-                         <div key={m.id} className="p-6 bg-white border border-[var(--border)] rounded-3xl shadow-sm relative overflow-hidden group">
+                        {reviewer.content.mnemonics.map((m) => (
+                          <div key={m.id} className="p-4 md:p-6 bg-white border border-[var(--border)] rounded-3xl shadow-sm relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                <Sparkles size={48} />
                             </div>
@@ -752,35 +752,35 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-[var(--border)] bg-[var(--bg)]/50 flex items-center justify-between">
-           <button onClick={onClose} className="btn-ghost">Close Reviewer</button>
+        <div className="p-4 md:p-6 border-t border-[var(--border)] bg-[var(--bg)]/50 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+           <button onClick={onClose} className="btn-ghost w-full md:w-auto justify-center md:justify-start">Close Reviewer</button>
            <div className="flex flex-wrap items-center gap-2">
               <button 
                 onClick={() => exportToPDF(reviewer)}
-                className="btn-secondary px-4 py-2 text-xs flex items-center gap-2"
+                className="btn-secondary px-3 md:px-4 py-2 text-[11px] md:text-xs flex items-center gap-1.5"
               >
-                <Download size={14} /> PDF
+                <Download size={13} /> PDF
               </button>
               <button 
                 onClick={() => exportToDOCX(reviewer)}
-                className="btn-secondary px-4 py-2 text-xs flex items-center gap-2"
+                className="btn-secondary px-3 md:px-4 py-2 text-[11px] md:text-xs flex items-center gap-1.5"
               >
-                <FileText size={14} /> DOCX
+                <FileText size={13} /> DOCX
               </button>
               {reviewer.content.slides && reviewer.content.slides.length > 0 && (
                 <button 
                   onClick={() => exportToPPTX(reviewer)}
-                  className="btn-primary px-4 py-2 text-xs flex items-center gap-2 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-white font-bold"
+                  className="btn-primary px-3 md:px-4 py-2 text-[11px] md:text-xs flex items-center gap-1.5 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-white font-bold"
                 >
-                  <Download size={14} /> Download PPTX
+                  <Download size={13} /> PPTX
                 </button>
               )}
                <button 
                  onClick={() => printFlashcards(reviewer)}
                  disabled={!reviewer.content.flashcards || reviewer.content.flashcards.length === 0}
-                 className="btn-secondary px-4 py-2 text-xs flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                 className="btn-secondary px-3 md:px-4 py-2 text-[11px] md:text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                >
-                 <Printer size={14} /> Print Cards
+                 <Printer size={13} /> Print
                </button>
               <button 
                 onClick={() => {
@@ -793,9 +793,9 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                   })
                   onClose()
                 }}
-                className="btn-primary px-6 py-2 text-sm flex items-center gap-2"
+                className="btn-primary px-4 md:px-6 py-2 text-[11px] md:text-sm flex items-center gap-1.5"
               >
-                <Play size={14} fill="currentColor" /> Start Quiz
+                <Play size={13} fill="currentColor" /> Quiz
               </button>
            </div>
         </div>
@@ -841,29 +841,29 @@ function SlideViewer({ slides }: { slides: any[] }) {
   
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold flex items-center gap-2">
+      <div className="flex items-center justify-between mb-4 gap-3">
+        <h3 className="text-lg md:text-xl font-bold flex items-center gap-2">
           <Play className="text-[var(--pink)]" size={20} fill="currentColor" />
-          Interactive Slide Deck
+          Slide Deck
         </h3>
-        <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest bg-[var(--secondary-bg)]/20 px-3 py-1 rounded-full border border-[var(--border)]">
-          Slide {currentSlideIdx + 1} of {slides.length}
+        <span className="text-[10px] md:text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest bg-[var(--secondary-bg)]/20 px-2 md:px-3 py-1 rounded-full border border-[var(--border)] shrink-0">
+          {currentSlideIdx + 1}/{slides.length}
         </span>
       </div>
       
       {/* Slide Container */}
-      <div className="bg-white border-2 border-[var(--border)] rounded-3xl p-8 shadow-md relative min-h-[300px] flex flex-col justify-between overflow-hidden">
+      <div className="bg-white border-2 border-[var(--border)] rounded-3xl p-4 md:p-8 shadow-md relative min-h-[250px] flex flex-col justify-between overflow-hidden">
         {/* Slide Title */}
         <div>
-          <h4 className="text-2xl font-bold text-[var(--pink)] mb-6 border-b border-[var(--border)] pb-4">
+          <h4 className="text-lg md:text-2xl font-bold text-[var(--pink)] mb-4 md:mb-6 border-b border-[var(--border)] pb-3 md:pb-4">
             {currentSlide.title}
           </h4>
           
           {/* Bullet Points */}
-          <ul className="space-y-4">
+          <ul className="space-y-3 md:space-y-4">
             {currentSlide.bullet_points.map((pt: string, idx: number) => (
-              <li key={idx} className="text-base font-medium text-[var(--text)] flex items-start gap-3">
-                <span className="w-2.5 h-2.5 rounded-full bg-[var(--pink)] shrink-0 mt-2"></span>
+              <li key={idx} className="text-sm md:text-base font-medium text-[var(--text)] flex items-start gap-2 md:gap-3">
+                <span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[var(--pink)] shrink-0 mt-1.5 md:mt-2"></span>
                 <span>{pt}</span>
               </li>
             ))}
@@ -871,7 +871,7 @@ function SlideViewer({ slides }: { slides: any[] }) {
         </div>
         
         {/* Navigation Controls inside Slide */}
-        <div className="flex items-center justify-between mt-8 border-t border-[var(--border)] pt-4">
+        <div className="flex items-center justify-between mt-6 md:mt-8 border-t border-[var(--border)] pt-3 md:pt-4">
           <button 
             disabled={currentSlideIdx === 0}
             onClick={() => setCurrentSlideIdx(prev => prev - 1)}

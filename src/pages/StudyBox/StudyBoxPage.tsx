@@ -917,31 +917,31 @@ body {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 flex gap-4 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative items-center">
+        <div className="p-4 md:p-6 flex gap-3 md:gap-4 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative items-center">
           <button 
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors text-xs font-bold"
+            className="absolute top-4 md:top-6 right-4 md:right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors text-xs font-bold"
           >
             Close
           </button>
 
           <div 
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm shrink-0 text-2xl"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-white shadow-sm shrink-0 text-xl md:text-2xl"
             style={{ backgroundColor: getTopicColor(currentItem.topic_id) }}
           >
             {getFileIcon(currentItem.file_type)}
           </div>
 
-          <div className="pr-12">
+          <div className="min-w-0 pr-10 md:pr-12">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 bg-white rounded-md text-[var(--text-secondary)] shadow-sm border border-[var(--border)]">
                 {getTopicTitle(currentItem.topic_id)}
               </span>
-              <span className="text-[10px] text-[var(--text-secondary)] font-medium">
+              <span className="text-[10px] text-[var(--text-secondary)] font-medium whitespace-nowrap">
                 Uploaded {formatRelativeDate(currentItem.created_at)}
               </span>
             </div>
-            <h2 className="text-base font-bold tracking-tight truncate max-w-[450px]">
+            <h2 className="text-sm md:text-base font-bold tracking-tight truncate">
               {currentItem.file_name.startsWith('[Reference]')
                 ? currentItem.file_name.replace('[Reference] ', '').replace('.txt', '')
                 : currentItem.file_name}
