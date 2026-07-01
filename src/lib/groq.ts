@@ -369,7 +369,7 @@ export async function callGeminiGroundedSearch(
           description: description.length > 300 ? description.substring(0, 297) + '...' : description,
           source: hostname,
           url,
-          search_url: `https://www.google.com/search?q=${encodeURIComponent(query + ' ' + hostname)}`,
+          search_url: `https://www.google.com/search?q=${encodeURIComponent(title)}`,
           category,
           is_trusted,
         }

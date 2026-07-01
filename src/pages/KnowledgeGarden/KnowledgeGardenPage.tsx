@@ -200,10 +200,10 @@ export default function KnowledgeGardenPage() {
                           href={(result as any).search_url} 
                           target="_blank" 
                           rel="noreferrer"
-                          title={`Search for "${query}" directly on ${result.source}`}
+                          title={`Search for "${result.title}" on Google`}
                           className="btn-secondary px-4 py-2 text-xs flex items-center gap-1.5"
                         >
-                          Find on {result.source} <Search size={14} />
+                          Find on Google <Search size={14} />
                         </a>
                       )}
                       <button 
