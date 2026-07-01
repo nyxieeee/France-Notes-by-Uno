@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { jsPDF } from 'jspdf'
 import type { StudyBoxItem, Topic } from '@/types'
 import { 
@@ -9,7 +9,6 @@ import {
   FileText, 
   Search, 
   Filter, 
-  Plus, 
   Trash2, 
   Heart, 
   MoreVertical,
@@ -58,7 +57,38 @@ export default function StudyBoxPage() {
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const filteredItems = getFilteredItems()
-  
+
+  // Filter panel state
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az'>('newest')
+  const [showFavorites, setShowFavorites] = useState(false)
+  const [fileTypeFilter, setFileTypeFilter] = useState<string>('all')
+  const filterRef = useRef<HTMLDivElement>(null)
+
+  // Close filter on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setIsFilterOpen(false)
+      }
+    }
+    if (isFilterOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isFilterOpen])
+
+  // Compute displayed items applying local filters on top of store filters
+  const displayedItems = (() => {
+    let list = [...filteredItems]
+    if (showFavorites) list = list.filter(i => i.is_favorite)
+    if (fileTypeFilter !== 'all') list = list.filter(i => i.file_type === fileTypeFilter)
+    if (sortBy === 'newest') list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    else if (sortBy === 'oldest') list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    else if (sortBy === 'az') list.sort((a, b) => a.file_name.localeCompare(b.file_name))
+    return list
+  })()
+
+  const activeFilterCount = (showFavorites ? 1 : 0) + (fileTypeFilter !== 'all' ? 1 : 0) + (sortBy !== 'newest' ? 1 : 0)
+
   const [isCameraOpen, setIsCameraOpen] = useState(false)
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<StudyBoxItem | null>(null)
@@ -66,8 +96,22 @@ export default function StudyBoxPage() {
   const { isFrance, aiAssistantName, studyBoxName, greetingName } = usePersonalization()
   const { generatePresentation, generateReviewer, isGeneratingReviewer, isGeneratingPresentation } = useReviewerStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuthStore()
   const firstName = user?.full_name?.split(' ')[0] || 'Your'
+
+  // Auto-open item if navigated here from dashboard with openItemId state
+  useEffect(() => {
+    const openItemId = (location.state as any)?.openItemId
+    if (openItemId) {
+      const target = items.find(i => i.id === openItemId)
+      if (target) {
+        setSelectedItem(target)
+        // Clear the state so re-visiting doesn't re-open
+        window.history.replaceState({}, '')
+      }
+    }
+  }, [location.state, items])
 
   const handleCapture = async (base64Image: string) => {
     setIsCameraOpen(false)
@@ -115,28 +159,30 @@ export default function StudyBoxPage() {
         <div className="flex items-center gap-1.5 sm:gap-2">
           <button 
             onClick={() => setIsCaseModalOpen(true)}
-            className="btn-primary flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-xs sm:text-sm px-2 sm:px-4"
+            className="btn-primary flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn p-2.5 sm:px-4 sm:py-2"
             disabled={isUploading || isProcessing}
+            title="Generate Case Study"
           >
-            <Sparkles size={16} />
-            <span className="sm:hidden">Generate</span>
-            <span className="hidden sm:inline">Generate Case Study</span>
+            <Sparkles size={18} className="shrink-0" />
+            <span className="hidden sm:inline text-sm font-semibold">Generate Case Study</span>
           </button>
           <button 
             onClick={() => setIsCameraOpen(true)}
-            className="btn-secondary flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
+            className="btn-secondary flex items-center justify-center gap-1.5 sm:gap-2 p-2.5 sm:px-4 sm:py-2"
             disabled={isUploading || isProcessing}
+            title="Take Photo"
           >
-            <Camera size={16} />
-            <span className="text-[10px] sm:text-xs">Take Photo</span>
+            <Camera size={18} className="shrink-0" />
+            <span className="hidden sm:inline text-sm font-semibold">Take Photo</span>
           </button>
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="btn-secondary flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
+            className="btn-secondary flex items-center justify-center gap-1.5 sm:gap-2 p-2.5 sm:px-4 sm:py-2"
             disabled={isUploading || isProcessing}
+            title="Upload Files"
           >
-            <Upload size={16} />
-            <span className="text-[10px] sm:text-xs">Upload Files</span>
+            <Upload size={18} className="shrink-0" />
+            <span className="hidden sm:inline text-sm font-semibold">Upload Files</span>
           </button>
           <input 
             type="file" 
@@ -146,6 +192,7 @@ export default function StudyBoxPage() {
             multiple
           />
         </div>
+
       </div>
 
       {/* Upload State / Processing */}
@@ -214,17 +261,95 @@ export default function StudyBoxPage() {
           </div>
         </div>
         <div className="flex items-center justify-end">
-          <button className="btn-secondary w-full md:w-auto flex items-center justify-center gap-2">
-            <Filter size={18} />
-            Filters
-          </button>
+          <div className="relative" ref={filterRef}>
+            <button
+              onClick={() => setIsFilterOpen(prev => !prev)}
+              className={cn(
+                "btn-secondary w-full md:w-auto flex items-center justify-center gap-2 relative",
+                activeFilterCount > 0 && "border-[var(--pink)] text-[var(--pink)]"
+              )}
+            >
+              <Filter size={18} />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--pink)] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {isFilterOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  className="absolute right-0 mt-2 w-56 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-md p-3 z-50 origin-top-right"
+                >
+                  {/* Sort */}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 px-1">Sort by</p>
+                  <div className="flex flex-col gap-0.5 mb-3">
+                    {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['az', 'Name A–Z']] as const).map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => setSortBy(val)}
+                        className={cn(
+                          'text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all',
+                          sortBy === val ? 'bg-[var(--pink)]/10 text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]'
+                        )}
+                      >{label}</button>
+                    ))}
+                  </div>
+
+                  {/* Show */}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 px-1">Show</p>
+                  <div className="flex flex-col gap-0.5 mb-3">
+                    <button
+                      onClick={() => setShowFavorites(false)}
+                      className={cn('text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all', !showFavorites ? 'bg-[var(--pink)]/10 text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]')}
+                    >All files</button>
+                    <button
+                      onClick={() => setShowFavorites(true)}
+                      className={cn('text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all', showFavorites ? 'bg-[var(--pink)]/10 text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]')}
+                    >Favorites only ❤️</button>
+                  </div>
+
+                  {/* Type */}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 px-1">File type</p>
+                  <div className="flex flex-col gap-0.5 mb-3">
+                    {([['all', 'All types'], ['pdf', 'PDF'], ['docx', 'Word (DOCX)'], ['pptx', 'PowerPoint'], ['image', 'Images'], ['txt', 'Text']] as const).map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => setFileTypeFilter(val)}
+                        className={cn(
+                          'text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all',
+                          fileTypeFilter === val ? 'bg-[var(--pink)]/10 text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]'
+                        )}
+                      >{label}</button>
+                    ))}
+                  </div>
+
+                  {/* Reset */}
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={() => { setSortBy('newest'); setShowFavorites(false); setFileTypeFilter('all') }}
+                      className="w-full mt-1 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors rounded-xl hover:bg-[var(--secondary-bg)]"
+                    >
+                      Reset filters
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
       {/* Document Grid */}
-      {filteredItems.length > 0 ? (
+      {displayedItems.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredItems.map((item) => (
+          {displayedItems.map((item) => (
             <motion.div 
               layout
               initial={{ opacity: 0, scale: 0.95 }}
@@ -350,21 +475,7 @@ export default function StudyBoxPage() {
         </div>
       )}
 
-      {/* Mobile Quick Action FAB */}
-      <div className={`md:hidden fixed bottom-20 right-4 flex flex-col gap-3 transition-opacity duration-200 ${selectedItemIds.length > 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <button 
-          onClick={() => setIsCameraOpen(true)}
-          className="w-12 h-12 bg-[var(--card)] text-[var(--text)] rounded-full shadow-lg border border-[var(--border)] flex items-center justify-center hover:scale-105 transition-transform"
-        >
-           <Camera size={24} />
-        </button>
-        <button 
-          onClick={() => fileInputRef.current?.click()}
-          className="w-14 h-14 bg-[var(--pink)] text-white rounded-full shadow-fn flex items-center justify-center hover:scale-105 transition-transform"
-        >
-           <Plus size={32} />
-        </button>
-      </div>
+
 
       {/* Floating AI Source Selection Bar */}
       <AnimatePresence>
@@ -964,7 +1075,7 @@ body {
         <div className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col gap-8 bg-[var(--secondary-bg)]/10">
           
           {/* Main Paper Document Container */}
-          <div className="bg-white border border-[var(--border)] rounded-[2rem] shadow-sm p-4 sm:p-6 md:p-10 flex flex-col gap-6 relative select-text shrink-0">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-[2rem] shadow-sm p-4 sm:p-6 md:p-10 flex flex-col gap-6 relative select-text shrink-0">
             {/* Soft decorative badge on the paper */}
             <div className="absolute top-4 right-6 text-[10px] font-bold text-[var(--text-secondary)]/30 uppercase tracking-widest">
               Original Document
@@ -1067,7 +1178,7 @@ body {
 
             <div className="flex items-center justify-between relative z-10 flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-[var(--pink)]">
+                <div className="w-10 h-10 rounded-xl bg-[var(--card)] shadow-sm flex items-center justify-center text-[var(--pink)]">
                   <Sparkles size={20} className="animate-pulse" />
                 </div>
                 <div>

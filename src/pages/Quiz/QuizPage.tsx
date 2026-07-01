@@ -434,7 +434,22 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
               <CustomTopicDropdown 
                 topics={topics} 
                 value={config.topic} 
-                onChange={(topicTitle) => setConfig({ ...config, topic: topicTitle, sourceText: undefined, sourceName: undefined })} 
+                onChange={(topicTitle) => {
+                  // Collect all extracted text from items in this topic
+                  const matchedTopic = topics.find(t => t.title === topicTitle)
+                  const topicItems = matchedTopic
+                    ? items.filter(i => i.topic_id === matchedTopic.id && i.extracted_text)
+                    : []
+                  const topicSourceText = topicItems.length > 0
+                    ? topicItems.map(i => `--- DOCUMENT: ${i.file_name} ---\n${i.extracted_text}`).join('\n\n')
+                    : undefined
+                  setConfig({ 
+                    ...config, 
+                    topic: topicTitle, 
+                    sourceText: topicSourceText,
+                    sourceName: topicItems.length > 0 ? topicItems.map(i => i.file_name).join(', ') : undefined 
+                  })
+                }} 
               />
             </div>
 
@@ -688,36 +703,42 @@ function QuizEngine() {
               <h3 className="font-bold text-xs sm:text-sm truncate">{activeQuiz?.title}</h3>
            </div>
         </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
            {/* End Quiz button */}
            {confirmEnd ? (
-             <div className="flex items-center gap-1 sm:gap-2">
+             <div className="flex items-center gap-1">
+               <span className="text-[10px] font-bold text-[var(--text-secondary)] hidden sm:inline">End quiz?</span>
                <button
                  onClick={() => { setConfirmEnd(false); finishQuiz() }}
-                 className="text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[var(--error)] text-white hover:opacity-90 transition-opacity"
-               >End</button>
+                 className="text-[10px] sm:text-xs font-bold px-2.5 py-1.5 rounded-xl bg-[var(--error)] text-white hover:opacity-90 transition-opacity whitespace-nowrap"
+               >
+                 <span className="sm:hidden">End ✓</span>
+                 <span className="hidden sm:inline">Yes, end</span>
+               </button>
                <button
                  onClick={() => setConfirmEnd(false)}
-                 className="text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[var(--secondary-bg)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors"
-               >Cancel</button>
+                 className="text-[10px] sm:text-xs font-bold px-2.5 py-1.5 rounded-xl bg-[var(--secondary-bg)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors"
+               >✕</button>
              </div>
            ) : (
              <button
                onClick={() => setConfirmEnd(true)}
-               className="text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--error)] px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-[var(--border)] hover:border-[var(--error)]/40 transition-all"
+               className="text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--error)] px-2.5 py-1.5 rounded-xl border border-[var(--border)] hover:border-[var(--error)]/40 transition-all whitespace-nowrap"
+               title="End Quiz"
              >
-               End
+               <span className="sm:hidden">✕ End</span>
+               <span className="hidden sm:inline">End Quiz</span>
              </button>
            )}
            {activeQuiz?.timer_type === 'untimed' ? (
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full whitespace-nowrap">
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30 px-2 sm:px-3 py-1.5 rounded-full whitespace-nowrap">
                 <Clock size={11} />
-                <span className="hidden sm:inline">Untimed Mode ☕</span>
+                <span className="hidden sm:inline">Untimed ☕</span>
                 <span className="sm:hidden">∞</span>
               </div>
             ) : (
               <div className={cn(
-                "flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all duration-300 whitespace-nowrap",
+                "flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-full transition-all duration-300 whitespace-nowrap",
                 timeLeft <= 10 
                   ? "bg-red-100 text-red-600 animate-pulse" 
                   : "text-[var(--text-secondary)] bg-[var(--secondary-bg)]/30"
@@ -729,6 +750,7 @@ function QuizEngine() {
             )}
          </div>
        </div>
+
 
       <div className="w-full h-1.5 bg-[var(--border)] rounded-full mb-8 overflow-hidden">
          <motion.div 

@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Plus
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getFileIcon, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
@@ -42,6 +42,7 @@ export default function HomePage() {
   const { reviewers } = useReviewerStore()
 
   const recentUploads = getRecentItems(3)
+  const navigate = useNavigate()
 
   // Calculate actual quiz accuracy
   const completedQuizzes = quizzes.filter(q => q.completed && q.score !== null)
@@ -149,8 +150,12 @@ export default function HomePage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {recentUploads.map((file) => (
-                <div key={file.id} className="fn-card p-4 hover:border-[var(--pink)] transition-colors cursor-pointer group">
-                  <div className="text-2xl mb-3 group-hover:scale-110 transition-transform">{getFileIcon(file.file_type)}</div>
+                <div
+                  key={file.id}
+                  className="fn-card p-4 hover:border-[var(--pink)] transition-colors cursor-pointer group"
+                  onClick={() => navigate('/study-box', { state: { openItemId: file.id } })}
+                >
+                  <div className="text-2xl mb-3 group-hover:scale-105 transition-transform">{getFileIcon(file.file_type)}</div>
                   <h4 className="font-bold text-sm mb-1 truncate">{file.file_name}</h4>
                   <p className="text-[10px] text-[var(--text-secondary)] font-medium">{formatRelativeDate(file.created_at)}</p>
                 </div>

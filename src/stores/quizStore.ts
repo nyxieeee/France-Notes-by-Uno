@@ -127,9 +127,12 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
 
       if (config.sourceText) {
         systemPrompt += `
-        CRITICAL INSTRUCTION: You must generate the quiz questions based on the following source material provided by the user. 
-        However, you MUST generate EXACTLY ${config.size} questions. If the source material is too short to generate ${config.size} unique questions, you MUST generate the remaining questions using your general nursing knowledge related to the same topic. 
-        Do NOT output fewer than ${config.size} questions under any circumstance.
+        CRITICAL SOURCE-ONLY INSTRUCTION: You MUST generate ALL quiz questions EXCLUSIVELY from the following source material provided below.
+        - Do NOT introduce conditions, diseases, drugs, or clinical scenarios that are NOT mentioned in the source material.
+        - Do NOT add unrelated comorbidities (e.g., if the source is about Myocardial Infarction, do NOT generate questions about Type 2 Diabetes unless it is explicitly discussed in the source text).
+        - Every question MUST be directly traceable to a fact, concept, or scenario present in the source material.
+        - If the source material does not have enough content for ${config.size} questions, generate the remaining questions using closely related sub-concepts strictly within the same topic as the source.
+        - You MUST generate EXACTLY ${config.size} questions. Do NOT generate fewer.
 
         SOURCE MATERIAL:
         """
@@ -156,7 +159,12 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       `
       
       const randomSeed = Math.random().toString(36).substring(7)
-      const prompt = `Generate a fresh, unique, and completely new clinical quiz now. 
+      const prompt = config.sourceText
+        ? `Generate a quiz now based STRICTLY on the provided source material. 
+      Random seed: ${randomSeed}-${new Date().getTime()}.
+      CRITICAL INSTRUCTION: You MUST generate EXACTLY ${config.size} questions. Count them as you generate: 1, 2, ..., ${config.size}. Do NOT stop until you have exactly ${config.size} questions.
+      STRICT SOURCE RULE: Every single question MUST come from the source material provided. Do NOT introduce any clinical scenario, condition, drug, or concept outside the source text.`
+        : `Generate a fresh, unique, and completely new clinical quiz now. 
       Random seed: ${randomSeed}-${new Date().getTime()}.
       CRITICAL INSTRUCTION: You MUST generate EXACTLY ${config.size} questions. Please count them as you generate: 1, 2, ..., ${config.size}. Do NOT stop generating until you have exactly ${config.size} questions. If you generate fewer than ${config.size}, you fail the task.
       CRITICAL DIVERSITY INSTRUCTION: Ensure that all questions, scenario profiles, lab values, and clinical settings are completely different from prior quizzes. Explore a different sub-focus within this topic area (e.g. drug side effects, priority assessments, post-op instructions, or ethical nurse dilemmas) to keep it fully dynamic!`

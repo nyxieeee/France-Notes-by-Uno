@@ -64,7 +64,7 @@ export default function MobileNav() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="md:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+            className="md:hidden fixed inset-x-0 top-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] bg-black/30 backdrop-blur-sm z-40"
             onClick={() => setMoreOpen(false)}
           />
         )}
