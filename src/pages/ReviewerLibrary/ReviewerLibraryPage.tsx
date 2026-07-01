@@ -759,8 +759,8 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
 
         {/* Footer Actions */}
         <div className="p-3 md:p-6 border-t border-[var(--border)] bg-[var(--bg)]/50 flex flex-col md:flex-row gap-2 md:gap-3 md:items-center md:justify-between">
-           <button onClick={onClose} className="btn-ghost w-full md:w-auto justify-start text-xs">Close Reviewer</button>
-           <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+           <button onClick={onClose} className="btn-ghost w-full md:w-auto justify-center md:justify-start text-xs">Close Reviewer</button>
+           <div className="flex flex-wrap items-center justify-center md:justify-end gap-1.5 md:gap-2">
               <button 
                 onClick={() => exportToPDF(reviewer)}
                 className="btn-secondary px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-xs flex items-center gap-1 md:gap-1.5"
@@ -805,6 +805,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
               </button>
            </div>
         </div>
+
       </motion.div>
     </motion.div>
   )
