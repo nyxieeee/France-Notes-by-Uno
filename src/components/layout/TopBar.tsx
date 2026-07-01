@@ -223,7 +223,7 @@ export default function TopBar() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: -8 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}
-                className="absolute right-0 mt-3.5 w-80 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn p-4 z-50 origin-top-right text-left"
+                className="absolute right-0 mt-3.5 w-[min(320px,calc(100vw-1.5rem))] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn p-4 z-50 origin-top-right text-left"
               >
                 {/* Speech Bubble Arrow pointing directly to the center of the Bell button */}
                 <div className="absolute -top-1.5 right-[13px] w-3 h-3 bg-[var(--card)] border-t border-l border-[var(--border)] rotate-45 z-40"></div>

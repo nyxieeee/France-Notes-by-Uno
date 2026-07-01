@@ -140,12 +140,12 @@ export default function StudyBoxPage() {
             exit={{ opacity: 0, height: 0 }}
             className="mb-8 overflow-hidden"
           >
-            <div className="fn-card p-6 bg-gradient-to-r from-[var(--secondary-bg)]/50 to-[var(--pink)]/10 border-dashed border-2 border-[var(--pink)] flex items-center gap-6">
-               <div className="w-16 h-16 bg-white rounded-2xl shadow-fn flex items-center justify-center text-[var(--pink)]">
-                  <div className="w-8 h-8 border-4 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin"></div>
+            <div className="fn-card p-4 sm:p-6 bg-gradient-to-r from-[var(--secondary-bg)]/50 to-[var(--pink)]/10 border-dashed border-2 border-[var(--pink)] flex items-center gap-4 sm:gap-6">
+               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl shadow-fn flex items-center justify-center text-[var(--pink)] shrink-0">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin"></div>
                </div>
-               <div className="flex-1">
-                 <h3 className="font-bold text-lg mb-1">
+               <div className="flex-1 min-w-0">
+                 <h3 className="font-bold text-base sm:text-lg mb-1">
                    {isUploading ? 'Uploading your study materials...' : `${aiAssistantName} is analyzing your notes... 🩺✨`}
                  </h3>
                  <p className="text-sm text-[var(--text-secondary)]">

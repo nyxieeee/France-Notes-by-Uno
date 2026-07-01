@@ -14,17 +14,17 @@ export const groq = new Groq({
 
 // ─── Model Registry ───────────────────────────────────────────────────────────
 export const DEFAULT_MODEL = 'llama-3.3-70b-versatile'
-export const FAST_MODEL    = 'llama-3.1-8b-instant'
-export const VISION_MODEL  = 'meta-llama/llama-4-scout-17b-16e-instruct'
+export const FAST_MODEL    = 'openai/gpt-oss-120b'
+export const VISION_MODEL  = 'qwen/qwen3.6-27b'
 const MISTRAL_MODEL        = 'open-mistral-nemo'
 const GEMINI_MODEL         = 'gemini-2.5-flash-lite'
 
 // ─── Feature → Provider Routing ──────────────────────────────────────────────
-//  chat        → Groq FAST_MODEL    (instant feel for Doc Uno)
+//  chat        → Groq FAST_MODEL    (openai/gpt-oss-120b, instant feel for Doc Uno)
 //  quiz        → Groq DEFAULT_MODEL (clinical accuracy matters)
-//  retdem      → Groq FAST_MODEL    (fast back and forth)
-//  recitation  → Groq FAST_MODEL    (fast back and forth)
-//  vision      → Groq VISION_MODEL  (llama-4-scout)
+//  retdem      → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
+//  recitation  → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
+//  vision      → Groq VISION_MODEL  (qwen/qwen3.6-27b)
 //  studybox    → Groq DEFAULT_MODEL (categorization + summary)
 //  knowledge   → Groq FAST_MODEL    (search queries)
 //  reviewer    → Mistral            (long output, 1B token pool free)

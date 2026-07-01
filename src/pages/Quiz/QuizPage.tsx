@@ -422,7 +422,7 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
         </div>
       )}
 
-      <div className="fn-card p-8 space-y-8">
+      <div className="fn-card p-4 sm:p-8 space-y-6 sm:space-y-8">
         {/* Source Material Selection */}
         <div className="space-y-4">
           <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1">Select Source Material</label>
@@ -746,7 +746,7 @@ function QuizEngine() {
           exit={{ opacity: 0, x: -20 }}
           className="space-y-8"
         >
-          <div className="fn-card p-8 md:p-10 relative overflow-hidden">
+          <div className="fn-card p-4 sm:p-8 md:p-10 relative overflow-hidden">
              {/* Decor */}
              <div className="absolute top-0 right-0 p-8 opacity-5">
                 <BrainCircuit size={120} />
@@ -759,7 +759,7 @@ function QuizEngine() {
                    </span>
                    {isSata && <span className="text-[10px] font-bold text-[var(--warning)] uppercase tracking-widest italic">Select all that apply</span>}
                 </div>
-                <h2 className="text-xl md:text-2xl font-bold leading-relaxed">{question.question}</h2>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-relaxed">{question.question}</h2>
              </div>
           </div>
 
@@ -827,7 +827,7 @@ function QuizEngine() {
                      disabled={showRationale}
                      onClick={() => handleChoiceClick(choice)}
                      className={cn(
-                       "flex items-center gap-4 p-5 rounded-[2rem] border-2 text-left transition-all group",
+                       "flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-[2rem] border-2 text-left transition-all group",
                        isSelected 
                          ? "bg-[var(--pink)] border-[var(--pink)] text-white shadow-fn" 
                          : "bg-[var(--card)] border-[var(--border)] hover:border-[var(--pink)]/50",
@@ -836,7 +836,7 @@ function QuizEngine() {
                      )}
                    >
                      <div className={cn(
-                       "w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 transition-colors",
+                       "w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 transition-colors",
                        isSelected ? "bg-white text-[var(--pink)]" : "bg-[var(--secondary-bg)] text-[var(--text-secondary)] group-hover:bg-[var(--pink)]/10 group-hover:text-[var(--pink)]",
                        showRationale && isCorrectChoice && "bg-[var(--success)] text-white"
                      )}>

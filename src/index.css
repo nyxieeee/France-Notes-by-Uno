@@ -135,7 +135,13 @@
 
   /* Page container */
   .page-container {
-    @apply flex-1 px-4 sm:px-6 py-6 pb-24 md:pb-8 w-full max-w-6xl mx-auto;
+    @apply flex-1 px-4 sm:px-6 py-6 w-full max-w-6xl mx-auto;
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 768px) {
+    .page-container {
+      padding-bottom: 2rem;
+    }
   }
 
   .custom-scrollbar {
@@ -155,7 +161,12 @@
 
   /* Bottom nav safe area */
   .bottom-nav-spacer {
-    @apply h-20 md:h-0;
+    height: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 768px) {
+    .bottom-nav-spacer {
+      height: 0;
+    }
   }
 }
 

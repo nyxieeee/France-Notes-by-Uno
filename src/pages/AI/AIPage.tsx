@@ -49,7 +49,7 @@ export default function AIPage() {
   return (
     <div className="flex flex-col h-full relative bg-[var(--bg)] overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--card)]/50 backdrop-blur-md flex items-center justify-between shrink-0">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--card)]/50 backdrop-blur-md flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
            <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-fn border border-[var(--pink)]/30 shrink-0">
               <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
@@ -75,7 +75,7 @@ export default function AIPage() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 custom-scrollbar space-y-4 sm:space-y-6">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-10">
              <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-[2rem] flex items-center justify-center text-[var(--pink)] mb-6 animate-float">
@@ -171,7 +171,7 @@ export default function AIPage() {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 md:p-6 bg-gradient-to-t from-[var(--bg)] to-transparent shrink-0">
+      <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-t from-[var(--bg)] to-transparent shrink-0" style={{ paddingBottom: 'max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem))' }}>
         <div className="max-w-4xl mx-auto">
           <form 
             onSubmit={handleSend}

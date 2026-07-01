@@ -274,7 +274,7 @@ export default function ProfilePage() {
         {/* Content Column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-4">
             {stats.map((stat, i) => (
               <motion.div 
                 key={i}
