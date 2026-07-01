@@ -1053,7 +1053,7 @@ function CaseStudyModal({
           "${scenario || 'No custom scenario/condition context provided.'}"
 
           STRUCTURE:
-          Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
+          Provide a complete, comprehensive document structured as follows:
 
           DISEASE OVERVIEW & DEFINITION
           Clear clinical definition, classifications, and primary homeostatic disruptions.
@@ -1061,20 +1061,20 @@ function CaseStudyModal({
           ETIOLOGY & CLINICAL RISK FACTORS
           Predisposing factors, precipitating events, and direct etiologies categorized clearly.
 
-          PATHOPHYSIOLOGY DIAGRAM (VISUAL FLOWCHART)
-          Instead of writing steps as paragraphs, create a visual text-based flowchart using arrows (→ ↓ ↑), indentation, and labeled boxes to trace the mechanism from initial insult to systemic manifestations. Use the vertical structure like:
+          PATHOPHYSIOLOGY DIAGRAM
+          Create a visual flowchart using arrows (→, ↓, ↑, ↕), indentation, and vertical branching to trace the mechanism from initial insult to systemic manifestations. WRAP THE ENTIRE DIAGRAM in a markdown code fence (triple backticks \`\`\`) so it renders as a monospace preformatted block that preserves spacing and alignment. Use this style inside the code block:
 
           INITIAL INSULT / TRIGGER
                ↓
-          [Phase 1 Name] — brief description of what happens
+          [Phase 1 Name] --- brief description
                ↓
-          [Phase 2 Name] — description
+          [Phase 2 Name] --- description
                ↓
-          [Phase 3 Name] — description
+          [Phase 3 Name] --- description
                ↓
           SYSTEMIC MANIFESTATIONS
 
-          Include branches (e.g., "LOW CARDIAC OUTPUT → ↓ Tissue Perfusion → Organ Dysfunction") and feedback loops where appropriate. Make it visual and easy to scan.
+          Include parallel branches and feedback loops using indentation. Make it visual and scannable.
 
           CLINICAL CORRELATIONS & SYMPTOM PATHWAYS
           Explain exactly HOW the pathophysiological changes lead to the classic signs and symptoms (e.g., why ischemia causes chest pain, why heart failure causes crackles).
@@ -1082,7 +1082,7 @@ function CaseStudyModal({
           PREVENTATIVE & CLINICAL INFLUENCES
           Key medical and nursing actions that directly interrupt this pathway to restore homeostasis.
 
-          Style: Strictly formal, academic, and highly detailed. Keep it in clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 600-1000 words (the diagram can be compact).
+          Style: Strictly formal, academic, and highly detailed. Keep it in clinical English. Use plain text capitalization for headings (NO #, ##, or ### symbols). Do NOT use bold (**) or italic (*) markdown. Aim for 600-1000 words.
         `
       }
 
