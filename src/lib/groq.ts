@@ -285,8 +285,18 @@ export async function callGeminiGroundedSearch(
       .slice(0, 8)
       .map((chunk: any, index: number) => {
         const web = chunk.web || {}
-        const url = web.uri || ''
+        let url = web.uri || ''
         const title = web.title || `Result ${index + 1}`
+
+        // Clean Google redirect URLs to get the actual article URL
+        if (url.includes('google.com/url?q=')) {
+          const match = url.match(/[?&]q=([^&]+)/)
+          if (match) {
+            url = decodeURIComponent(match[1])
+          }
+        } else if (url.includes('google.com/search')) {
+          url = `https://www.google.com/search?q=${encodeURIComponent(query)}`
+        }
 
         const isVertexRedirect = url.includes('vertexaisearch.cloud.google.com')
 

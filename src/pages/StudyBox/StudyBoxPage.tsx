@@ -22,7 +22,10 @@ import {
   BookOpen,
   Loader2,
   Download,
-  RefreshCw
+  RefreshCw,
+  ExternalLink,
+  Globe,
+  X
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getFileIcon, formatRelativeDate, cn } from '@/lib/utils'
@@ -100,6 +103,8 @@ export default function StudyBoxPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+
+
   return (
     <div className="page-container">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -107,29 +112,30 @@ export default function StudyBoxPage() {
           <h1 className="text-3xl font-bold tracking-tight mb-2">{studyBoxName} ✨</h1>
           <p className="text-[var(--text-secondary)] font-medium">Upload, organize, and transform your nursing notes into smart reviewers! {isFrance ? '🩺🌸' : '🩺✨'}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button 
             onClick={() => setIsCaseModalOpen(true)}
-            className="btn-primary flex items-center gap-2 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-xs sm:text-sm px-3 sm:px-4"
+            className="btn-primary flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn text-xs sm:text-sm px-2 sm:px-4"
             disabled={isUploading || isProcessing}
           >
-            <Sparkles size={18} />
-            <span>Generate Case Study</span>
+            <Sparkles size={16} />
+            <span className="sm:hidden">Generate</span>
+            <span className="hidden sm:inline">Generate Case Study</span>
           </button>
           <button 
             onClick={() => setIsCameraOpen(true)}
-            className="btn-secondary flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4"
+            className="btn-secondary flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
             disabled={isUploading || isProcessing}
           >
-            <Camera size={18} />
+            <Camera size={16} />
             <span className="hidden sm:inline">Take Photo</span>
           </button>
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="btn-secondary flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4"
+            className="btn-secondary flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4"
             disabled={isUploading || isProcessing}
           >
-            <Upload size={18} />
+            <Upload size={16} />
             <span className="hidden sm:inline">Upload Files</span>
           </button>
           <input 
@@ -182,11 +188,11 @@ export default function StudyBoxPage() {
             />
           </div>
           <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 sm:pb-0">
-             <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl flex p-1 whitespace-nowrap min-w-max">
+             <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl flex p-0.5 sm:p-1 whitespace-nowrap min-w-max">
                 <button 
                   onClick={() => setSelectedTopic(null)}
                   className={cn(
-                    "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                    "px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all",
                     selectedTopic === null ? "bg-[var(--pink)] text-white shadow-fn" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"
                   )}
                 >
@@ -197,7 +203,7 @@ export default function StudyBoxPage() {
                     key={topic.id}
                     onClick={() => setSelectedTopic(topic.id)}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                      "px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all",
                       selectedTopic === topic.id ? "bg-[var(--pink)] text-white shadow-fn" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"
                     )}
                   >
@@ -268,7 +274,7 @@ export default function StudyBoxPage() {
                     toggleItemSelection(item.id)
                   }}
                   className={cn(
-                    "absolute top-3 left-3 w-6 h-6 rounded-full border-2 transition-all flex items-center justify-center z-20 cursor-pointer",
+                    "absolute top-3 left-3 w-7 h-7 sm:w-6 sm:h-6 rounded-full border-2 transition-all flex items-center justify-center z-20 cursor-pointer",
                     selectedItemIds.includes(item.id) 
                       ? "bg-[var(--pink)] border-[var(--pink)] text-white shadow-md" 
                       : "bg-white/50 border-white opacity-0 group-hover:opacity-100"
@@ -290,32 +296,35 @@ export default function StudyBoxPage() {
                       toggleFavorite(item.id)
                     }}
                     className={cn(
-                      "absolute top-0 right-0 p-1.5 rounded-full bg-white/80 backdrop-blur-sm transition-all shadow-sm z-10",
+                      "absolute top-0 right-0 p-2 sm:p-1.5 rounded-full bg-white/80 backdrop-blur-sm transition-all shadow-sm z-10",
                       item.is_favorite ? "text-[var(--pink)] opacity-100" : "text-[var(--text-secondary)] opacity-0 group-hover:opacity-100"
                     )}
+                    title={item.is_favorite ? "Remove from favorites" : "Add to favorites"}
                   >
-                    <Heart size={14} fill={item.is_favorite ? "currentColor" : "none"} />
+                    <Heart size={12} fill={item.is_favorite ? "currentColor" : "none"} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">{formatRelativeDate(item.created_at)}</span>
-                  <div className="flex gap-1 z-10">
+                  <div className="flex gap-0.5 z-10">
                     <button 
                       onClick={(e) => {
                         e.stopPropagation()
                         removeItem(item.id)
                       }} 
-                      className="p-1 hover:text-[var(--error)] transition-colors"
+                      className="p-1.5 hover:text-[var(--error)] transition-colors rounded-lg hover:bg-[var(--error)]/10"
+                      title="Delete"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={12} />
                     </button>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation()
                       }}
-                      className="p-1 hover:text-[var(--pink)] transition-colors"
+                      className="p-1.5 hover:text-[var(--pink)] transition-colors rounded-lg hover:bg-[var(--pink)]/10"
+                      title="More"
                     >
-                      <MoreVertical size={14} />
+                      <MoreVertical size={12} />
                     </button>
                   </div>
                 </div>
@@ -342,7 +351,7 @@ export default function StudyBoxPage() {
       )}
 
       {/* Mobile Quick Action FAB */}
-      <div className="md:hidden fixed bottom-20 right-4 flex flex-col gap-3">
+      <div className={`md:hidden fixed bottom-20 right-4 flex flex-col gap-3 transition-opacity duration-200 ${selectedItemIds.length > 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <button 
           onClick={() => setIsCameraOpen(true)}
           className="w-12 h-12 bg-[var(--card)] text-[var(--text)] rounded-full shadow-lg border border-[var(--border)] flex items-center justify-center hover:scale-105 transition-transform"
@@ -364,7 +373,7 @@ export default function StudyBoxPage() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-2xl"
+            className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-2xl"
           >
             <div className="bg-[var(--card)] border-2 border-[var(--pink)] rounded-[2rem] p-4 shadow-2xl flex items-center justify-between gap-4 backdrop-blur-xl bg-opacity-90">
               <div className="flex items-center gap-4 pl-2">
@@ -382,33 +391,33 @@ export default function StudyBoxPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button 
                   onClick={() => {
                     navigate('/quiz', { state: { selectedItemIds } })
                     clearSelection()
                   }}
-                  className="btn-secondary px-6 py-2.5 text-xs flex items-center gap-2"
+                  className="btn-secondary px-2 sm:px-6 py-2 sm:py-2.5 text-xs flex items-center gap-1 sm:gap-2"
                 >
                   <BrainCircuit size={16} />
-                  Quiz
+                  <span className="hidden sm:inline">Quiz</span>
                 </button>
                 <button 
                   onClick={handleGeneratePresentation}
                   disabled={isGeneratingReviewer || isGeneratingPresentation}
-                  className="btn-secondary px-6 py-2.5 text-xs flex items-center gap-2"
+                  className="btn-secondary px-2 sm:px-6 py-2 sm:py-2.5 text-xs flex items-center gap-1 sm:gap-2"
                 >
                   <FileText size={16} />
-                  {isGeneratingPresentation ? 'Generating...' : 'PPTX'}
+                  <span className="hidden sm:inline">{isGeneratingPresentation ? 'Generating...' : 'PPTX'}</span>
                 </button>
                 <button 
                   onClick={handleGenerateReviewer}
                   disabled={isGeneratingReviewer || isGeneratingPresentation}
-                  className="btn-primary px-6 py-2.5 text-xs flex items-center gap-2"
+                  className="btn-primary px-3 sm:px-6 py-2 sm:py-2.5 text-xs flex items-center gap-1 sm:gap-2"
                 >
                   <Sparkles size={16} />
-                  {isGeneratingReviewer ? 'Generating...' : 'AI Reviewer'}
-                  <ArrowRight size={14} />
+                  <span className="hidden sm:inline">{isGeneratingReviewer ? 'Generating...' : 'AI Reviewer'}</span>
+                  <ArrowRight size={14} className="hidden sm:inline" />
                 </button>
               </div>
             </div>
@@ -920,9 +929,11 @@ body {
         <div className="p-4 md:p-6 flex gap-3 md:gap-4 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative items-center">
           <button 
             onClick={onClose}
-            className="absolute top-4 md:top-6 right-4 md:right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors text-xs font-bold"
+            className="absolute top-4 md:top-6 right-4 md:right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"
+            title="Close"
           >
-            Close
+            <X size={18} className="sm:hidden" />
+            <span className="hidden sm:inline text-xs font-bold">Close</span>
           </button>
 
           <div 
@@ -972,8 +983,54 @@ body {
                 <BookOpen size={16} className="text-[var(--pink)]" />
                 <span className="text-xs font-bold uppercase tracking-wider">Document Reader</span>
               </div>
+
+              {/* Source Link for Reference items */}
+              {currentItem.file_name.startsWith('[Reference]') && (() => {
+                const text = currentItem.extracted_text || ''
+                const sourceMatch = text.match(/^SOURCE:\s*(.+)/m)
+                const urlMatch = text.match(/^URL:\s*(.+)/m)
+                const sourceUrl = urlMatch?.[1]?.trim()
+                const sourceName = sourceMatch?.[1]?.trim()
+                if (!sourceUrl && !sourceName) return null
+                return (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 sm:p-4 bg-[var(--secondary-bg)]/20 border border-[var(--border)] rounded-xl mb-4">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <Globe size={14} className="text-[var(--pink)] shrink-0" />
+                      {sourceUrl ? (
+                        <a 
+                          href={sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-semibold text-[var(--pink)] hover:underline truncate max-w-full"
+                        >
+                          {sourceName || sourceUrl}
+                        </a>
+                      ) : (
+                        <span className="text-xs font-semibold text-[var(--text-secondary)] truncate">
+                          {sourceName}
+                        </span>
+                      )}
+                    </div>
+                    {sourceUrl && (
+                      <a 
+                        href={sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn-secondary px-3 py-1.5 text-[10px] font-bold rounded-lg flex items-center gap-1.5 shrink-0 self-end sm:self-auto whitespace-nowrap"
+                      >
+                        Visit Source <ExternalLink size={10} />
+                      </a>
+                    )}
+                  </div>
+                )
+              })()}
+
               <div className="text-sm md:text-base text-[var(--text)] leading-relaxed font-sans select-text">
-                <MarkdownText content={currentItem.extracted_text} />
+                <MarkdownText content={
+                  currentItem.file_name.startsWith('[Reference]')
+                    ? (currentItem.extracted_text || '').replace(/^SOURCE:.*\nURL:.*\n?\n?/, '').trim()
+                    : currentItem.extracted_text
+                } />
               </div>
             </div>
 
@@ -1021,22 +1078,23 @@ body {
               </div>
 
               {currentItem.summary && (
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-1.5 sm:gap-2 shrink-0">
                   <button 
                     onClick={handleGenerateSummary}
                     disabled={isGeneratingSummary}
-                    className="btn-secondary py-2 px-4 text-xs flex items-center gap-1.5 rounded-xl border-[var(--pink)]/30 hover:bg-[var(--pink)]/10 text-[var(--pink)] font-bold transition-all shadow-sm"
+                    className="btn-secondary py-2 px-2 sm:px-4 text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl border-[var(--pink)]/30 hover:bg-[var(--pink)]/10 text-[var(--pink)] font-bold transition-all shadow-sm"
+                    title={isGeneratingSummary ? 'Regenerating...' : 'Regenerate Summary'}
                   >
                     <RefreshCw size={13} className={isGeneratingSummary ? "animate-spin" : ""} />
-                    {isGeneratingSummary ? 'Regenerating...' : 'Regenerate'}
+                    <span className="hidden sm:inline">{isGeneratingSummary ? 'Regenerating...' : 'Regenerate'}</span>
                   </button>
                   <button 
                     onClick={handleDownloadSummary}
-                    className="btn-secondary download-notes-btn py-2 px-4 text-xs flex items-center gap-1.5 rounded-xl border-[var(--pink)]/30 hover:bg-[var(--pink)]/10 text-[var(--pink)] font-bold transition-all shadow-sm"
+                    className="btn-secondary download-notes-btn py-2 px-2 sm:px-4 text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl border-[var(--pink)]/30 hover:bg-[var(--pink)]/10 text-[var(--pink)] font-bold transition-all shadow-sm"
                     title={`Download ${isFrance ? "Doc Uno's Study Guide" : 'Study Guide'} as a PDF!`}
                   >
                     <Download size={13} />
-                    Download Notes
+                    <span className="hidden sm:inline">Download Notes</span>
                   </button>
                 </div>
               )}
@@ -1089,7 +1147,7 @@ body {
               ) : summaryError ? (
                 <div className="flex flex-col items-center justify-center py-6 text-center gap-3">
                   <p className="text-xs font-bold text-[var(--error)]">{summaryError}</p>
-                  <button onClick={handleGenerateSummary} className="btn-secondary py-2 px-4 text-xs flex items-center gap-1.5">
+                  <button onClick={handleGenerateSummary} className="btn-secondary py-1.5 sm:py-2 px-3 sm:px-4 text-xs flex items-center gap-1.5">
                     <Loader2 size={12} /> Retry Summarizing
                   </button>
                 </div>
@@ -1101,7 +1159,7 @@ body {
                       : `No summary generated yet. Let ${aiAssistantName} read this document and extract clinical concepts and board exam priorities for you! 🩺`
                     }
                   </p>
-                  <button onClick={handleGenerateSummary} className="btn-primary py-3 px-6 text-xs flex items-center gap-2 shadow-fn">
+                  <button onClick={handleGenerateSummary} className="btn-primary py-2.5 sm:py-3 px-4 sm:px-6 text-xs flex items-center gap-1.5 sm:gap-2 shadow-fn">
                     <Sparkles size={14} /> Write AI Summary
                   </button>
                 </div>
@@ -1127,42 +1185,47 @@ body {
           <button onClick={handleDelete} className="text-xs font-bold text-[var(--error)] hover:bg-[var(--error)]/10 px-4 py-2.5 rounded-xl transition-colors">
             Delete Note
           </button>
-          <div className="flex flex-wrap gap-2 justify-end w-full sm:w-auto">
-            <button onClick={onClose} className="btn-secondary px-4 py-2.5 text-xs rounded-xl">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 justify-end w-full sm:w-auto">
+            <button onClick={onClose} className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-xs rounded-xl">
               Close
             </button>
             <button 
               onClick={handlePrint}
-              className="btn-secondary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
               title="Print this document"
             >
-              <FileText size={13} /> Print
+              <FileText size={13} /> 
+              <span className="hidden sm:inline">Print</span>
             </button>
             <button 
               onClick={handleDownloadFullPDF}
-              className="btn-secondary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
               title="Download as PDF"
             >
-              <Download size={13} /> Download PDF
+              <Download size={13} /> 
+              <span className="hidden sm:inline">Download PDF</span>
             </button>
             <button 
               onClick={handleModalGeneratePresentation}
               disabled={isGeneratingReviewer || isGeneratingPresentation}
-              className="btn-secondary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              title="Generate PPTX"
             >
               <FileText size={13} /> 
-              {isGeneratingPresentation ? 'Generating...' : 'Generate PPTX'}
+              <span className="hidden sm:inline">{isGeneratingPresentation ? 'Generating...' : 'Generate PPTX'}</span>
             </button>
             <button 
               onClick={handleModalGenerateReviewer}
               disabled={isGeneratingReviewer || isGeneratingPresentation}
-              className="btn-primary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl shadow-sm"
+              className="btn-primary px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 rounded-xl shadow-sm"
+              title="Make Reviewer"
             >
               <Sparkles size={13} /> 
-              {isGeneratingReviewer ? 'Generating...' : 'Make Reviewer'}
+              <span className="hidden sm:inline">{isGeneratingReviewer ? 'Generating...' : 'Make Reviewer'}</span>
             </button>
-            <button onClick={handleStartQuiz} className="btn-primary bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 border-none text-white px-4 py-2.5 text-xs flex items-center gap-1.5 shadow-sm rounded-xl">
-              <BrainCircuit size={13} /> Start Quiz
+            <button onClick={handleStartQuiz} title="Start Quiz" className="btn-primary bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 border-none text-white px-3 sm:px-4 py-2 sm:py-2.5 text-xs flex items-center gap-1.5 shadow-sm rounded-xl">
+              <BrainCircuit size={13} /> 
+              <span className="hidden sm:inline">Start Quiz</span>
             </button>
           </div>
         </div>

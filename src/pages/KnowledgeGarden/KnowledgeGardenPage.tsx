@@ -297,12 +297,12 @@ export default function KnowledgeGardenPage() {
         {savedToast && (
           <motion.div
             key="save-toast"
-            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 400, damping: 28 }}
             className={cn(
-              "fixed bottom-28 md:bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-fn-md border backdrop-blur-md max-w-sm w-[calc(100vw-2rem)]",
+              "fixed bottom-36 md:bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-fn-md border backdrop-blur-md max-w-sm w-[calc(100vw-2rem)]",
               savedToast.action === 'saved'
                 ? "bg-[var(--success)]/10 border-[var(--success)]/30 text-[var(--success)]"
                 : "bg-[var(--secondary-bg)] border-[var(--border)] text-[var(--text-secondary)]"
