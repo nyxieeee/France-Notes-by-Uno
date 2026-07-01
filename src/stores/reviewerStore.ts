@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase'
 interface ReviewerState {
   reviewers: ReviewerItem[]
   isGenerating: boolean
+  isGeneratingReviewer: boolean
+  isGeneratingPresentation: boolean
   isLoading: boolean
   searchQuery: string
   selectedReviewer: ReviewerItem | null
@@ -25,6 +27,8 @@ interface ReviewerState {
 export const useReviewerStore = create<ReviewerState>()((set, get) => ({
   reviewers: [],
   isGenerating: false,
+  isGeneratingReviewer: false,
+  isGeneratingPresentation: false,
   isLoading: false,
   searchQuery: '',
   selectedReviewer: null,
@@ -51,7 +55,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
   },
 
   generateReviewer: async (sourceItemIds: string[], topicId?: string | null) => {
-    set({ isGenerating: true })
+    set({ isGeneratingReviewer: true, isGenerating: true })
     const config = getPersonalizationConfig()
     const { isFrance, greetingName, aiAssistantName } = config
 
@@ -139,7 +143,11 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       if (error) console.error('Error saving reviewer:', error)
 
       const newReviewer = data as ReviewerItem || { ...newReviewerData, id: 'temp-id', created_at: new Date().toISOString() } as any
-      set((state) => ({ reviewers: [newReviewer, ...state.reviewers], isGenerating: false }))
+      set((state) => ({ 
+        reviewers: [newReviewer, ...state.reviewers], 
+        isGeneratingReviewer: false, 
+        isGenerating: state.isGeneratingPresentation 
+      }))
       return newReviewer
     } catch (error) {
       console.error("Reviewer Generation Error:", error)
@@ -170,13 +178,17 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
           simplified_explanation: `Don't worry, ${greetingName}! Just a temporary hiccup. Try again! 🧸🩺`
         }
       } as any
-      set((state) => ({ reviewers: [fallbackReviewer, ...state.reviewers], isGenerating: false }))
+      set((state) => ({ 
+        reviewers: [fallbackReviewer, ...state.reviewers], 
+        isGeneratingReviewer: false, 
+        isGenerating: state.isGeneratingPresentation 
+      }))
       return fallbackReviewer
     }
   },
 
   generatePresentation: async (sourceItemIds: string[], topicId?: string | null) => {
-    set({ isGenerating: true })
+    set({ isGeneratingPresentation: true, isGenerating: true })
     const config = getPersonalizationConfig()
     const { isFrance, greetingName, aiAssistantName } = config
 
@@ -212,7 +224,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
         Analyze the following text and generate a structured, highly educational, board-ready slide deck.
         ${aestheticRule}
         Output strictly as a JSON object: { "slides": [ { "title": "Slide Title", "bullet_points": ["point 1", "point 2"], "presenter_notes": "..." } ] }
-        Generate between 6 to 10 comprehensive slides.
+        Generate as many highly detailed and comprehensive slides as necessary to exhaustively cover all of the information, data, definitions, clinical logic, and steps in the source material without omitting any details or summarizing heavily. There is no slide limit.
       `
 
       const randomSeed = Math.random().toString(36).substring(7)
@@ -242,11 +254,18 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       if (error) console.error('Error saving presentation:', error)
 
       const newPresentation = data as ReviewerItem || { ...newPresentationData, id: 'temp-id', created_at: new Date().toISOString() } as any
-      set((state) => ({ reviewers: [newPresentation, ...state.reviewers], isGenerating: false }))
+      set((state) => ({ 
+        reviewers: [newPresentation, ...state.reviewers], 
+        isGeneratingPresentation: false, 
+        isGenerating: state.isGeneratingReviewer 
+      }))
       return newPresentation
     } catch (error) {
       console.error("Presentation Generation Error:", error)
-      set((state) => ({ isGenerating: false }))
+      set((state) => ({ 
+        isGeneratingPresentation: false, 
+        isGenerating: state.isGeneratingReviewer 
+      }))
       throw error
     }
   },

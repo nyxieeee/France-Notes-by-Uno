@@ -58,7 +58,7 @@ export default function StudyBoxPage() {
   const [selectedItem, setSelectedItem] = useState<StudyBoxItem | null>(null)
 
   const { isFrance, aiAssistantName, studyBoxName } = usePersonalization()
-  const { generatePresentation, generateReviewer, isGenerating: isGeneratingReviewer } = useReviewerStore()
+  const { generatePresentation, generateReviewer, isGeneratingReviewer, isGeneratingPresentation } = useReviewerStore()
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const firstName = user?.full_name?.split(' ')[0] || 'Your'
@@ -384,15 +384,15 @@ export default function StudyBoxPage() {
                 </button>
                 <button 
                   onClick={handleGeneratePresentation}
-                  disabled={isGeneratingReviewer}
+                  disabled={isGeneratingReviewer || isGeneratingPresentation}
                   className="btn-secondary px-6 py-2.5 text-xs flex items-center gap-2"
                 >
                   <FileText size={16} />
-                  {isGeneratingReviewer ? 'Generating...' : 'PPTX'}
+                  {isGeneratingPresentation ? 'Generating...' : 'PPTX'}
                 </button>
                 <button 
                   onClick={handleGenerateReviewer}
-                  disabled={isGeneratingReviewer}
+                  disabled={isGeneratingReviewer || isGeneratingPresentation}
                   className="btn-primary px-6 py-2.5 text-xs flex items-center gap-2"
                 >
                   <Sparkles size={16} />
@@ -517,7 +517,7 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
 
-  const { generateReviewer, generatePresentation, isGenerating: isGeneratingReviewer } = useReviewerStore()
+  const { generateReviewer, generatePresentation, isGeneratingReviewer, isGeneratingPresentation } = useReviewerStore()
 
   const handleModalGenerateReviewer = async () => {
     await generateReviewer([currentItem.id], currentItem.topic_id || undefined)
@@ -921,15 +921,15 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
             </button>
             <button 
               onClick={handleModalGeneratePresentation}
-              disabled={isGeneratingReviewer}
+              disabled={isGeneratingReviewer || isGeneratingPresentation}
               className="btn-secondary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
             >
               <FileText size={13} /> 
-              {isGeneratingReviewer ? 'Generating...' : 'Generate PPTX'}
+              {isGeneratingPresentation ? 'Generating...' : 'Generate PPTX'}
             </button>
             <button 
               onClick={handleModalGenerateReviewer}
-              disabled={isGeneratingReviewer}
+              disabled={isGeneratingReviewer || isGeneratingPresentation}
               className="btn-primary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl shadow-sm"
             >
               <Sparkles size={13} /> 

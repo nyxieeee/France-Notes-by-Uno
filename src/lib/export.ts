@@ -229,3 +229,135 @@ export const exportToDOCX = async (reviewer: ReviewerItem) => {
   link.click()
   window.URL.revokeObjectURL(url)
 }
+
+export const exportToPPTX = async (reviewer: ReviewerItem) => {
+  if (!reviewer.content.slides || reviewer.content.slides.length === 0) return
+
+  try {
+    const pptxgen = (await import('pptxgenjs')).default
+    const pptx = new pptxgen()
+    pptx.layout = 'LAYOUT_16x9'
+
+    const { user } = useAuthStore.getState()
+    const FRANCE_EMAILS = [
+      'franceregraceceles@gmail.com',
+      'fraceles@gbox.ncf.edu.ph',
+      'regraceceles97@gmail.com',
+    ]
+    const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
+
+    const primaryColor = isFrance ? 'EC4899' : '3B82F6'
+    const textColor = '1F2937'
+
+    // 1. Cover Slide
+    const coverSlide = pptx.addSlide()
+    
+    // Decorative background color
+    coverSlide.addShape(pptx.ShapeType.rect, {
+      x: 0,
+      y: 0,
+      w: '100%',
+      h: '100%',
+      fill: { color: isFrance ? 'FFF1F2' : 'F0F9FF' }
+    })
+
+    // Cover title
+    coverSlide.addText(reviewer.title, {
+      x: 0.8,
+      y: 2.0,
+      w: 11.5,
+      fontSize: 32,
+      bold: true,
+      color: primaryColor,
+      fontFace: 'Arial'
+    })
+
+    coverSlide.addText(`Source: ${reviewer.source_file}`, {
+      x: 0.8,
+      y: 3.5,
+      w: 11.5,
+      fontSize: 14,
+      color: '6B7280',
+      fontFace: 'Arial'
+    })
+
+    coverSlide.addText(
+      isFrance 
+        ? 'Prepared with love by Doc Uno for France 🩺🌸' 
+        : 'Clinical Lecture Series • Prepared by Nurse Florence 🩺👩‍⚕️',
+      {
+        x: 0.8,
+        y: 5.5,
+        w: 11.5,
+        fontSize: 12,
+        italic: true,
+        color: '4B5563',
+        fontFace: 'Arial'
+      }
+    )
+
+    // 2. Individual content slides
+    reviewer.content.slides.forEach((slideData) => {
+      const slide = pptx.addSlide()
+
+      // Header bar shape
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 0,
+        y: 0,
+        w: '100%',
+        h: 0.8,
+        fill: { color: primaryColor }
+      })
+
+      // Header Title
+      slide.addText(slideData.title, {
+        x: 0.5,
+        y: 0.15,
+        w: 12.0,
+        fontSize: 20,
+        bold: true,
+        color: 'FFFFFF',
+        fontFace: 'Arial'
+      })
+
+      // Content bullet points
+      if (slideData.bullet_points && slideData.bullet_points.length > 0) {
+        const bullets = slideData.bullet_points.map((pt: string) => {
+          return { text: pt, options: { bullet: true, color: textColor, fontSize: 14 } }
+        })
+
+        slide.addText(bullets, {
+          x: 0.6,
+          y: 1.2,
+          w: 11.8,
+          h: 4.8,
+          fontSize: 14,
+          fontFace: 'Arial',
+          lineSpacing: 22,
+          valign: 'top'
+        })
+      }
+
+      // Presenter Notes
+      if (slideData.presenter_notes) {
+        slide.addNotes(slideData.presenter_notes)
+      }
+
+      // Small footer logo
+      slide.addText(isFrance ? "Doc Uno's Reviewer" : "France Notes App", {
+        x: 10.0,
+        y: 6.8,
+        w: 3.0,
+        fontSize: 9,
+        color: '9CA3AF',
+        align: 'right',
+        fontFace: 'Arial'
+      })
+    })
+
+    // 3. Save / Download presentation
+    await pptx.writeFile({ fileName: `${reviewer.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_Slides.pptx` })
+  } catch (err) {
+    console.error("Failed to export PPTX slide deck:", err)
+  }
+}
