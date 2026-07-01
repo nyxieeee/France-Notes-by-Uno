@@ -29,6 +29,7 @@ import { getFileIcon, formatRelativeDate, cn } from '@/lib/utils'
 import CameraModal from '@/components/shared/CameraModal'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { generateCompletion } from '@/lib/groq'
+import { extractTextFromFile } from '@/lib/extractor'
 import { useAuthStore } from '@/stores/authStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
@@ -630,6 +631,233 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
     onClose()
   }
 
+  const markdownToHtml = (md: string) => {
+    return md
+      .split('\n')
+      .map(line => {
+        const trimmed = line.trim()
+        if (!trimmed) return '<div class="h-3"></div>'
+        if (/^[A-Z][A-Z\s&,]+$/.test(trimmed) && trimmed.length > 3) {
+          return `<h2 class="section-heading">${trimmed}</h2>`
+        }
+        if (/^\d+[.)]\s/.test(trimmed)) {
+          return `<li class="list-item numbered">${trimmed.replace(/^\d+[.)]\s*/, '')}</li>`
+        }
+        if (/^[-•]\s/.test(trimmed)) {
+          return `<li class="list-item bullet">${trimmed.replace(/^[-•]\s*/, '')}</li>`
+        }
+        return `<p class="text-paragraph">${trimmed}</p>`
+      })
+      .join('\n')
+  }
+
+  const getDocTitle = () => {
+    return currentItem.file_name
+      .replace('.txt', '')
+      .replace('[Case Study] ', '')
+      .replace('[Pathophysiology] ', '')
+      .replace('[Reference] ', '')
+  }
+
+  const buildPrintContent = () => {
+    const title = getDocTitle()
+    const isGenerated = currentItem.tags?.includes('generated')
+    const typeLabel = isGenerated && currentItem.tags?.includes('case-study') ? 'CASE STUDY' :
+                      isGenerated && currentItem.tags?.includes('pathophysiology') ? 'PATHOPHYSIOLOGY GUIDE' : 'DOCUMENT'
+
+    const originalHtml = markdownToHtml(currentItem.extracted_text || '')
+    const summaryHtml = currentItem.summary ? markdownToHtml(currentItem.summary) : ''
+    const today = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+
+    return `
+      <div class="print-page">
+        <div class="print-header">
+          <div class="type-badge">${typeLabel}</div>
+          <h1 class="doc-title">${title}</h1>
+          <p class="doc-date">${today}</p>
+        </div>
+
+        <div class="doc-card">
+          <div class="card-label">Original Document</div>
+          <div class="card-body">${originalHtml}</div>
+          <div class="card-footer">
+            <span>Type: ${currentItem.file_type}</span>
+            <span>${currentItem.extracted_text?.split(/\s+/).length || 0} Words</span>
+          </div>
+        </div>
+
+        ${summaryHtml ? `
+        <div class="summary-card">
+          <div class="card-label summary-label">${isFrance ? "Doc Uno's Clinical Notes" : `${aiAssistantName}'s Clinical Notes`}</div>
+          <div class="card-body">${summaryHtml}</div>
+          <div class="signature">
+            Made with &#10084;&#65039; by ${isFrance ? 'Doc Uno for France' : aiAssistantName}
+            <span class="signature-date">${today}</span>
+          </div>
+        </div>
+        ` : ''}
+      </div>
+    `
+  }
+
+  const handlePrint = () => {
+    const w = window.open('', '_blank')
+    if (!w) return
+
+    const content = buildPrintContent()
+    const assistantName = isFrance ? 'Doc Uno' : aiAssistantName
+
+    w.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${getDocTitle()} - ${assistantName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fef6f8;
+      color: #1a1a2e;
+      padding: 40px 20px;
+      line-height: 1.7;
+    }
+    .print-page { max-width: 800px; margin: 0 auto; }
+    .print-header { text-align: center; margin-bottom: 32px; }
+    .type-badge {
+      display: inline-block;
+      background: #ff8fa3;
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .doc-title {
+      font-size: 26px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ff8fa3, #f7a8b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .doc-date { font-size: 11px; color: #888; font-weight: 600; margin-top: 6px; letter-spacing: 0.5px; }
+    .doc-card, .summary-card {
+      background: white;
+      border: 1px solid #f0e0e4;
+      border-radius: 24px;
+      padding: 32px 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(255, 143, 163, 0.08);
+    }
+    .summary-card {
+      background: linear-gradient(135deg, #fff9fa, #fff0f2);
+      border-color: #ffcad3;
+      border-width: 2px;
+    }
+    .card-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #aaa;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0e0e4;
+    }
+    .summary-label { color: #ff8fa3; border-bottom-color: #ffcad3; }
+    .card-body { font-size: 14px; color: #333; }
+    .section-heading {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ff8fa3;
+      margin: 20px 0 8px;
+      letter-spacing: 0.3px;
+    }
+    .section-heading:first-child { margin-top: 0; }
+    .text-paragraph { margin-bottom: 6px; }
+    .list-item { margin-left: 20px; margin-bottom: 4px; }
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #bbb;
+      padding-top: 16px;
+      margin-top: 20px;
+      border-top: 1px solid #f0e0e4;
+    }
+    .signature {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #ffcad3;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ff8fa3;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .signature-date { font-size: 10px; color: #bbb; font-weight: 600; letter-spacing: 0.5px; }
+    @media print {
+      body { padding: 0; background: white; }
+      .doc-card, .summary-card { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>${content}</body>
+</html>`)
+    w.document.close()
+    w.focus()
+    setTimeout(() => w.print(), 500)
+  }
+
+  const handleDownloadFullPDF = () => {
+    const content = buildPrintContent()
+    const assistantName = isFrance ? 'Doc Uno' : aiAssistantName
+
+    const containerId = 'pdf-capture-container'
+    let container = document.getElementById(containerId)
+    if (!container) {
+      container = document.createElement('div')
+      container.id = containerId
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fef6f8;padding:40px 20px;z-index:-1'
+      document.body.appendChild(container)
+    }
+    container.innerHTML = content
+
+    const opt = {
+      margin: [8, 8, 8, 8],
+      filename: `${getDocTitle().replace(/\s+/g, '_')}_${assistantName.replace(/\s+/g, '_')}.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }
+
+    const run = () => {
+      (window as any).html2pdf().from(container).set(opt).save().then(() => {
+        container!.innerHTML = ''
+      }).catch((err: any) => {
+        console.error('PDF generation failed:', err)
+        container!.innerHTML = ''
+      })
+    }
+
+    if ((window as any).html2pdf) {
+      run()
+    } else {
+      const script = document.createElement('script')
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+      script.onload = run
+      document.head.appendChild(script)
+    }
+  }
+
   const handleGenerateSummary = async () => {
     setIsGeneratingSummary(true)
     setSummaryError(null)
@@ -941,6 +1169,20 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
               Close
             </button>
             <button 
+              onClick={handlePrint}
+              className="btn-secondary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              title="Print this document"
+            >
+              <FileText size={13} /> Print
+            </button>
+            <button 
+              onClick={handleDownloadFullPDF}
+              className="btn-secondary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
+              title="Download as PDF"
+            >
+              <Download size={13} /> Download PDF
+            </button>
+            <button 
               onClick={handleModalGeneratePresentation}
               disabled={isGeneratingReviewer || isGeneratingPresentation}
               className="btn-secondary px-4 py-2.5 text-xs flex items-center gap-1.5 rounded-xl"
@@ -1004,6 +1246,8 @@ function CaseStudyModal({
   const [genType, setGenType] = useState<'case-study' | 'pathophysiology'>('case-study')
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [referenceFiles, setReferenceFiles] = useState<{ name: string, text: string | null, loading: boolean, error?: string }[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1012,6 +1256,11 @@ function CaseStudyModal({
     setError(null)
 
     try {
+      const referenceSection = referenceFiles
+        .filter(f => f.text)
+        .map(f => `\n--- Reference from "${f.name}" ---\n${f.text}\n--- End Reference ---`)
+        .join('\n')
+
       let prompt = ''
       if (genType === 'case-study') {
         prompt = `
@@ -1020,6 +1269,7 @@ function CaseStudyModal({
           
           Scenario/Condition details provided by student:
           "${scenario || 'No custom scenario details provided.'}"
+          ${referenceSection ? `\nReference materials provided by student (use these to tailor the content):\n${referenceSection}` : ''}
           
           STRUCTURE:
           Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
@@ -1051,6 +1301,7 @@ function CaseStudyModal({
 
           Patient Scenario/Condition context provided by student:
           "${scenario || 'No custom scenario/condition context provided.'}"
+          ${referenceSection ? `\nReference materials provided by student (use these to tailor the content):\n${referenceSection}` : ''}
 
           STRUCTURE:
           Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
@@ -1092,6 +1343,27 @@ function CaseStudyModal({
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    if (e.target) e.target.value = ''
+
+    for (const file of files) {
+      const id = Date.now().toString() + file.name
+      setReferenceFiles(prev => [...prev, { name: file.name, text: null, loading: true }])
+      try {
+        const text = await extractTextFromFile(file)
+        setReferenceFiles(prev => prev.map(f => f.name === file.name && f.text === null ? { ...f, text, loading: false } : f))
+      } catch (err: any) {
+        setReferenceFiles(prev => prev.map(f => f.name === file.name && f.loading ? { ...f, loading: false, error: err.message } : f))
+      }
+    }
+  }
+
+  const removeFile = (name: string) => {
+    setReferenceFiles(prev => prev.filter(f => f.name !== name))
   }
 
   return (
@@ -1208,6 +1480,46 @@ function CaseStudyModal({
                 rows={5}
                 className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--pink)] transition-all leading-relaxed"
               />
+            </div>
+
+            {/* Reference Upload */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
+                Reference Materials <span className="text-[10px] font-normal lowercase tracking-normal text-[var(--text-secondary)]/60">(PDF, DOCX, images — optional)</span>
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.docx,.txt,.md,.csv,.jpg,.jpeg,.png,.webp"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <div className="flex flex-wrap gap-2 mb-2">
+                {referenceFiles.map(f => (
+                  <div key={f.name} className="flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs max-w-full">
+                    {f.loading ? (
+                      <Loader2 size={12} className="animate-spin shrink-0" />
+                    ) : f.error ? (
+                      <span className="text-[var(--error)] shrink-0" title={f.error}>⚠</span>
+                    ) : (
+                      <FileText size={12} className="text-[var(--pink)] shrink-0" />
+                    )}
+                    <span className="truncate max-w-[180px]">{f.name}</span>
+                    {!f.loading && (
+                      <button type="button" onClick={() => removeFile(f.name)} className="text-[var(--text-secondary)] hover:text-[var(--error)] shrink-0 ml-1">&times;</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 text-xs text-[var(--text-secondary)] hover:text-[var(--pink)] font-semibold transition-colors"
+              >
+                <Upload size={14} /> 
+                {referenceFiles.length > 0 ? 'Add More References' : 'Upload References'}
+              </button>
             </div>
 
             {/* Submit Buttons */}
