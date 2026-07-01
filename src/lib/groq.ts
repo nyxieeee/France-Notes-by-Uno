@@ -331,12 +331,20 @@ export async function callGeminiGroundedSearch(
       .slice(0, 10)
       .map((chunk: any, index: number) => {
         const web = chunk.web || {}
-        const url = web.uri || ''
-        const title = web.title || `Result ${index + 1}`
+        let url = web.uri || ''
+        let title = web.title || `Result ${index + 1}`
+
+        const isVertexRedirect = url.includes('vertexaisearch.cloud.google.com')
 
         // Determine source name from URL
         const urlObj = (() => { try { return new URL(url) } catch { return null } })()
-        const hostname = urlObj?.hostname?.replace('www.', '') || 'Unknown Source'
+        let hostname = urlObj?.hostname?.replace('www.', '') || 'Unknown Source'
+
+        if (isVertexRedirect) {
+          hostname = 'Google Health Index'
+          title = `Clinical Reference on "${query}"`
+          url = `https://www.google.com/search?q=${encodeURIComponent(query + ' medical guidelines')}`
+        }
 
         // Categorize based on URL/title
         const lowerUrl = url.toLowerCase()

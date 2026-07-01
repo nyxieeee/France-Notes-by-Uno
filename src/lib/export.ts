@@ -389,3 +389,199 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     console.error("Failed to export PPTX slide deck:", err)
   }
 }
+
+export const printFlashcards = (reviewer: ReviewerItem) => {
+  const cards = reviewer.content.flashcards
+  if (!cards || cards.length === 0) {
+    alert("Babe, there are no flashcards generated for this reviewer yet! 🌸")
+    return
+  }
+
+  const printWindow = window.open('', '_blank')
+  if (!printWindow) {
+    alert("Please allow popups to print your flashcards! 🩺")
+    return
+  }
+
+  const { user } = useAuthStore.getState()
+  const FRANCE_EMAILS = [
+    'franceregraceceles@gmail.com',
+    'fraceles@gbox.ncf.edu.ph',
+    'regraceceles97@gmail.com',
+  ]
+  const isFrance = FRANCE_EMAILS.includes(user?.email?.toLowerCase() ?? '')
+
+  // Build the print HTML
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Print Flashcards - ${reviewer.title}</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
+        
+        body {
+          font-family: 'Outfit', 'Segoe UI', sans-serif;
+          background-color: #ffffff;
+          color: #5b4636;
+          margin: 0;
+          padding: 20px;
+        }
+
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px dashed #f3d8de;
+          padding-bottom: 15px;
+        }
+
+        .header h1 {
+          font-size: 24px;
+          margin: 0 0 5px 0;
+          color: #db2777;
+        }
+
+        .header p {
+          font-size: 13px;
+          color: #8c6a74;
+          margin: 0;
+        }
+
+        .grid-container {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 25px;
+          max-width: 800px;
+          margin: 0 auto;
+        }
+
+        /* Printable Flashcard layout: Front and Back side-by-side with fold crease */
+        .card-pair {
+          display: flex;
+          border: 2px dashed #f7a8b8;
+          border-radius: 16px;
+          overflow: hidden;
+          background-color: #fff8f6;
+          page-break-inside: avoid;
+          min-height: 180px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .card-half {
+          flex: 1;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          position: relative;
+          box-sizing: border-box;
+        }
+
+        .card-front {
+          background-color: #ffffff;
+          border-right: 2px dotted #f7a8b8;
+        }
+
+        .card-back {
+          background-color: #fff8f6;
+        }
+
+        .badge {
+          position: absolute;
+          top: 10px;
+          left: 15px;
+          font-size: 9px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          padding: 2px 8px;
+          border-radius: 99px;
+        }
+
+        .badge-front {
+          background-color: #ffd6e0;
+          color: #db2777;
+        }
+
+        .badge-back {
+          background-color: #a8d8b9;
+          color: #2f6a4f;
+        }
+
+        .card-text {
+          font-size: 14px;
+          font-weight: 600;
+          line-height: 1.5;
+          text-align: center;
+          margin-top: 15px;
+          word-break: break-word;
+        }
+
+        .instructions {
+          background-color: #fff0f3;
+          border: 1px solid #ffd6e0;
+          padding: 15px;
+          border-radius: 12px;
+          margin-bottom: 25px;
+          font-size: 12px;
+          color: #8c6a74;
+          text-align: center;
+          max-width: 800px;
+          margin: 0 auto 25px auto;
+        }
+
+        @media print {
+          body {
+            padding: 0;
+          }
+          .instructions {
+            display: none;
+          }
+          .card-pair {
+            box-shadow: none;
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>${reviewer.title} - Printable Flashcards</h1>
+        <p>${isFrance ? "Prepared with love by Doc Uno for France 🌸" : "Clinical Practice Series • France Notes App 🩺"}</p>
+      </div>
+
+      <div class="instructions">
+        <strong>💡 Printing & Folding Instructions:</strong> Print this sheet on standard paper or cardstock. Cut along the outer <strong>dashed lines</strong>. Fold along the middle <strong>dotted vertical crease</strong> to align the Front and Back, then tape or glue them together to create your double-sided flashcard!
+      </div>
+
+      <div class="grid-container">
+        ${cards.map((c, idx) => `
+          <div class="card-pair">
+            <div class="card-half card-front">
+              <span class="badge badge-front">Card ${idx + 1} (Front)</span>
+              <div class="card-text">${c.front}</div>
+            </div>
+            <div class="card-half card-back">
+              <span class="badge badge-back">Rationale (Back)</span>
+              <div class="card-text">${c.back}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+          }, 500);
+        };
+      </script>
+    </body>
+    </html>
+  `
+
+  printWindow.document.write(htmlContent)
+  printWindow.document.close()
+}
+

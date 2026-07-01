@@ -25,7 +25,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
-import { exportToPDF, exportToDOCX, exportToPPTX } from '@/lib/export'
+import { exportToPDF, exportToDOCX, exportToPPTX, printFlashcards } from '@/lib/export'
 import type { ReviewerItem } from '@/types'
 
 export default function ReviewerLibraryPage() {
@@ -775,12 +775,13 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                   <Download size={14} /> PPTX
                 </button>
               )}
-              <button 
-                onClick={() => alert(`Preparing printable flashcards for ${reviewer.title}...`)}
-                className="btn-secondary px-4 py-2 text-xs flex items-center gap-2"
-              >
-                <Printer size={14} /> Print Cards
-              </button>
+               <button 
+                 onClick={() => printFlashcards(reviewer)}
+                 disabled={!reviewer.content.flashcards || reviewer.content.flashcards.length === 0}
+                 className="btn-secondary px-4 py-2 text-xs flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+               >
+                 <Printer size={14} /> Print Cards
+               </button>
               <button 
                 onClick={() => {
                   navigate('/quiz', {
