@@ -9,6 +9,7 @@ import {
   Sparkles,
   Stethoscope,
   Calendar,
+  Library,
   MoreHorizontal,
   X
 } from 'lucide-react'
@@ -25,6 +26,7 @@ const primaryNavItems = [
 
 const moreNavItems = [
   { icon: Stethoscope, label: 'Simulations', path: '/simulations', isBeta: true },
+  { icon: Library,     label: 'Reviewer Library', path: '/reviewer-library' },
   { icon: Sparkles,    label: 'Knowledge Garden', path: '/knowledge-garden' },
   { icon: Calendar,    label: 'Planner',  path: '/planner' },
 ]

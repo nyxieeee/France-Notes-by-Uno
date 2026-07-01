@@ -164,7 +164,7 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="page-container max-w-4xl">
+    <div className="page-container max-w-4xl overflow-x-hidden">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2">Your Profile {isFrance ? '🌸' : '✨'}</h1>
         <p className="text-[var(--text-secondary)] font-medium">Manage your nursing journey and study preferences. {isFrance ? '✨' : '🩺'}</p>
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="fn-card p-4 flex flex-col items-center justify-center text-center"
+                className="fn-card p-3 sm:p-4 flex flex-col items-center justify-center text-center"
               >
                 <div className={cn("p-2 rounded-xl mb-2", stat.color)}>
                   <stat.icon size={20} />
@@ -305,7 +305,7 @@ export default function ProfilePage() {
                   <button 
                     key={i}
                     onClick={() => setActiveSetting(option.label)}
-                    className="w-full flex items-center justify-between p-6 hover:bg-[var(--bg)] transition-colors group"
+                    className="w-full flex items-center justify-between p-4 md:p-6 hover:bg-[var(--bg)] transition-colors group"
                   >
                     <div className="flex items-center gap-4">
                        <div className="w-10 h-10 rounded-xl bg-[var(--bg)] flex items-center justify-center text-[var(--text-secondary)] group-hover:bg-[var(--secondary-bg)] group-hover:text-[var(--pink)] transition-all">

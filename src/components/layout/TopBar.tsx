@@ -215,6 +215,19 @@ export default function TopBar() {
             )}
           </button>
 
+          {/* Mobile backdrop */}
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="md:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+                onClick={() => setIsOpen(false)}
+              />
+            )}
+          </AnimatePresence>
+
           {/* Floating Dropdown Speech Bubble with Scale Animation */}
           <AnimatePresence>
             {isOpen && (
@@ -223,10 +236,10 @@ export default function TopBar() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: -8 }}
                 transition={{ duration: 0.18, ease: "easeOut" }}
-                className="absolute right-0 mt-3.5 w-[min(320px,calc(100vw-1.5rem))] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn p-4 z-50 origin-top-right text-left"
+                className="md:absolute md:right-0 md:mt-3.5 fixed inset-x-4 top-1/2 -translate-y-1/2 w-[min(320px,calc(100vw-2rem))] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn p-4 z-50 md:origin-top-right text-left"
               >
-                {/* Speech Bubble Arrow pointing directly to the center of the Bell button */}
-                <div className="absolute -top-1.5 right-[13px] w-3 h-3 bg-[var(--card)] border-t border-l border-[var(--border)] rotate-45 z-40"></div>
+                {/* Speech Bubble Arrow - desktop only */}
+                <div className="hidden md:block absolute -top-1.5 right-[13px] w-3 h-3 bg-[var(--card)] border-t border-l border-[var(--border)] rotate-45 z-40"></div>
 
                 <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--border)] relative z-50">
                   <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--pink)]/20 bg-[var(--secondary-bg)] shrink-0">

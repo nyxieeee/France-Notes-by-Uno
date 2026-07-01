@@ -950,10 +950,10 @@ body {
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar flex flex-col gap-8 bg-[var(--secondary-bg)]/10">
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col gap-8 bg-[var(--secondary-bg)]/10">
           
           {/* Main Paper Document Container */}
-          <div className="bg-white border border-[var(--border)] rounded-[2rem] shadow-sm p-8 md:p-10 flex flex-col gap-6 relative select-text shrink-0">
+          <div className="bg-white border border-[var(--border)] rounded-[2rem] shadow-sm p-4 sm:p-6 md:p-10 flex flex-col gap-6 relative select-text shrink-0">
             {/* Soft decorative badge on the paper */}
             <div className="absolute top-4 right-6 text-[10px] font-bold text-[var(--text-secondary)]/30 uppercase tracking-widest">
               Original Document
@@ -998,7 +998,7 @@ body {
           </div>
 
           {/* AI Summary Section */}
-          <div id="doc-unos-love-notes-card" className="bg-gradient-to-tr from-[var(--pink)]/[0.02] to-[var(--pink)]/[0.08] border-2 border-[var(--pink)]/20 rounded-[2rem] p-8 flex flex-col gap-5 relative overflow-hidden shrink-0">
+          <div id="doc-unos-love-notes-card" className="bg-gradient-to-tr from-[var(--pink)]/[0.02] to-[var(--pink)]/[0.08] border-2 border-[var(--pink)]/20 rounded-[2rem] p-4 sm:p-6 md:p-8 flex flex-col gap-5 relative overflow-hidden shrink-0">
             {/* Love theme decor elements */}
             <div 
               className="absolute top-0 right-0 p-6 pointer-events-none"
@@ -1361,7 +1361,7 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[var(--card)] w-full max-w-2xl rounded-3xl p-6 sm:p-8 border border-[var(--border)] shadow-2xl relative my-8"
+        className="bg-[var(--card)] w-full max-w-2xl rounded-3xl p-4 sm:p-6 md:p-8 border border-[var(--border)] shadow-2xl relative my-4 md:my-8 max-h-[90vh] overflow-y-auto"
       >
         {/* Close Button */}
         <button 
