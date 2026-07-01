@@ -50,11 +50,9 @@ export default function AIPage() {
     fetchSessions()
   }, [])
 
-  // Auto-open sidebar on desktop screens if empty/first load
+  // Ensure sidebar starts closed on mount
   useEffect(() => {
-    if (window.innerWidth >= 1024) {
-      setSidebarOpen(true)
-    }
+    setSidebarOpen(false)
   }, [])
 
   const activeSession = sessions.find(s => s.id === activeSessionId)
@@ -247,6 +245,7 @@ export default function AIPage() {
 
       {/* Responsive Sidebar Drawer */}
       <motion.div 
+        initial={false}
         animate={{ 
           x: isSidebarOpen ? 0 : -288,
           width: isSidebarOpen ? 288 : 0

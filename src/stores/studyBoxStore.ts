@@ -355,8 +355,17 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) throw new Error("No active session found")
 
+    let cleanTitle = result.title.trim()
+    // If title contains a URL or is a pure domain name format
+    if (
+      cleanTitle.toLowerCase().startsWith('http') ||
+      /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(cleanTitle)
+    ) {
+      cleanTitle = `${result.source} Clinical Reference`
+    }
+
     const newItem = {
-      file_name: `[Reference] ${result.title}.txt`,
+      file_name: `[Reference] ${cleanTitle}.txt`,
       file_type: 'txt',
       file_size: 0,
       extracted_text: fullArticleText,

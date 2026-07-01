@@ -268,7 +268,11 @@ export default function StudyBoxPage() {
               </div>
               <div className="p-4">
                 <div className="flex justify-between items-start mb-1 relative">
-                  <h4 className="font-bold text-sm truncate pr-6 group-hover:text-[var(--pink)] transition-colors">{item.file_name}</h4>
+                  <h4 className="font-bold text-sm truncate pr-6 group-hover:text-[var(--pink)] transition-colors">
+                    {item.file_name.startsWith('[Reference]')
+                      ? item.file_name.replace('[Reference] ', '').replace('.txt', '')
+                      : item.file_name}
+                  </h4>
                   <button 
                     onClick={(e) => {
                       e.stopPropagation()
@@ -725,7 +729,11 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
                 Uploaded {formatRelativeDate(currentItem.created_at)}
               </span>
             </div>
-            <h2 className="text-base font-bold tracking-tight truncate max-w-[450px]">{currentItem.file_name}</h2>
+            <h2 className="text-base font-bold tracking-tight truncate max-w-[450px]">
+              {currentItem.file_name.startsWith('[Reference]')
+                ? currentItem.file_name.replace('[Reference] ', '').replace('.txt', '')
+                : currentItem.file_name}
+            </h2>
           </div>
         </div>
 
