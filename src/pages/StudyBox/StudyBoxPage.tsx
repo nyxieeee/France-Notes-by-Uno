@@ -1262,6 +1262,24 @@ function CaseStudyModal({
         .join('\n')
 
       let prompt = ''
+      const trustedSources = `\nTRUSTED SOURCES (base ALL content on these references only):
+- WHO (World Health Organization)
+- CDC (Centers for Disease Control and Prevention)
+- NIH / NCBI / PubMed
+- Cochrane Library
+- Mayo Clinic
+- Medscape
+- ANA (American Nurses Association)
+- NCSBN (National Council of State Boards of Nursing)
+- NurseLabs
+- Drugs.com / FDA
+- DOH Philippines / PNA (Philippine Nurses Association)
+- Saunders Comprehensive Review for NCLEX-RN
+- Brunner & Suddarth's Textbook of Medical-Surgical Nursing
+- Lippincott Nursing textbooks
+
+Cite the specific source for each lab value, diagnostic criterion, medication, and nursing intervention using parentheses like (Source Name). Include a REFERENCES section at the end listing all sources used. NEVER fabricate data or use non-authoritative sources.`
+
       if (genType === 'case-study') {
         prompt = `
           You are a professional clinical educator and nursing case analyst.
@@ -1270,6 +1288,7 @@ function CaseStudyModal({
           Scenario/Condition details provided by student:
           "${scenario || 'No custom scenario details provided.'}"
           ${referenceSection ? `\nReference materials provided by student (use these to tailor the content):\n${referenceSection}` : ''}
+          ${trustedSources}
           
           STRUCTURE:
           Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
@@ -1291,6 +1310,9 @@ function CaseStudyModal({
           
           CLINICAL QUESTIONS & CRITICAL DISCUSSION
           3 high-yield clinical discussion questions with detailed, expert-level rationales for nursing review.
+
+          REFERENCES
+          List all sources cited throughout the document.
           
           Style: Strictly formal, clinical-grade, academic, and extremely detailed. Keep it in clear clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 800-1200 words.
         `
@@ -1302,6 +1324,7 @@ function CaseStudyModal({
           Patient Scenario/Condition context provided by student:
           "${scenario || 'No custom scenario/condition context provided.'}"
           ${referenceSection ? `\nReference materials provided by student (use these to tailor the content):\n${referenceSection}` : ''}
+          ${trustedSources}
 
           STRUCTURE:
           Provide a complete, comprehensive document structured as follows (do NOT use any markdown #, ##, or ### headings, bold symbols like **, or backticks):
@@ -1321,13 +1344,16 @@ function CaseStudyModal({
           PREVENTATIVE & CLINICAL INFLUENCES
           Key medical and nursing actions that directly interrupt this pathway to restore homeostasis.
 
+          REFERENCES
+          List all sources cited throughout the document.
+
           Style: Strictly formal, academic, and highly detailed. Keep it in clinical English. Do NOT use any markdown symbols (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings and standard line spacing. Aim for 800-1200 words.
         `
       }
 
       const articleContent = await generateCompletion(
         prompt, 
-        `You are ${aiAssistantName}, a professional nursing clinical instructor drafting textbook-grade clinical materials for ${greetingName}.`, 
+        `You are ${aiAssistantName}, a professional nursing clinical instructor drafting textbook-grade clinical materials for ${greetingName}. You must base all content exclusively on the TRUSTED SOURCES listed in the prompt and cite them. Never fabricate data.`, 
         'knowledge'
       )
 
