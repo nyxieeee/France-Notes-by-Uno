@@ -6,7 +6,7 @@ export type { PersonalizationConfig }
 const API_BASE = '/api'
 
 // ─── Model Registry ───────────────────────────────────────────────────────────
-export const DEFAULT_MODEL = 'llama-3.3-70b-versatile'
+export const DEFAULT_MODEL = 'openai/gpt-oss-120b'
 export const FAST_MODEL    = 'openai/gpt-oss-120b'
 export const VISION_MODEL  = 'qwen/qwen3.6-27b'
 const MISTRAL_MODEL        = 'open-mistral-nemo'
@@ -14,11 +14,11 @@ const GEMINI_MODEL         = 'gemini-2.5-flash-lite'
 
 // ─── Feature → Provider Routing ──────────────────────────────────────────────
 //  chat        → Groq FAST_MODEL    (openai/gpt-oss-120b, instant feel for Doc Uno)
-//  quiz        → Groq DEFAULT_MODEL (clinical accuracy matters)
+//  quiz        → Groq DEFAULT_MODEL (clinical accuracy matters) [openai/gpt-oss-120b]
 //  retdem      → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
 //  recitation  → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
 //  vision      → Groq VISION_MODEL  (qwen/qwen3.6-27b)
-//  studybox    → Groq DEFAULT_MODEL (categorization + summary)
+//  studybox    → Groq DEFAULT_MODEL (categorization + summary) [openai/gpt-oss-120b]
 //  knowledge   → Groq FAST_MODEL    (search queries)
 //  reviewer    → Mistral            (long output, 1B token pool free)
 //  ppt         → Mistral            (long output, 1B token pool free)
