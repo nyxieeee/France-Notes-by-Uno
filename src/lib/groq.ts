@@ -5,6 +5,13 @@ export type { PersonalizationConfig }
 
 const API_BASE = '/api'
 
+// ─── Think-block stripper ─────────────────────────────────────────────────────
+// Qwen 3 (and other reasoning models) prefix responses with <think>…</think>.
+// Strip them so callers always receive clean content.
+function stripThinkBlocks(text: string): string {
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+}
+
 // ─── Model Registry ───────────────────────────────────────────────────────────
 export const DEFAULT_MODEL = 'openai/gpt-oss-120b'
 export const FAST_MODEL    = 'openai/gpt-oss-120b'
@@ -493,7 +500,7 @@ export async function generateJSON(
   )
 
   try {
-    const cleaned = raw.replace(/```json|```/g, '').trim()
+    const cleaned = stripThinkBlocks(raw).replace(/```json|```/g, '').trim()
     return JSON.parse(cleaned)
   } catch {
     console.error(`[AI Router] Failed to parse JSON for ${feature}. Response length: ${raw.length} chars. First 500 chars:`, raw.substring(0, 500))
@@ -535,7 +542,8 @@ export async function visionExtractText(imageBase64: string): Promise<string> {
     }
 
     const data = await response.json()
-    return data.choices[0]?.message?.content || 'No text extracted.'
+    const raw = data.choices[0]?.message?.content || 'No text extracted.'
+    return stripThinkBlocks(raw) || 'No text extracted.'
   } catch (error) {
     console.error('Vision API Error:', error)
     return 'Vision extraction failed. Please check your API configuration and try again. 🌸'
