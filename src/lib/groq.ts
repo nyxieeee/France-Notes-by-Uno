@@ -532,7 +532,8 @@ export async function visionExtractText(imageBase64: string): Promise<string> {
           },
         ],
         temperature: 0.2,
-        max_tokens: 1500,
+        max_tokens: 4096,
+        reasoning_format: 'hidden',
       }),
     })
 
