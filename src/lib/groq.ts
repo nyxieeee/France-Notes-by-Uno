@@ -516,7 +516,57 @@ export async function generateJSON(
 // ─── Vision (Groq only) ───────────────────────────────────────────────────────
 
 export async function visionExtractText(imageBase64: string): Promise<string> {
+  let rawText = ''
+  let lastError: any = null
+
+  // 1. Try Gemini first via the backend /api/gemini route
   try {
+    const match = imageBase64.match(/^data:([^;]+);base64,(.+)$/)
+    const mimeType = match ? match[1] : 'image/jpeg'
+    const dataOnly = match ? match[2] : imageBase64
+
+    console.log('[AI Vision] Attempting OCR with gemini-2.5-flash-lite...')
+    const response = await fetch(`${API_BASE}/gemini`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gemini-2.5-flash-lite',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: 'Extract all handwritten or typed text from this image. If it is a nursing or medical diagram, describe the key concepts clearly. Output ONLY the extracted text and concepts.' },
+              {
+                inlineData: {
+                  mimeType,
+                  data: dataOnly
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.2
+        }
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+      if (rawText) return rawText.trim()
+    } else {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.error || `Gemini status: ${response.statusText}`)
+    }
+  } catch (error: any) {
+    console.warn('[AI Vision] Gemini OCR failed, falling back to Groq:', error.message)
+    lastError = error
+  }
+
+  // 2. Fallback to Groq
+  try {
+    console.log('[AI Vision] Fallback: Attempting OCR with Groq Qwen...')
     const response = await fetch(`${API_BASE}/groq`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -543,10 +593,10 @@ export async function visionExtractText(imageBase64: string): Promise<string> {
     }
 
     const data = await response.json()
-    const raw = data.choices[0]?.message?.content || 'No text extracted.'
+    const raw = data.choices[0]?.message?.content || ''
     return stripThinkBlocks(raw) || 'No text extracted.'
-  } catch (error) {
-    console.error('Vision API Error:', error)
-    return 'Vision extraction failed. Please check your API configuration and try again. 🌸'
+  } catch (error: any) {
+    console.error('[AI Vision] All vision providers failed:', error.message)
+    throw lastError || error
   }
 }
