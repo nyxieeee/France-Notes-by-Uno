@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/groq'
+import { synthesizeSpeechGoogle } from '@/lib/googleTts'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,7 +26,7 @@ export interface PodcastEpisode {
   source_type: string
 }
 
-// ─── Web Speech Voice Selection ───────────────────────────────────────────────
+// ─── Web Speech Voice Selection (Fallback) ──────────────────────────────────
 function getBestVoice(voices: SpeechSynthesisVoice[], gender: 'male' | 'female'): SpeechSynthesisVoice | null {
   if (voices.length === 0) return null
 
@@ -157,7 +158,6 @@ function TranscriptLine({ line, active, index }: { line: DialogueLine; active: b
 function parseScript(raw: string): DialogueLine[] {
   const lines: DialogueLine[] = []
 
-  // Clean raw text first
   const cleanRaw = raw
     .replace(/<think>[\s\S]*?<\/think>/gi, '')
     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -175,14 +175,12 @@ function parseScript(raw: string): DialogueLine[] {
       const speakerRaw = match[1].toUpperCase().replace(/\s/g, '_')
       let text = match[2].trim()
 
-      // Clean leading/trailing bold tags, quotes, or Markdown header hashes
       text = text
         .replace(/^(\*\*|\*|#)+/, '')
         .replace(/(\*\*|\*|#)+$/, '')
         .replace(/^["']|["']$/g, '')
         .trim()
 
-      // Skip lines that are just markdown formatting or empty
       if (!text || text === '**' || text === '*' || /^SECTION\s*\d+/i.test(text) || /^EPISODE\s*INTRO/i.test(text)) {
         continue
       }
@@ -194,7 +192,6 @@ function parseScript(raw: string): DialogueLine[] {
     }
   }
 
-  // Fallback: if regex missed, parse alternate lines
   if (lines.length === 0) {
     const paragraphs = cleanRaw.split('\n\n').filter(p => p.trim())
     paragraphs.forEach((p, i) => {
@@ -243,6 +240,7 @@ export default function PodcastReviewPage() {
   const [speed, setSpeed] = useState(1)
   const [progress, setProgress] = useState(0)
 
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
   const currentLineRef = useRef(-1)
   const isPlayingRef = useRef(false)
@@ -253,12 +251,9 @@ export default function PodcastReviewPage() {
     fetchSavedKnowledge()
   }, [])
 
-  // Load saved episodes from Supabase (with localStorage fallback)
   useEffect(() => {
     const fetchEpisodes = async () => {
       const storageKey = `france_notes_podcast_episodes_${user?.id || 'guest'}`
-      
-      // Local fallback
       const localData = localStorage.getItem(storageKey)
       let initialData: PodcastEpisode[] = localData ? JSON.parse(localData) : []
 
@@ -280,10 +275,18 @@ export default function PodcastReviewPage() {
     fetchEpisodes()
   }, [user?.id])
 
+  const stopAllPlayback = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      audioRef.current = null
+    }
+    window.speechSynthesis.cancel()
+    isPlayingRef.current = false
+  }
+
   const saveEpisodeToHistory = async (newEpisode: PodcastEpisode) => {
     const storageKey = `france_notes_podcast_episodes_${user?.id || 'guest'}`
-    
-    // Update local state and localStorage
     setSavedEpisodes(prev => {
       const filtered = prev.filter(e => e.id !== newEpisode.id)
       const updated = [newEpisode, ...filtered]
@@ -291,20 +294,19 @@ export default function PodcastReviewPage() {
       return updated
     })
 
-    // Persist to Supabase if authenticated
     if (user?.id) {
-      const { error } = await supabase.from('podcast_episodes').insert([{
-        id: newEpisode.id,
-        user_id: user.id,
-        title: newEpisode.title,
-        topic: newEpisode.topic,
-        script: newEpisode.script,
-        source_type: newEpisode.source_type,
-        created_at: newEpisode.created_at
-      }])
-
-      if (error) {
-        console.warn('Failed to insert podcast episode to Supabase:', error.message)
+      try {
+        await supabase.from('podcast_episodes').insert([{
+          id: newEpisode.id,
+          user_id: user.id,
+          title: newEpisode.title,
+          topic: newEpisode.topic,
+          script: newEpisode.script,
+          source_type: newEpisode.source_type,
+          created_at: newEpisode.created_at
+        }])
+      } catch (err) {
+        console.warn('Failed to insert episode to Supabase:', err)
       }
     }
   }
@@ -326,7 +328,7 @@ export default function PodcastReviewPage() {
     }
   }
 
-  // Load voices
+  // Load voices for fallback WebSpeech
   useEffect(() => {
     const load = () => {
       voicesRef.current = window.speechSynthesis.getVoices()
@@ -338,7 +340,7 @@ export default function PodcastReviewPage() {
 
   useEffect(() => {
     return () => {
-      window.speechSynthesis.cancel()
+      stopAllPlayback()
     }
   }, [])
 
@@ -365,7 +367,7 @@ export default function PodcastReviewPage() {
     if (!sourceDetails.title) return
 
     setIsGenerating(true)
-    window.speechSynthesis.cancel()
+    stopAllPlayback()
     setIsPlaying(false)
     setCurrentLine(-1)
     setProgress(0)
@@ -416,7 +418,6 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
       setEpisodeTitle(sourceDetails.title)
       setActiveEpisodeId(episodeId)
 
-      // Save to Supabase and localStorage
       const newEp: PodcastEpisode = {
         id: episodeId,
         title: sourceDetails.title,
@@ -434,7 +435,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
   }
 
   const loadSavedEpisode = (ep: PodcastEpisode) => {
-    window.speechSynthesis.cancel()
+    stopAllPlayback()
     setIsPlaying(false)
     setCurrentLine(-1)
     setProgress(0)
@@ -444,7 +445,8 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
     setShowHistoryView(false)
   }
 
-  const speakLine = useCallback((lineIndex: number) => {
+  // ─── Playback Engine (Google Cloud TTS Neural2 + WebSpeech Fallback) ──────
+  const speakLine = useCallback(async (lineIndex: number) => {
     if (lineIndex >= script.length || !isPlayingRef.current) {
       setIsPlaying(false)
       setCurrentLine(-1)
@@ -453,6 +455,43 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
       return
     }
 
+    const line = script[lineIndex]
+    currentLineRef.current = lineIndex
+    setCurrentLine(lineIndex)
+    setProgress(lineIndex / script.length)
+
+    // Attempt 1: Synthesize with Google Cloud Neural2 TTS
+    const googleAudioDataUrl = await synthesizeSpeechGoogle({
+      text: line.text,
+      speaker: line.speaker,
+      speakingRate: speed
+    })
+
+    if (googleAudioDataUrl && isPlayingRef.current) {
+      const audio = new Audio(googleAudioDataUrl)
+      audioRef.current = audio
+      audio.playbackRate = speed
+
+      audio.onended = () => {
+        if (isPlayingRef.current) {
+          speakLine(lineIndex + 1)
+        }
+      }
+      audio.onerror = () => {
+        if (isPlayingRef.current) fallbackWebSpeech(lineIndex)
+      }
+      audio.play().catch(() => {
+        if (isPlayingRef.current) fallbackWebSpeech(lineIndex)
+      })
+      return
+    }
+
+    // Fallback: WebSpeech API
+    fallbackWebSpeech(lineIndex)
+  }, [script, speed])
+
+  const fallbackWebSpeech = (lineIndex: number) => {
+    if (lineIndex >= script.length || !isPlayingRef.current) return
     const line = script[lineIndex]
     const utter = new SpeechSynthesisUtterance(line.text)
     utteranceRef.current = utter
@@ -463,14 +502,8 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
     utter.pitch = line.speaker === 'DOC_UNO' ? 0.9 : 1.1
     utter.volume = 1
 
-    currentLineRef.current = lineIndex
-    setCurrentLine(lineIndex)
-    setProgress(lineIndex / script.length)
-
     utter.onend = () => {
-      if (isPlayingRef.current) {
-        speakLine(lineIndex + 1)
-      }
+      if (isPlayingRef.current) speakLine(lineIndex + 1)
     }
     utter.onerror = () => {
       if (isPlayingRef.current) speakLine(lineIndex + 1)
@@ -478,13 +511,12 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
 
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utter)
-  }, [script, speed])
+  }
 
   const handlePlay = () => {
     if (script.length === 0) return
     if (isPlaying) {
-      window.speechSynthesis.cancel()
-      isPlayingRef.current = false
+      stopAllPlayback()
       setIsPlaying(false)
     } else {
       isPlayingRef.current = true
@@ -495,8 +527,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
   }
 
   const handleRestart = () => {
-    window.speechSynthesis.cancel()
-    isPlayingRef.current = false
+    stopAllPlayback()
     setIsPlaying(false)
     setCurrentLine(-1)
     setProgress(0)
@@ -528,8 +559,8 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
         <h1 className="text-4xl font-black mb-2 font-heading">Nursepod 🎙️</h1>
         <p className="text-[var(--text-secondary)] text-sm max-w-lg">
           {isFrance
-            ? 'Listen to Doc Uno & Nurse Florence break down nursing topics just for you, babe! 🌷'
-            : 'Doc Uno & Nurse Florence bring your nursing topics to life in podcast format! 🩺'}
+            ? 'Listen to Doc Uno & Nurse Florence break down nursing topics powered by Google Neural AI voices! 🌷'
+            : 'Doc Uno & Nurse Florence bring your nursing topics to life with Google Cloud Neural AI voices! 🩺'}
         </p>
 
         {/* History Toggle Button */}
@@ -861,7 +892,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                       <div className="flex items-center justify-between">
                         <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-1">Now Playing</p>
                         <span className="text-[10px] font-bold text-white/90 bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <BookmarkCheck size={10} /> Saved to Supabase
+                          <BookmarkCheck size={10} /> Google Neural AI Voice
                         </span>
                       </div>
                       <h2 className="text-white font-black text-lg leading-tight truncate">{episodeTitle}</h2>
