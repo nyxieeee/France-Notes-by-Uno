@@ -11,7 +11,10 @@ import {
   Calendar,
   Library,
   MoreHorizontal,
-  X
+  X,
+  Calculator,
+  Mic2,
+  FlaskConical
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -29,6 +32,9 @@ const moreNavItems = [
   { icon: Library,     label: 'Reviewer Library', path: '/reviewer-library' },
   { icon: Sparkles,    label: 'Knowledge Garden', path: '/knowledge-garden' },
   { icon: Calendar,    label: 'Planner',  path: '/planner' },
+  { icon: Calculator,  label: 'Dosage Calc', path: '/dosage-calculator' },
+  { icon: Mic2,        label: 'Nursepod', path: '/podcast-review' },
+  { icon: FlaskConical, label: 'Normal Labs', path: '/labs-reference' },
 ]
 
 export default function MobileNav() {

@@ -8,7 +8,10 @@ import {
   MessageCircle, 
   User,
   Sparkles,
-  Calendar
+  Calendar,
+  Calculator,
+  Mic2,
+  FlaskConical
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
@@ -59,6 +62,9 @@ export default function DesktopSidebar() {
     { icon: MessageCircle, label: `Ask ${aiAssistantName}`, path: '/ai' },
     { icon: Sparkles, label: knowledgeGardenName, path: '/knowledge-garden' },
     { icon: Calendar, label: 'Planner & Calendar', path: '/planner' },
+    { icon: Calculator, label: 'Dosage Calculator', path: '/dosage-calculator' },
+    { icon: Mic2, label: 'Nursepod', path: '/podcast-review' },
+    { icon: FlaskConical, label: 'Normal Labs', path: '/labs-reference' },
     { icon: User, label: 'Profile', path: '/profile' },
   ]
 

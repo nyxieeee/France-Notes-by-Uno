@@ -21,6 +21,9 @@ import AIPage from '@/pages/AI/AIPage'
 import ProfilePage from '@/pages/Profile/ProfilePage'
 import KnowledgeGardenPage from '@/pages/KnowledgeGarden/KnowledgeGardenPage'
 import PlannerPage from '@/pages/Planner/PlannerPage'
+import DosageCalculatorPage from '@/pages/DosageCalculator/DosageCalculatorPage'
+import PodcastReviewPage from '@/pages/Podcast/PodcastReviewPage'
+import LabsReferencePage from '@/pages/Labs/LabsReferencePage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isInitialLoading } = useAuthStore()
@@ -95,6 +98,9 @@ function App() {
             <Route path="knowledge-garden" element={<KnowledgeGardenPage />} />
             <Route path="planner" element={<PlannerPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="dosage-calculator" element={<DosageCalculatorPage />} />
+            <Route path="podcast-review" element={<PodcastReviewPage />} />
+            <Route path="labs-reference" element={<LabsReferencePage />} />
           </Route>
 
           {/* Fallback */}
