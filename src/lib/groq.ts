@@ -103,6 +103,21 @@ Your personality is deeply inspired by the user's boyfriend (Uno), and you are h
 - NEVER force them to study. If they want to just chat, follow their lead.
 - Be a supportive boyfriend first, tutor second.
 
+### FORMATTING RULES (CRITICAL — ALWAYS FOLLOW):
+- **NEVER write lists as inline text** separated by dashes or commas. ALWAYS use proper markdown.
+- Use bullet points (- item) or numbered lists (1. item) for ANY list, enumeration, or series of points.
+- Each list item MUST be on its own separate line.
+- Use headers (## Heading or ### Heading) for sections when organizing content.
+- Use bold text (**bold**) for key terms, critical values, and important highlights.
+- Lists MUST have a blank line before them and each item on its own line — never inline.
+- Example of CORRECT format:
+  1. Pain out of proportion
+  2. Paresthesia
+  3. Pallor
+  4. Pulselessness
+  5. Paralysis
+- Example of WRONG format (NEVER do this): "The 5 P's are: 1. Pain 2. Paresthesia 3. Pallor..."
+
 ### GUIDELINES:
 - Always medically accurate. Patient safety always.
 - Goal: Make France feel loved, supported, and not alone.
@@ -122,6 +137,21 @@ You are ${aiAssistantName}, a highly supportive, intelligent, and warm clinical 
 
 ### NO NARRATION OR 3RD PERSON ACTIONS:
 - Do NOT output anything in parentheses or asterisks (e.g., NEVER output "(waiting for response)", "(smiles)", etc.). Output ONLY direct dialogue.
+
+### FORMATTING RULES (CRITICAL — ALWAYS FOLLOW):
+- **NEVER write lists as inline text** separated by dashes or commas. ALWAYS use proper markdown.
+- Use bullet points (- item) or numbered lists (1. item) for ANY list, enumeration, or series of points.
+- Each list item MUST be on its own separate line.
+- Use headers (## Heading or ### Heading) for sections when organizing content.
+- Use bold text (**bold**) for key terms, critical values, and important highlights.
+- Lists MUST have a blank line before them and each item on its own line — never inline.
+- Example of CORRECT format:
+  1. Pain out of proportion
+  2. Paresthesia
+  3. Pallor
+  4. Pulselessness
+  5. Paralysis
+- Example of WRONG format (NEVER do this): "The 5 P's are: 1. Pain 2. Paresthesia 3. Pallor..."
 
 ### GUIDELINES:
 - Celebrate successes. Comfort when stressed.
@@ -505,10 +535,41 @@ export async function generateJSON(
   } catch {
     console.error(`[AI Router] Failed to parse JSON for ${feature}. Response length: ${raw.length} chars. First 500 chars:`, raw.substring(0, 500))
     console.error(`[AI Router] Last 200 chars:`, raw.substring(raw.length - 200))
-    // Check if response was cut off mid-JSON
-    if (raw.includes('"summary"') && !raw.endsWith('}')) {
-      console.error(`[AI Router] Response appears truncated — increase maxTokens for feature: ${feature}`)
+
+    // ── JSON Repair: try to close truncated responses ──────────────────────
+    try {
+      let repaired = stripThinkBlocks(raw).replace(/```json|```/g, '').trim()
+
+      // Remove trailing comma before attempting to close
+      repaired = repaired.replace(/,\s*$/, '')
+
+      // Close any open string first (naive: remove last unclosed quote line)
+      if ((repaired.match(/"/g) || []).length % 2 !== 0) {
+        const lastQuote = repaired.lastIndexOf('"')
+        repaired = repaired.substring(0, lastQuote)
+      }
+
+      // Close any open object
+      if (!repaired.endsWith('}') && repaired.includes('{')) {
+        repaired += '}'
+      }
+
+      // Close the questions array and root object if needed
+      if (!repaired.endsWith(']') && repaired.includes('[')) {
+        repaired += ']'
+      }
+      if (!repaired.endsWith('}')) {
+        repaired += '}'
+      }
+
+      const parsed = JSON.parse(repaired)
+      console.warn(`[AI Router] Repaired truncated JSON for ${feature} — recovered ${parsed.questions?.length ?? 0} questions.`)
+      return parsed
+    } catch (repairError) {
+      console.error(`[AI Router] JSON repair also failed for ${feature}:`, repairError)
     }
+    // ── End repair ──────────────────────────────────────────────────────────
+
     return {}
   }
 }

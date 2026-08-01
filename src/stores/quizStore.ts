@@ -126,6 +126,9 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       }
 
       if (config.sourceText) {
+        // Trim aggressively — the system prompt itself is already ~800 tokens
+        // leaving ~6-7k tokens for source context + generation
+        const trimmedSource = config.sourceText.substring(0, 8000)
         systemPrompt += `
         CRITICAL SOURCE-ONLY INSTRUCTION: You MUST generate ALL quiz questions EXCLUSIVELY from the following source material provided below.
         - Do NOT introduce conditions, diseases, drugs, or clinical scenarios that are NOT mentioned in the source material.
@@ -136,7 +139,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
 
         SOURCE MATERIAL:
         """
-        ${config.sourceText.substring(0, 15000)}
+        ${trimmedSource}
         """
         `
       }
@@ -169,7 +172,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       CRITICAL INSTRUCTION: You MUST generate EXACTLY ${config.size} questions. Please count them as you generate: 1, 2, ..., ${config.size}. Do NOT stop generating until you have exactly ${config.size} questions. If you generate fewer than ${config.size}, you fail the task.
       CRITICAL DIVERSITY INSTRUCTION: Ensure that all questions, scenario profiles, lab values, and clinical settings are completely different from prior quizzes. Explore a different sub-focus within this topic area (e.g. drug side effects, priority assessments, post-op instructions, or ethical nurse dilemmas) to keep it fully dynamic!`
 
-      const result = await generateJSON(prompt, systemPrompt, 'quiz', 0.85, 12000)
+      const result = await generateJSON(prompt, systemPrompt, 'quiz', 0.85, 8000)
       const generatedQuestions = (result.questions || [])
         .filter((q: any) => q && typeof q.question === 'string')
         .map((q: any) => ({

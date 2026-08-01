@@ -205,6 +205,97 @@
   font-family: inherit;
 }
 
+/* ── Tables (GFM) ── */
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 1.25rem;
+  font-size: 0.82rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.markdown-content th {
+  background: var(--secondary-bg);
+  color: var(--pink);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.55rem 0.85rem;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+}
+
+.markdown-content td {
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.55;
+}
+
+.markdown-content tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown-content tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--secondary-bg) 25%, transparent);
+}
+
+/* ── Inline code ── */
+.markdown-content code:not(pre code) {
+  background: var(--secondary-bg);
+  color: var(--pink);
+  padding: 0.1em 0.4em;
+  border-radius: 0.35rem;
+  font-size: 0.85em;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+/* ── Code blocks ── */
+.markdown-content pre {
+  background: var(--secondary-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.markdown-content pre code {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  font-family: 'Courier New', monospace;
+  background: none;
+  padding: 0;
+  color: var(--text);
+}
+
+/* ── Blockquotes ── */
+.markdown-content blockquote {
+  border-left: 3px solid var(--pink);
+  padding: 0.5rem 0 0.5rem 1rem;
+  margin: 0.75rem 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ── Strikethrough ── */
+.markdown-content del {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+/* ── Horizontal rule ── */
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.25rem 0;
+}
+
+
 .markdown-content p {
   margin-bottom: 1rem;
   line-height: 1.6;

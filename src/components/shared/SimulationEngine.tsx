@@ -101,10 +101,11 @@ function SimulationSession() {
       if (!response || !response.trim()) throw new Error('Empty response received from Groq.')
 
       const cleanedResponse = response
-        .replace(/\*[^*]*\*/g, '')
-        .replace(/\([^)]*\)/g, '')
-        .replace(/\s+/g, ' ')
-        .replace(/\s+([.,!?;:])/g, '$1')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\((?:waiting|smiles|giggles|nods|sighs|chuckles|pauses)[^)]*\)/gi, '')
+        .replace(/\*(?:smiles|giggles|nods|sighs|chuckles|pauses)\*/gi, '')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n\s*\n\s*\n+/g, '\n\n')
         .trim()
 
       addMessage('assistant', cleanedResponse)
@@ -139,10 +140,11 @@ function SimulationSession() {
       if (!response || !response.trim()) throw new Error('Empty response received from Groq.')
 
       const cleanedResponse = response
-        .replace(/\*[^*]*\*/g, '')
-        .replace(/\([^)]*\)/g, '')
-        .replace(/\s+/g, ' ')
-        .replace(/\s+([.,!?;:])/g, '$1')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\((?:waiting|smiles|giggles|nods|sighs|chuckles|pauses)[^)]*\)/gi, '')
+        .replace(/\*(?:smiles|giggles|nods|sighs|chuckles|pauses)\*/gi, '')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n\s*\n\s*\n+/g, '\n\n')
         .trim()
 
       addMessage('assistant', cleanedResponse)
@@ -264,10 +266,11 @@ function SimulationSession() {
       if (!response || !response.trim()) throw new Error('Empty response received from Groq.')
 
       const cleanedResponse = response
-        .replace(/\*[^*]*\*/g, '')
-        .replace(/\([^)]*\)/g, '')
-        .replace(/\s+/g, ' ')
-        .replace(/\s+([.,!?;:])/g, '$1')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\((?:waiting|smiles|giggles|nods|sighs|chuckles|pauses)[^)]*\)/gi, '')
+        .replace(/\*(?:smiles|giggles|nods|sighs|chuckles|pauses)\*/gi, '')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n\s*\n\s*\n+/g, '\n\n')
         .trim()
 
       addMessage('assistant', cleanedResponse)

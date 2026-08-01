@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FlaskConical, Search, ChevronDown, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
+import { FlaskConical, Search, ChevronDown, TrendingUp, TrendingDown, AlertTriangle, Star, Copy, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/authStore'
+import { supabase } from '@/lib/supabase'
 
 interface LabValue {
   name: string
@@ -258,8 +260,17 @@ const LAB_DATA: LabCategory[] = [
   },
 ]
 
-function LabCard({ lab }: { lab: LabValue }) {
+function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boolean; onToggleSave: (labName: string) => void }) {
   const [expanded, setExpanded] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const copyLabSummary = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const summaryText = `${lab.name}${lab.abbreviation ? ` (${lab.abbreviation})` : ''}\nNormal Range: ${lab.normalRange} ${lab.unit}\nLow (${lab.lowName}): ${lab.lowComplications.join(', ')}\nHigh (${lab.highName}): ${lab.highComplications.join(', ')}${lab.clinicalPearl ? `\nClinical Pearl: ${lab.clinicalPearl}` : ''}`
+    navigator.clipboard.writeText(summaryText)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <motion.div
@@ -270,8 +281,18 @@ function LabCard({ lab }: { lab: LabValue }) {
       )}
       onClick={() => setExpanded(p => !p)}
     >
-      {/* Collapsed header */}
       <div className="p-4 flex items-center gap-3">
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSave(lab.name) }}
+          className={cn(
+            "p-1.5 rounded-xl transition-all shrink-0",
+            isSaved ? "text-amber-500 bg-amber-50 dark:bg-amber-900/30" : "text-[var(--text-secondary)] hover:text-amber-500"
+          )}
+          title={isSaved ? "Unbookmark Lab" : "Bookmark Lab"}
+        >
+          <Star size={18} fill={isSaved ? "currentColor" : "none"} />
+        </button>
+
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
             <h4 className="font-black text-base">{lab.name}</h4>
@@ -285,7 +306,15 @@ function LabCard({ lab }: { lab: LabValue }) {
             Normal: <span className="font-bold text-[var(--text)]">{lab.normalRange} {lab.unit}</span>
           </p>
         </div>
+
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={copyLabSummary}
+            className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-[var(--pink)]/10 rounded-xl transition-all"
+            title="Copy Lab Reference"
+          >
+            {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+          </button>
           <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full">
             <TrendingDown size={10} /> {lab.lowName}
           </span>
@@ -299,7 +328,6 @@ function LabCard({ lab }: { lab: LabValue }) {
         </div>
       </div>
 
-      {/* Expanded content */}
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
@@ -311,7 +339,6 @@ function LabCard({ lab }: { lab: LabValue }) {
           >
             <div className="px-4 pb-5 space-y-4 border-t border-[var(--border)] pt-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Low */}
                 <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingDown size={14} className="text-blue-500" />
@@ -329,7 +356,6 @@ function LabCard({ lab }: { lab: LabValue }) {
                   </ul>
                 </div>
 
-                {/* High */}
                 <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp size={14} className="text-red-500" />
@@ -368,6 +394,60 @@ function LabCard({ lab }: { lab: LabValue }) {
 export default function LabsReferencePage() {
   const [activeTab, setActiveTab] = useState('electrolytes')
   const [search, setSearch] = useState('')
+  const user = useAuthStore(s => s.user)
+
+  // Saved / Bookmarked Labs State
+  const [savedLabs, setSavedLabs] = useState<string[]>([])
+
+  // Load saved labs from Supabase (with localStorage fallback)
+  useEffect(() => {
+    const fetchSavedLabs = async () => {
+      const storageKey = `france_notes_saved_labs_${user?.id || 'guest'}`
+      const localData = localStorage.getItem(storageKey)
+      let initialData: string[] = localData ? JSON.parse(localData) : []
+
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('saved_labs')
+          .select('lab_name')
+          .eq('user_id', user.id)
+
+        if (!error && data) {
+          initialData = data.map(d => d.lab_name)
+          localStorage.setItem(storageKey, JSON.stringify(initialData))
+        }
+      }
+
+      setSavedLabs(initialData)
+    }
+
+    fetchSavedLabs()
+  }, [user?.id])
+
+  const toggleSaveLab = async (labName: string) => {
+    const storageKey = `france_notes_saved_labs_${user?.id || 'guest'}`
+    const isCurrentlySaved = savedLabs.includes(labName)
+
+    // Update local state and localStorage
+    const updated = isCurrentlySaved
+      ? savedLabs.filter(n => n !== labName)
+      : [...savedLabs, labName]
+
+    setSavedLabs(updated)
+    localStorage.setItem(storageKey, JSON.stringify(updated))
+
+    // Persist to Supabase if authenticated
+    if (user?.id) {
+      if (isCurrentlySaved) {
+        await supabase.from('saved_labs').delete().eq('user_id', user.id).eq('lab_name', labName)
+      } else {
+        await supabase.from('saved_labs').insert([{ user_id: user.id, lab_name: labName }])
+      }
+    }
+  }
+
+  const allLabs = LAB_DATA.flatMap(c => c.labs)
+  const savedLabObjects = allLabs.filter(l => savedLabs.includes(l.name))
 
   const filtered = LAB_DATA.map(cat => ({
     ...cat,
@@ -382,17 +462,17 @@ export default function LabsReferencePage() {
   return (
     <div className="page-container">
       {/* Header */}
-      <div className="flex flex-col items-center text-center max-w-2xl mx-auto mb-10">
+      <div className="flex flex-col items-center text-center max-w-2xl mx-auto mb-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-16 h-16 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-[2rem] flex items-center justify-center mb-6 shadow-sm"
+          className="w-16 h-16 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-[2rem] flex items-center justify-center mb-4 shadow-sm"
         >
           <FlaskConical size={32} />
         </motion.div>
-        <h1 className="text-4xl font-black mb-3 font-heading">Normal Labs 🧪</h1>
-        <p className="text-[var(--text-secondary)] text-base">
-          Quick-reference normal ranges with low/high clinical implications. Tap any lab to expand.
+        <h1 className="text-4xl font-black mb-2 font-heading">Normal Labs 🧪</h1>
+        <p className="text-[var(--text-secondary)] text-sm max-w-lg">
+          Quick-reference normal ranges with low/high clinical implications. Star your essential labs to sync with your account!
         </p>
       </div>
 
@@ -412,7 +492,20 @@ export default function LabsReferencePage() {
 
       {/* Category Tabs */}
       {!search.trim() && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar justify-start sm:justify-center">
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={cn(
+              'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all border-2 shrink-0',
+              activeTab === 'saved'
+                ? 'bg-amber-500 text-white border-amber-500 shadow-md'
+                : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-amber-400'
+            )}
+          >
+            <Star size={14} fill={activeTab === 'saved' ? 'currentColor' : 'none'} className="text-amber-300" />
+            <span>Saved Labs ({savedLabs.length})</span>
+          </button>
+
           {LAB_DATA.map(cat => (
             <button
               key={cat.id}
@@ -443,7 +536,6 @@ export default function LabsReferencePage() {
           className="space-y-3 max-w-4xl mx-auto"
         >
           {search.trim() ? (
-            // Search results: show all categories
             filtered.length > 0 ? (
               filtered.map(cat => (
                 <div key={cat.id} className="space-y-3">
@@ -451,7 +543,7 @@ export default function LabsReferencePage() {
                     <span>{cat.emoji}</span> {cat.label}
                   </p>
                   {cat.labs.map(lab => (
-                    <LabCard key={lab.name} lab={lab} />
+                    <LabCard key={lab.name} lab={lab} isSaved={savedLabs.includes(lab.name)} onToggleSave={toggleSaveLab} />
                   ))}
                 </div>
               ))
@@ -461,8 +553,30 @@ export default function LabsReferencePage() {
                 <p className="text-[var(--text-secondary)] text-sm">Try searching with a different term.</p>
               </div>
             )
+          ) : activeTab === 'saved' ? (
+            savedLabObjects.length > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center text-lg font-bold">
+                    ⭐
+                  </div>
+                  <div>
+                    <h2 className="font-black text-xl">Saved & Bookmarked Labs</h2>
+                    <p className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-widest">{savedLabObjects.length} bookmarked lab values synced with Supabase</p>
+                  </div>
+                </div>
+                {savedLabObjects.map(lab => (
+                  <LabCard key={lab.name} lab={lab} isSaved={true} onToggleSave={toggleSaveLab} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 fn-card border-dashed">
+                <Star size={36} className="mx-auto mb-2 text-amber-400 opacity-40" />
+                <p className="text-lg font-bold mb-1">No bookmarked labs yet ⭐</p>
+                <p className="text-[var(--text-secondary)] text-xs">Tap the star icon on any lab value to save it to your Supabase account!</p>
+              </div>
+            )
           ) : (
-            // Tab view: show active category
             activeCategory ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3 mb-4">
@@ -478,7 +592,7 @@ export default function LabsReferencePage() {
                   </div>
                 </div>
                 {activeCategory.labs.map(lab => (
-                  <LabCard key={lab.name} lab={lab} />
+                  <LabCard key={lab.name} lab={lab} isSaved={savedLabs.includes(lab.name)} onToggleSave={toggleSaveLab} />
                 ))}
               </div>
             ) : null

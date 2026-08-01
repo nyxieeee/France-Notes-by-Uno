@@ -292,12 +292,13 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       
       const response = await generateCompletion(prompt, DOC_UNO_SYSTEM_PROMPT, 'chat')
       
-      // Clean up third-person narration, meta-instructions, and parenthetical/asterisk comments
+      // Clean up third-person narration/action tags like (smiles) or *smiles*, while preserving newlines & markdown
       const cleanedResponse = response
-        .replace(/\*[^*]*\*/g, '')
-        .replace(/\([^)]*\)/g, '')
-        .replace(/\s+/g, ' ')
-        .replace(/\s+([.,!?;:])/g, '$1')
+        .replace(/\/\*[\s\S]*?\*\//g, '') // remove JS-style comments if any
+        .replace(/\((?:waiting|smiles|giggles|nods|sighs|chuckles|pauses)[^)]*\)/gi, '') // remove stage direction parens only
+        .replace(/\*(?:smiles|giggles|nods|sighs|chuckles|pauses)\*/gi, '') // remove stage direction asterisks only
+        .replace(/[ \t]+/g, ' ') // replace multiple spaces/tabs WITH SINGLE SPACE, preserving \n newlines!
+        .replace(/\n\s*\n\s*\n+/g, '\n\n') // normalize excessive newlines to max 2
         .trim();
 
       return cleanedResponse

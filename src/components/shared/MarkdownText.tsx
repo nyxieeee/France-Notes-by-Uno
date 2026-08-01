@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { cn } from '@/lib/utils'
 
 interface MarkdownTextProps {
@@ -9,7 +10,7 @@ interface MarkdownTextProps {
 export default function MarkdownText({ content, className }: MarkdownTextProps) {
   return (
     <div className={cn("markdown-content select-text", className)}>
-      <ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
         {content}
       </ReactMarkdown>
     </div>
