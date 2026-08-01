@@ -156,25 +156,55 @@ function TranscriptLine({ line, active, index }: { line: DialogueLine; active: b
 // ─── Parse script ─────────────────────────────────────────────────────────────
 function parseScript(raw: string): DialogueLine[] {
   const lines: DialogueLine[] = []
-  const regex = /\[(DOC[_ ]?UNO|NURSE[_ ]?FLORENCE|UNO|FLORENCE)\]:?\s*(.*)/gi
-  let match
 
-  while ((match = regex.exec(raw)) !== null) {
-    const speakerRaw = match[1].toUpperCase().replace(/\s/g, '_')
-    const text = match[2].trim()
-    if (!text) continue
-    const speaker: 'DOC_UNO' | 'NURSE_FLORENCE' =
-      speakerRaw.includes('UNO') ? 'DOC_UNO' : 'NURSE_FLORENCE'
-    lines.push({ speaker, text })
+  // Clean raw text first
+  const cleanRaw = raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .trim()
+
+  const lineRegex = /^\s*(?:\*\*|\*|#)*\s*\[?\s*(DOC[_ ]?UNO|NURSE[_ ]?FLORENCE|UNO|FLORENCE)\s*\]?\s*(?:\*\*|\*|#)*\s*:?\s*(.*)/i
+
+  const splitLines = cleanRaw.split('\n')
+  for (const line of splitLines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    const match = lineRegex.exec(trimmed)
+    if (match) {
+      const speakerRaw = match[1].toUpperCase().replace(/\s/g, '_')
+      let text = match[2].trim()
+
+      // Clean leading/trailing bold tags, quotes, or Markdown header hashes
+      text = text
+        .replace(/^(\*\*|\*|#)+/, '')
+        .replace(/(\*\*|\*|#)+$/, '')
+        .replace(/^["']|["']$/g, '')
+        .trim()
+
+      // Skip lines that are just markdown formatting or empty
+      if (!text || text === '**' || text === '*' || /^SECTION\s*\d+/i.test(text) || /^EPISODE\s*INTRO/i.test(text)) {
+        continue
+      }
+
+      const speaker: 'DOC_UNO' | 'NURSE_FLORENCE' =
+        speakerRaw.includes('UNO') ? 'DOC_UNO' : 'NURSE_FLORENCE'
+
+      lines.push({ speaker, text })
+    }
   }
 
+  // Fallback: if regex missed, parse alternate lines
   if (lines.length === 0) {
-    const paragraphs = raw.split('\n\n').filter(p => p.trim())
+    const paragraphs = cleanRaw.split('\n\n').filter(p => p.trim())
     paragraphs.forEach((p, i) => {
-      lines.push({
-        speaker: i % 2 === 0 ? 'DOC_UNO' : 'NURSE_FLORENCE',
-        text: p.trim().replace(/^\[.*?\]:?\s*/, '')
-      })
+      const cleaned = p.trim().replace(/^\[.*?\]:?\s*/, '').replace(/^(\*\*|\*)+|(\*\*|\*)+$/g, '').trim()
+      if (cleaned && cleaned !== '**') {
+        lines.push({
+          speaker: i % 2 === 0 ? 'DOC_UNO' : 'NURSE_FLORENCE',
+          text: cleaned
+        })
+      }
     })
   }
 
@@ -372,7 +402,8 @@ CRITICAL REQUIREMENTS:
 - Write AT LEAST 50 to 70 rich dialogue exchanges total.
 - Format EVERY line EXACTLY as: [DOC UNO]: text OR [NURSE FLORENCE]: text
 - Alternate naturally between the hosts (1-4 sentences per turn).
-- Pure dialogue only — NO stage directions, NO parentheses, NO asterisks.`
+- Pure dialogue only — NO stage directions, NO parentheses, NO asterisks (**), NO bold section headers.
+- Do NOT write section headers like "**SECTION 1**" or "**EPISODE INTRO**". Have the hosts speak naturally without announcing section titles.`
 
     const prompt = `Create a comprehensive, full-length, professional nursing podcast episode about: "${sourceDetails.title}". 
 Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational professional discussion covering pathophysiology, clinical assessments, pharmacology, priority nursing interventions, and a step-by-step board scenario breakdown.`
