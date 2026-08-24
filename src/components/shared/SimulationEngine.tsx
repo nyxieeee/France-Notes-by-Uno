@@ -7,6 +7,7 @@ import { getRecitationPrompt, getRetDemPrompt, getSimulationEvaluationPrompt } f
 import { cn } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { synthesizeSpeechElevenLabs } from '@/lib/elevenLabsTts'
 
 let lastStartedSessionId = '';
 
@@ -31,7 +32,7 @@ function SimulationSession() {
   const recognitionRef = useRef<any>(null)
   const silenceTimerRef = useRef<any>(null)
   const spokenIdsRef = useRef<Set<string>>(new Set())
-  const synthRef = useRef<SpeechSynthesis | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const inputRef = useRef('')
 
   inputRef.current = input
@@ -57,26 +58,56 @@ function SimulationSession() {
     }
   }, [isListening])
 
-  const speakMessage = useCallback((text: string) => {
-    if (!synthRef.current) {
-      startVoiceRecognition()
+  const speakMessage = useCallback(async (text: string) => {
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause()
+      URL.revokeObjectURL(audioRef.current.src)
+      audioRef.current = null
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+
+    setIsSpeaking(true)
+    const speaker = isFrance ? 'DOC_UNO' : 'NURSE_FLORENCE'
+
+    // Attempt ElevenLabs TTS
+    const audioUrl = await synthesizeSpeechElevenLabs({ text, speaker })
+
+    if (audioUrl) {
+      const audio = new Audio(audioUrl)
+      audioRef.current = audio
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl)
+        audioRef.current = null
+        setIsSpeaking(false)
+        startVoiceRecognition()
+      }
+      audio.onerror = () => {
+        URL.revokeObjectURL(audioUrl)
+        audioRef.current = null
+        setIsSpeaking(false)
+        startVoiceRecognition()
+      }
+      audio.play().catch(() => {
+        setIsSpeaking(false)
+        startVoiceRecognition()
+      })
       return
     }
-    synthRef.current.cancel()
-    setIsSpeaking(true)
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = 0.9
-    utterance.pitch = 1
-    utterance.onend = () => {
+
+    // Fallback: Web Speech API
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.rate = 0.9
+      utterance.pitch = isFrance ? 1.0 : 1.1
+      utterance.onend = () => { setIsSpeaking(false); startVoiceRecognition() }
+      utterance.onerror = () => { setIsSpeaking(false); startVoiceRecognition() }
+      window.speechSynthesis.speak(utterance)
+    } else {
       setIsSpeaking(false)
       startVoiceRecognition()
     }
-    utterance.onerror = () => {
-      setIsSpeaking(false)
-      startVoiceRecognition()
-    }
-    synthRef.current.speak(utterance)
-  }, [startVoiceRecognition])
+  }, [isFrance, startVoiceRecognition])
 
   const doSend = useCallback(async (text: string) => {
     stopVoiceRecognition()
@@ -156,13 +187,6 @@ function SimulationSession() {
     }
   }, [activeMode, topic, difficulty, addMessage])
 
-  // Init speech synthesis
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      synthRef.current = window.speechSynthesis
-    }
-  }, [])
-
   // Init speech recognition + first message trigger
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
@@ -223,7 +247,12 @@ function SimulationSession() {
   useEffect(() => {
     return () => {
       stopVoiceRecognition()
-      if (synthRef.current) synthRef.current.cancel()
+      if (audioRef.current) {
+        audioRef.current.pause()
+        URL.revokeObjectURL(audioRef.current.src)
+        audioRef.current = null
+      }
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
     }
   }, [stopVoiceRecognition])
 

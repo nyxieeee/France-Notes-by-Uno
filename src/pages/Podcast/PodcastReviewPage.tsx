@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/groq'
-import { synthesizeSpeechGoogle } from '@/lib/googleTts'
+import { synthesizeSpeechElevenLabs } from '@/lib/elevenLabsTts'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -460,27 +460,29 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
     setCurrentLine(lineIndex)
     setProgress(lineIndex / script.length)
 
-    // Attempt 1: Synthesize with Google Cloud Neural2 TTS
-    const googleAudioDataUrl = await synthesizeSpeechGoogle({
+    // Attempt 1: Synthesize with ElevenLabs Turbo v2.5
+    const audioUrl = await synthesizeSpeechElevenLabs({
       text: line.text,
       speaker: line.speaker,
-      speakingRate: speed
     })
 
-    if (googleAudioDataUrl && isPlayingRef.current) {
-      const audio = new Audio(googleAudioDataUrl)
+    if (audioUrl && isPlayingRef.current) {
+      const audio = new Audio(audioUrl)
       audioRef.current = audio
       audio.playbackRate = speed
 
       audio.onended = () => {
+        URL.revokeObjectURL(audioUrl)
         if (isPlayingRef.current) {
           speakLine(lineIndex + 1)
         }
       }
       audio.onerror = () => {
+        URL.revokeObjectURL(audioUrl)
         if (isPlayingRef.current) fallbackWebSpeech(lineIndex)
       }
       audio.play().catch(() => {
+        URL.revokeObjectURL(audioUrl)
         if (isPlayingRef.current) fallbackWebSpeech(lineIndex)
       })
       return
