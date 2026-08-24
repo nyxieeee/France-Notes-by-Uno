@@ -421,11 +421,11 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
       }
       audio.onerror = () => {
         URL.revokeObjectURL(audioUrl)
-        if (isPlayingRef.current) fallbackWebSpeech(lineIndex)
+        if (isPlayingRef.current) speakLine(lineIndex + 1)
       }
       audio.play().catch(() => {
         URL.revokeObjectURL(audioUrl)
-        if (isPlayingRef.current) fallbackWebSpeech(lineIndex)
+        if (isPlayingRef.current) speakLine(lineIndex + 1)
       })
       return
     }
