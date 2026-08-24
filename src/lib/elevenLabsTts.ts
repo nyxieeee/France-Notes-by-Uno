@@ -1,31 +1,21 @@
 // ─── ElevenLabs Text-to-Speech Client ───────────────────────────────────────
-// Uses ElevenLabs Turbo v2.5 for ultra-low latency, high-quality voice synthesis.
-// Fallback: Web Speech API if API key is not configured or the call fails.
+// Routes through /api/elevenlabs Vercel proxy so the API key stays server-side.
+// Fallback: Web Speech API if the proxy call fails.
 
-const ELEVEN_LABS_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY || ''
-
-// ── ElevenLabs Voice IDs ─────────────────────────────────────────────────────
-// Adam  (en, male)   — warm, deep, authoritative → Doc Uno
-// Rachel (en, female) — calm, clear, professional → Nurse Florence
-export const ELEVENLABS_VOICES = {
-  DOC_UNO:       import.meta.env.VITE_ELEVENLABS_VOICE_DOC_UNO       || 'pNInz6obpgDQGcFmaJgB', // Adam
-  NURSE_FLORENCE: import.meta.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || '21m00Tcm4TlvDq8ikWAM', // Rachel
-} as const
-
-export type ElevenLabsSpeaker = keyof typeof ELEVENLABS_VOICES
+export type ElevenLabsSpeaker = 'DOC_UNO' | 'NURSE_FLORENCE'
 
 export interface ElevenLabsSynthOptions {
   text: string
   speaker: ElevenLabsSpeaker
-  /** 0.0–1.0  — lower = slower. Defaults to 0.9 */
+  /** 0.0–1.0 — lower = more stable/monotone. Defaults to 0.5 */
   stability?: number
-  /** 0.0–1.0  — higher = more expressive. Defaults to 0.75 */
+  /** 0.0–1.0 — higher = closer to original voice. Defaults to 0.75 */
   similarityBoost?: number
 }
 
 /**
- * Synthesizes speech via ElevenLabs Turbo v2.5.
- * Returns an object-URL (audio/mpeg) string on success, or null on failure.
+ * Synthesizes speech via the /api/elevenlabs proxy (ElevenLabs Turbo v2.5).
+ * Returns a blob object-URL (audio/mpeg) on success, or null on failure.
  * The caller is responsible for revoking the URL when done (URL.revokeObjectURL).
  */
 export async function synthesizeSpeechElevenLabs({
@@ -34,44 +24,28 @@ export async function synthesizeSpeechElevenLabs({
   stability = 0.5,
   similarityBoost = 0.75,
 }: ElevenLabsSynthOptions): Promise<string | null> {
-  if (!ELEVEN_LABS_KEY) {
-    console.warn('[ElevenLabs TTS] No VITE_ELEVENLABS_API_KEY found — falling back to Web Speech.')
-    return null
-  }
-
-  const voiceId = ELEVENLABS_VOICES[speaker]
-  const endpoint = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`
-
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch('/api/elevenlabs', {
       method: 'POST',
-      headers: {
-        'xi-api-key': ELEVEN_LABS_KEY,
-        'Content-Type': 'application/json',
-        'Accept': 'audio/mpeg',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_turbo_v2_5',
-        voice_settings: {
-          stability,
-          similarity_boost: similarityBoost,
-          style: 0.0,
-          use_speaker_boost: true,
-        },
+        speaker,
+        stability,
+        similarity_boost: similarityBoost,
       }),
     })
 
     if (!response.ok) {
-      const err = await response.text().catch(() => '')
-      console.warn('[ElevenLabs TTS] API error:', response.status, err)
+      const err = await response.text().catch(() => response.statusText)
+      console.warn('[ElevenLabs TTS] Proxy error:', response.status, err)
       return null
     }
 
     const blob = await response.blob()
     return URL.createObjectURL(blob)
   } catch (error) {
-    console.error('[ElevenLabs TTS] Network error:', error)
+    console.error('[ElevenLabs TTS] Proxy fetch failed:', error)
     return null
   }
 }
