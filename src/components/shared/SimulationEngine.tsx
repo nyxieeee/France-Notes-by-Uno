@@ -339,7 +339,7 @@ ${formattedTranscript}`
               <button
                 onClick={() => setVoiceMode(v => !v)}
                 className={cn(
-                  "text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5",
+                  "text-xs font-bold px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5",
                   voiceMode
                     ? "bg-[var(--pink)]/10 text-[var(--pink)] border border-[var(--pink)]/20"
                     : "bg-[var(--secondary-bg)] text-[var(--text-secondary)] border border-[var(--border)]"
@@ -350,7 +350,7 @@ ${formattedTranscript}`
                 {voiceMode ? 'Voice On' : 'Voice Off'}
               </button>
             )}
-            <button onClick={handleEnd} className="text-sm font-bold text-[var(--error)] hover:bg-[var(--error)]/10 px-4 py-2 rounded-xl transition-colors">
+            <button onClick={handleEnd} className="text-sm font-bold text-[var(--error)] hover:bg-[var(--error)]/10 px-4 py-2 rounded-full transition-colors">
               End Session
             </button>
           </div>
