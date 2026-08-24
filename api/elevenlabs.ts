@@ -3,8 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY || ''
 
 const VOICE_IDS: Record<string, string> = {
-  DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'pNInz6obpgDQGcFmaJgB', // Adam
-  NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || '21m00Tcm4TlvDq8ikWAM', // Rachel
+  DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'pNInz6obpgDQGcFmaJgB', // Adam (Premade)
+  NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || 'EXAVITQu4vr4xnSDxMaL', // Sarah (Premade - Free Tier Supported)
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
