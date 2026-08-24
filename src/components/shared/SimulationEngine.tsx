@@ -248,6 +248,8 @@ function SimulationSession() {
     const text = input.trim()
     setInput('')
     setInterimText('')
+    // Add user message to chat FIRST so it appears in the chatbox
+    addMessage('user', text)
     setIsTyping(true)
     try {
       const currentStore = useSimulationStore.getState()
@@ -255,6 +257,7 @@ function SimulationSession() {
         ? getRecitationPrompt(topic!, difficulty, currentStore.sourceText || undefined) 
         : getRetDemPrompt(topic!, difficulty, currentStore.sourceText || undefined)
       
+      // Use fresh messages from store (now includes the user message we just added)
       const currentMessages = currentStore.messages
       const chatHistory: { role: 'system' | 'user' | 'assistant', content: string }[] = currentMessages.map(m => ({ 
         role: m.role as 'system' | 'user' | 'assistant', 
