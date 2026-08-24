@@ -26,52 +26,6 @@ export interface PodcastEpisode {
   source_type: string
 }
 
-// ─── Web Speech Voice Selection (Fallback) ──────────────────────────────────
-function getBestVoice(voices: SpeechSynthesisVoice[], gender: 'male' | 'female'): SpeechSynthesisVoice | null {
-  if (voices.length === 0) return null
-
-  const preferred = gender === 'female'
-    ? [
-        'Google UK English Female',
-        'Microsoft Hazel - English (United Kingdom)',
-        'Microsoft Zira - English (United States)',
-        'Karen',
-        'Samantha',
-        'Victoria',
-      ]
-    : [
-        'Google UK English Male',
-        'Microsoft George - English (United Kingdom)',
-        'Microsoft David - English (United States)',
-        'Daniel',
-        'Alex',
-        'Fred',
-      ]
-
-  for (const name of preferred) {
-    const found = voices.find(v => v.name === name)
-    if (found) return found
-  }
-
-  const enVoices = voices.filter(v => v.lang.startsWith('en'))
-  if (gender === 'female') {
-    const fem = enVoices.find(v =>
-      v.name.toLowerCase().includes('female') ||
-      v.name.toLowerCase().includes('woman') ||
-      ['karen', 'samantha', 'victoria', 'zira', 'hazel', 'eva', 'susan', 'fiona'].some(n => v.name.toLowerCase().includes(n))
-    )
-    if (fem) return fem
-  } else {
-    const male = enVoices.find(v =>
-      v.name.toLowerCase().includes('male') ||
-      v.name.toLowerCase().includes('man') ||
-      ['daniel', 'alex', 'fred', 'david', 'george', 'tom', 'mark'].some(n => v.name.toLowerCase().includes(n))
-    )
-    if (male) return male
-  }
-
-  return enVoices[0] || voices[0]
-}
 
 // ─── Animated Waveform ────────────────────────────────────────────────────────
 function Waveform({ playing }: { playing: boolean }) {
@@ -241,10 +195,8 @@ export default function PodcastReviewPage() {
   const [progress, setProgress] = useState(0)
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
   const currentLineRef = useRef(-1)
   const isPlayingRef = useRef(false)
-  const voicesRef = useRef<SpeechSynthesisVoice[]>([])
 
   useEffect(() => {
     fetchItems()
@@ -281,7 +233,6 @@ export default function PodcastReviewPage() {
       audioRef.current.currentTime = 0
       audioRef.current = null
     }
-    window.speechSynthesis.cancel()
     isPlayingRef.current = false
   }
 
@@ -328,15 +279,6 @@ export default function PodcastReviewPage() {
     }
   }
 
-  // Load voices for fallback WebSpeech
-  useEffect(() => {
-    const load = () => {
-      voicesRef.current = window.speechSynthesis.getVoices()
-    }
-    load()
-    window.speechSynthesis.onvoiceschanged = load
-    return () => { window.speechSynthesis.onvoiceschanged = null }
-  }, [])
 
   useEffect(() => {
     return () => {
@@ -488,32 +430,9 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
       return
     }
 
-    // Fallback: WebSpeech API
-    fallbackWebSpeech(lineIndex)
+    // If ElevenLabs fails, skip line and continue
+    if (isPlayingRef.current) speakLine(lineIndex + 1)
   }, [script, speed])
-
-  const fallbackWebSpeech = (lineIndex: number) => {
-    if (lineIndex >= script.length || !isPlayingRef.current) return
-    const line = script[lineIndex]
-    const utter = new SpeechSynthesisUtterance(line.text)
-    utteranceRef.current = utter
-
-    const voices = voicesRef.current
-    utter.voice = getBestVoice(voices, line.speaker === 'DOC_UNO' ? 'male' : 'female')
-    utter.rate = speed
-    utter.pitch = line.speaker === 'DOC_UNO' ? 0.9 : 1.1
-    utter.volume = 1
-
-    utter.onend = () => {
-      if (isPlayingRef.current) speakLine(lineIndex + 1)
-    }
-    utter.onerror = () => {
-      if (isPlayingRef.current) speakLine(lineIndex + 1)
-    }
-
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utter)
-  }
 
   const handlePlay = () => {
     if (script.length === 0) return

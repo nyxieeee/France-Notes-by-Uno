@@ -65,12 +65,10 @@ function SimulationSession() {
       URL.revokeObjectURL(audioRef.current.src)
       audioRef.current = null
     }
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
 
     setIsSpeaking(true)
     const speaker = isFrance ? 'DOC_UNO' : 'NURSE_FLORENCE'
 
-    // Attempt ElevenLabs TTS
     const audioUrl = await synthesizeSpeechElevenLabs({ text, speaker })
 
     if (audioUrl) {
@@ -92,18 +90,8 @@ function SimulationSession() {
         setIsSpeaking(false)
         startVoiceRecognition()
       })
-      return
-    }
-
-    // Fallback: Web Speech API
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.rate = 0.9
-      utterance.pitch = isFrance ? 1.0 : 1.1
-      utterance.onend = () => { setIsSpeaking(false); startVoiceRecognition() }
-      utterance.onerror = () => { setIsSpeaking(false); startVoiceRecognition() }
-      window.speechSynthesis.speak(utterance)
     } else {
+      // ElevenLabs failed — just resume listening silently
       setIsSpeaking(false)
       startVoiceRecognition()
     }
