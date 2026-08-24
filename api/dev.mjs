@@ -31,6 +31,12 @@ if (existsSync(envPath)) {
 const GROQ_API_KEY = process.env.VITE_GROQ_API_KEY
 const MISTRAL_API_KEY = process.env.VITE_MISTRAL_API_KEY
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY
+const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY
+
+const ELEVENLABS_VOICES = {
+  DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'pNInz6obpgDQGcFmaJgB',
+  NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || '21m00Tcm4TlvDq8ikWAM',
+}
 
 if (!GROQ_API_KEY && !MISTRAL_API_KEY && !GEMINI_API_KEY) {
   console.warn('⚠ No API keys found in .env. Create a .env file from .env.example')
@@ -107,6 +113,34 @@ async function handleRequest(req, res) {
       res.writeHead(apiRes.status, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(data))
 
+    } else if (path === '/api/elevenlabs') {
+      if (!ELEVENLABS_API_KEY) throw new Error('VITE_ELEVENLABS_API_KEY not set')
+      const { text, speaker, stability = 0.5, similarity_boost = 0.75 } = body
+      const voiceId = ELEVENLABS_VOICES[speaker]
+      if (!voiceId) throw new Error(`Unknown speaker: ${speaker}`)
+      const apiRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': ELEVENLABS_API_KEY,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability, similarity_boost, style: 0.0, use_speaker_boost: true },
+        }),
+      })
+      if (!apiRes.ok) {
+        const errText = await apiRes.text().catch(() => apiRes.statusText)
+        res.writeHead(apiRes.status, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: errText }))
+        return
+      }
+      const audioBuffer = await apiRes.arrayBuffer()
+      res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' })
+      res.end(Buffer.from(audioBuffer))
+
     } else {
       res.writeHead(404, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'Not found' }))
@@ -121,6 +155,6 @@ async function handleRequest(req, res) {
 const PORT = 3001
 createServer(handleRequest).listen(PORT, () => {
   console.log(`✅ API dev server running on http://localhost:${PORT}`)
-  console.log(`   Routes: /api/groq, /api/mistral, /api/gemini`)
+  console.log(`   Routes: /api/groq, /api/mistral, /api/gemini, /api/elevenlabs`)
   console.log(`   Start Vite in another terminal: npm run dev`)
 })
