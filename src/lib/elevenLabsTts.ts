@@ -34,8 +34,8 @@ export async function synthesizeSpeechElevenLabs({
     })
 
     if (!response.ok) {
-      const err = await response.text().catch(() => response.statusText)
-      console.warn('[ElevenLabs TTS] Proxy error:', response.status, err)
+      const errData = await response.json().catch(() => ({ error: response.statusText }))
+      console.error('[ElevenLabs TTS] ❌ Status:', response.status, '| ElevenLabs error:', errData.error)
       return null
     }
 
