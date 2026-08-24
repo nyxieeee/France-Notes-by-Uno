@@ -138,8 +138,9 @@ async function handleRequest(req, res) {
         return
       }
       const audioBuffer = await apiRes.arrayBuffer()
-      res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' })
-      res.end(Buffer.from(audioBuffer))
+      const base64Audio = Buffer.from(audioBuffer).toString('base64')
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+      res.end(JSON.stringify({ audio: base64Audio, contentType: 'audio/mpeg' }))
 
     } else {
       res.writeHead(404, { 'Content-Type': 'application/json' })

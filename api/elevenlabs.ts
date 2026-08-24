@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY || ''
 
-const VOICE_IDS = {
+const VOICE_IDS: Record<string, string> = {
   DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'pNInz6obpgDQGcFmaJgB', // Adam
   NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || '21m00Tcm4TlvDq8ikWAM', // Rachel
 }
@@ -13,16 +13,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (!ELEVENLABS_API_KEY) {
+    console.error('[ElevenLabs proxy] No API key configured')
     return res.status(500).json({ error: 'ELEVENLABS_API_KEY not configured' })
   }
 
-  const { text, speaker, stability = 0.5, similarity_boost = 0.75 } = req.body
+  const { text, speaker, stability = 0.5, similarity_boost = 0.75 } = req.body ?? {}
 
   if (!text || !speaker) {
     return res.status(400).json({ error: 'Missing required fields: text, speaker' })
   }
 
-  const voiceId = VOICE_IDS[speaker as keyof typeof VOICE_IDS]
+  const voiceId = VOICE_IDS[speaker]
   if (!voiceId) {
     return res.status(400).json({ error: `Unknown speaker: ${speaker}` })
   }
@@ -56,13 +57,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(response.status).json({ error: errText })
     }
 
-    // Stream audio/mpeg back to the browser
+    // Return as base64 JSON — avoids any binary streaming issues on Vercel
     const audioBuffer = await response.arrayBuffer()
-    res.setHeader('Content-Type', 'audio/mpeg')
-    res.setHeader('Cache-Control', 'no-store')
-    return res.status(200).send(Buffer.from(audioBuffer))
+    const base64Audio = Buffer.from(audioBuffer).toString('base64')
+    return res.status(200).json({ audio: base64Audio, contentType: 'audio/mpeg' })
+
   } catch (error: any) {
-    console.error('[ElevenLabs proxy] Network error:', error)
+    console.error('[ElevenLabs proxy] Error:', error)
     return res.status(500).json({ error: error.message || 'Internal server error' })
   }
 }

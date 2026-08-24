@@ -7,16 +7,13 @@ export type ElevenLabsSpeaker = 'DOC_UNO' | 'NURSE_FLORENCE'
 export interface ElevenLabsSynthOptions {
   text: string
   speaker: ElevenLabsSpeaker
-  /** 0.0–1.0 — lower = more stable/monotone. Defaults to 0.5 */
   stability?: number
-  /** 0.0–1.0 — higher = closer to original voice. Defaults to 0.75 */
   similarityBoost?: number
 }
 
 /**
  * Synthesizes speech via the /api/elevenlabs proxy (ElevenLabs Turbo v2.5).
  * Returns a blob object-URL (audio/mpeg) on success, or null on failure.
- * The caller is responsible for revoking the URL when done (URL.revokeObjectURL).
  */
 export async function synthesizeSpeechElevenLabs({
   text,
@@ -42,10 +39,24 @@ export async function synthesizeSpeechElevenLabs({
       return null
     }
 
-    const blob = await response.blob()
+    // Proxy returns base64-encoded audio as JSON
+    const data = await response.json()
+    if (!data.audio) {
+      console.warn('[ElevenLabs TTS] No audio in proxy response')
+      return null
+    }
+
+    // Decode base64 → Blob → object URL
+    const byteChars = atob(data.audio)
+    const byteNums = new Uint8Array(byteChars.length)
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNums[i] = byteChars.charCodeAt(i)
+    }
+    const blob = new Blob([byteNums], { type: data.contentType || 'audio/mpeg' })
     return URL.createObjectURL(blob)
+
   } catch (error) {
-    console.error('[ElevenLabs TTS] Proxy fetch failed:', error)
+    console.error('[ElevenLabs TTS] Error:', error)
     return null
   }
 }
