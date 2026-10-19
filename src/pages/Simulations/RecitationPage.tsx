@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Microphone as Mic, FileText, BookOpen, Globe, CheckCircle as CheckCircle2, X, CaretUp as ChevronUp } from '@phosphor-icons/react'
+import { Microphone as Mic, FileText, BookOpen, Globe, CheckCircle as CheckCircle2, CaretDown as ChevronDown, Play, Leaf, Chalkboard, Heart } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
-import { useSimulationStore, DifficultyMode } from '@/stores/simulationStore'
+import { useSimulationStore } from '@/stores/simulationStore'
+import type { DifficultyMode } from '@/stores/simulationStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { cn } from '@/lib/utils'
 import { SimulationEngine } from '@/components/shared/SimulationEngine'
@@ -25,7 +26,7 @@ export default function RecitationPage() {
 type SourceType = 'file' | 'knowledge' | 'none'
 
 function RecitationSetup() {
-  const { isFrance, greetingName, aiAssistantName } = usePersonalization()
+  const { isFrance, aiAssistantName } = usePersonalization()
   const { topics, items, savedKnowledge } = useStudyBoxStore()
   const { startSession } = useSimulationStore()
 
@@ -66,268 +67,257 @@ function RecitationSetup() {
     startSession('recitation', selectedTopic, difficulty, sourceText, sourceName)
   }
 
+  const examinerName = isFrance ? 'Doc Uno' : aiAssistantName
+  const examinerAvatar = isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'
+
+  const sources = [
+    { id: 'none' as SourceType, label: 'General knowledge', desc: `${examinerName} picks the questions`, icon: Globe },
+    { id: 'file' as SourceType, label: 'Uploaded file', desc: 'Your Study Box notes', icon: FileText },
+    { id: 'knowledge' as SourceType, label: 'Saved reference', desc: 'From Knowledge Garden', icon: BookOpen },
+  ]
+
+  const difficulties = [
+    { id: 'gentle', label: 'Gentle', desc: isFrance ? 'Guided, warm and supportive, babe.' : 'Guided, step-by-step mentoring.', icon: Leaf },
+    { id: 'clinical_instructor', label: 'Clinical Instructor', desc: 'Strict, high-pressure oral exam questioning.', icon: Chalkboard },
+    ...(isFrance ? [{ id: 'doc_uno', label: 'Doc Uno Mode', desc: 'Teasing, challenging, sweet boyfriend-style questioning.', icon: Heart }] : [])
+  ]
+
+  const sourceLabel = sourceType === 'file'
+    ? items.find(i => i.id === selectedFileId)?.file_name
+    : sourceType === 'knowledge'
+      ? savedKnowledge.find(k => k.id === selectedKnowledgeId)?.title
+      : 'General knowledge'
+
+  const canStart = !((sourceType === 'file' && !selectedFileId) || (sourceType === 'knowledge' && !selectedKnowledgeId))
+
   return (
-    <div className="page-container max-w-3xl mx-auto">
+    <div className="page-container max-w-5xl">
       <PageHeader
         icon={Mic}
         title={isFrance ? "France's Recitation Practice" : 'Recitation Mode'}
-        subtitle={isFrance ? 'Prepare for clinicals by defending your knowledge out loud, babe!' : 'Prepare for clinicals by defending your knowledge out loud.'}
+        subtitle={isFrance ? 'Prepare for clinicals by defending your knowledge out loud, babe.' : 'Prepare for clinicals by defending your knowledge out loud.'}
       />
 
-      <div className="fn-card p-8 space-y-8">
-
-        {/* Topic */}
-        <div className="space-y-4">
-          <label className="text-sm font-bold text-[var(--text-secondary)]">Select Topic</label>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsTopicDropdownOpen(!isTopicDropdownOpen)}
-              className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-bold text-left focus:border-[var(--pink)] transition-all active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-2">
-                {topics.length > 0 && (
-                  <span 
-                    className="w-3 h-3 rounded-full shrink-0" 
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
+        <div className="space-y-4 min-w-0">
+          {/* Topic */}
+          <Section step={1} title="Topic">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsTopicDropdownOpen(!isTopicDropdownOpen)}
+                className="w-full flex items-center justify-between gap-2 bg-[var(--card)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 text-sm text-left hover:border-[var(--accent)] transition-colors"
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ backgroundColor: topics.find(t => t.title === selectedTopic)?.color || 'var(--pink)' }}
                   />
-                )}
-                <span className="truncate">{selectedTopic}</span>
-              </div>
-              <ChevronUp 
-                size={18} 
-                className={cn(
-                  "text-[var(--text-secondary)] transition-transform duration-300 shrink-0",
-                  isTopicDropdownOpen ? "" : "rotate-180"
-                )} 
-              />
-            </button>
+                  <span className="truncate">{selectedTopic}</span>
+                </span>
+                <ChevronDown size={15} className={cn('text-[var(--text-secondary)] transition-transform shrink-0', isTopicDropdownOpen && 'rotate-180')} />
+              </button>
 
-            <AnimatePresence>
-              {isTopicDropdownOpen && (
-                <>
-                  {/* Backdrop overlay to close when clicking outside */}
-                  <div 
-                    className="fixed inset-0 z-40 cursor-default" 
-                    onClick={() => setIsTopicDropdownOpen(false)}
-                  />
-                  
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border border-[var(--border)] rounded-2xl shadow-fn-lg max-h-60 overflow-y-auto custom-scrollbar p-2"
-                  >
-                    <div className="space-y-1">
-                      {topics.length > 0 ? (
-                        topics.map(t => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedTopic(t.title)
-                              setIsTopicDropdownOpen(false)
-                            }}
-                            className={cn(
-                              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5",
-                              selectedTopic === t.title 
-                                ? "bg-th-pink/10 text-[var(--pink)]" 
-                                : "text-[var(--text)]"
-                            )}
-                          >
-                            <span 
-                              className="w-2.5 h-2.5 rounded-full shrink-0" 
-                              style={{ backgroundColor: t.color }}
-                            />
-                            <span className="truncate">{t.title}</span>
-                          </button>
-                        ))
-                      ) : (
+              <AnimatePresence>
+                {isTopicDropdownOpen && (
+                  <>
+                    {/* Backdrop overlay to close when clicking outside */}
+                    <div className="fixed inset-0 z-40 cursor-default" onClick={() => setIsTopicDropdownOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-fn-lg max-h-60 overflow-y-auto custom-scrollbar p-1.5"
+                    >
+                      {(topics.length > 0 ? topics : [{ id: 'general', title: 'General Nursing', color: 'var(--pink)' }]).map(t => (
                         <button
+                          key={t.id}
                           type="button"
                           onClick={() => {
-                            setSelectedTopic("General Nursing")
+                            setSelectedTopic(t.title)
                             setIsTopicDropdownOpen(false)
                           }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5 bg-th-pink/10 text-[var(--pink)]"
+                          className={cn(
+                            'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-left transition-colors hover:bg-[var(--rose-soft)]',
+                            selectedTopic === t.title ? 'bg-[var(--rose-soft)] text-[var(--pink)] font-medium' : 'text-[var(--text)]'
+                          )}
                         >
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[var(--pink)]" />
-                          <span className="truncate">General Nursing</span>
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
+                          <span className="truncate">{t.title}</span>
                         </button>
-                      )}
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Study Source Selector */}
-        <div className="space-y-4">
-          <label className="text-sm font-bold text-[var(--text-secondary)]">
-            Study Source <span className="normal-case font-normal text-th-text-secondary/60 ml-1">(optional — let {isFrance ? "Doc Uno" : aiAssistantName} test you on your own materials)</span>
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { id: 'none' as SourceType, label: 'General Knowledge', desc: `${isFrance ? "Doc Uno" : aiAssistantName} picks the questions`, icon: Globe },
-              { id: 'file' as SourceType, label: 'Uploaded File', desc: 'Test me on my Study Box notes', icon: FileText },
-              { id: 'knowledge' as SourceType, label: 'Knowledge Garden', desc: 'Use a saved reference', icon: BookOpen },
-            ].map(s => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  setSourceType(s.id)
-                  setSelectedFileId(null)
-                  setSelectedKnowledgeId(null)
-                }}
-                className={cn(
-                  "p-4 rounded-2xl border-2 cursor-pointer transition-all text-left relative",
-                  sourceType === s.id
-                    ? "border-[var(--pink)] bg-th-pink/5"
-                    : "border-[var(--border)] hover:border-th-pink/50"
+                      ))}
+                    </motion.div>
+                  </>
                 )}
-              >
-                <s.icon size={18} className={cn("mb-2", sourceType === s.id ? "text-[var(--pink)]" : "text-[var(--text-secondary)]")} />
-                <p className="font-bold text-sm mb-0.5">{s.label}</p>
-                <p className="text-[10px] text-[var(--text-secondary)]">{s.desc}</p>
-                {sourceType === s.id && (
-                  <CheckCircle2 size={14} className="absolute top-3 right-3 text-[var(--pink)]" />
+              </AnimatePresence>
+            </div>
+          </Section>
+
+          {/* Study Source Selector */}
+          <Section step={2} title="Study source" hint="Optional">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {sources.map(src => (
+                <button
+                  key={src.id}
+                  onClick={() => {
+                    setSourceType(src.id)
+                    setSelectedFileId(null)
+                    setSelectedKnowledgeId(null)
+                  }}
+                  className={cn(
+                    'p-3.5 rounded-xl border text-left relative flex sm:flex-col items-center sm:items-start gap-3 sm:gap-2 transition-colors',
+                    sourceType === src.id ? 'border-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]'
+                  )}
+                >
+                  <span className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', sourceType === src.id ? 'bg-[var(--pink)] text-white' : 'bg-th-pink/10 text-[var(--pink)]')}>
+                    <src.icon size={18} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[13.5px] font-medium">{src.label}</span>
+                    <span className="block text-[11.5px] text-[var(--text-secondary)]">{src.desc}</span>
+                  </span>
+                  {sourceType === src.id && <CheckCircle2 size={16} weight="fill" className="absolute top-3 right-3 text-[var(--pink)]" />}
+                </button>
+              ))}
+            </div>
+
+            {/* File picker */}
+            {sourceType === 'file' && (
+              <div className="mt-3">
+                {filesWithContent.length === 0 ? (
+                  <EmptyPicker text="No uploaded files with readable text yet. Upload notes to your Study Box first." />
+                ) : (
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                    {filesWithContent.map(file => (
+                      <PickerRow
+                        key={file.id}
+                        icon={FileText}
+                        title={file.file_name}
+                        sub={`${file.extracted_text.substring(0, 80)}...`}
+                        active={selectedFileId === file.id}
+                        onClick={() => setSelectedFileId(file.id)}
+                      />
+                    ))}
+                  </div>
                 )}
-              </button>
-            ))}
-          </div>
-
-          {/* File picker */}
-          {sourceType === 'file' && (
-            <div className="space-y-2 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-              {filesWithContent.length === 0 ? (
-                <div className="p-4 rounded-2xl border border-dashed border-[var(--border)] text-center text-sm text-[var(--text-secondary)]">
-                  No uploaded files with content found. Upload notes to your Study Box first!
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
-                  {filesWithContent.map(file => (
-                    <button
-                      key={file.id}
-                      onClick={() => setSelectedFileId(file.id)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
-                        selectedFileId === file.id
-                          ? "border-[var(--pink)] bg-th-pink/5"
-                          : "border-[var(--border)] hover:border-th-pink/50"
-                      )}
-                    >
-                      <FileText size={16} className="text-[var(--pink)] shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold truncate">{file.file_name}</p>
-                        <p className="text-[10px] text-[var(--text-secondary)] truncate">
-                          {file.extracted_text.substring(0, 80)}...
-                        </p>
-                      </div>
-                      {selectedFileId === file.id && (
-                        <CheckCircle2 size={14} className="text-[var(--pink)] shrink-0 ml-auto" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Knowledge Garden picker */}
-          {sourceType === 'knowledge' && (
-            <div className="space-y-2 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-              {savedKnowledge.length === 0 ? (
-                <div className="p-4 rounded-2xl border border-dashed border-[var(--border)] text-center text-sm text-[var(--text-secondary)]">
-                  No saved references yet. Save something from the Knowledge Garden first!
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
-                  {savedKnowledge.map(ref => (
-                    <button
-                      key={ref.id}
-                      onClick={() => setSelectedKnowledgeId(ref.id)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
-                        selectedKnowledgeId === ref.id
-                          ? "border-[var(--pink)] bg-th-pink/5"
-                          : "border-[var(--border)] hover:border-th-pink/50"
-                      )}
-                    >
-                      <BookOpen size={16} className="text-[var(--pink)] shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold truncate">{ref.title}</p>
-                        <p className="text-[10px] text-[var(--text-secondary)] truncate">{ref.source}</p>
-                      </div>
-                      {selectedKnowledgeId === ref.id && (
-                        <CheckCircle2 size={14} className="text-[var(--pink)] shrink-0 ml-auto" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Active source badge */}
-          {((sourceType === 'file' && selectedFileId) || (sourceType === 'knowledge' && selectedKnowledgeId)) && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-th-pink/10 border border-th-pink/20 text-sm">
-              <CheckCircle2 size={14} className="text-[var(--pink)]" />
-              <span className="font-medium text-[var(--pink)] text-xs">
-                {isFrance ? 'Doc Uno' : aiAssistantName} will base questions on:{' '}
-                <strong>
-                  {sourceType === 'file'
-                    ? items.find(i => i.id === selectedFileId)?.file_name
-                    : savedKnowledge.find(k => k.id === selectedKnowledgeId)?.title}
-                </strong>
-              </span>
-              <button
-                onClick={() => { setSourceType('none'); setSelectedFileId(null); setSelectedKnowledgeId(null) }}
-                className="ml-auto text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Difficulty */}
-        <div className="space-y-4">
-          <label className="text-sm font-bold text-[var(--text-secondary)]">Select Difficulty</label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { id: 'gentle', label: 'Gentle Mode', desc: isFrance ? 'Guided, warm, and supportive review, babe.' : 'Guided, step-by-step supportive mentoring.' },
-              { id: 'clinical_instructor', label: 'Clinical Instructor', desc: 'Strict, professional high-pressure oral exam questioning.' },
-              ...(isFrance ? [{ id: 'doc_uno', label: 'Doc Uno Mode', desc: 'Teasing, challenging, sweet boyfriend-style questioning.' }] : [])
-            ].map(d => (
-              <div
-                key={d.id}
-                onClick={() => setDifficulty(d.id as DifficultyMode)}
-                className={cn(
-                  "p-5 rounded-2xl border-2 cursor-pointer transition-all",
-                  difficulty === d.id ? "border-[var(--pink)] bg-th-pink/5" : "border-[var(--border)] hover:border-th-pink/50"
-                )}
-              >
-                <h3 className="font-bold mb-1">{d.label}</h3>
-                <p className="text-xs text-[var(--text-secondary)]">{d.desc}</p>
               </div>
-            ))}
-          </div>
+            )}
+
+            {/* Knowledge Garden picker */}
+            {sourceType === 'knowledge' && (
+              <div className="mt-3">
+                {savedKnowledge.length === 0 ? (
+                  <EmptyPicker text="No saved references yet. Save something from the Knowledge Garden first." />
+                ) : (
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                    {savedKnowledge.map(ref => (
+                      <PickerRow
+                        key={ref.id}
+                        icon={BookOpen}
+                        title={ref.title}
+                        sub={ref.source}
+                        active={selectedKnowledgeId === ref.id}
+                        onClick={() => setSelectedKnowledgeId(ref.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Section>
+
+          {/* Difficulty */}
+          <Section step={3} title="Examiner style">
+            <div className={cn('grid grid-cols-1 gap-2', difficulties.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+              {difficulties.map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => setDifficulty(d.id as DifficultyMode)}
+                  className={cn(
+                    'p-3.5 rounded-xl border text-left transition-colors',
+                    difficulty === d.id ? 'border-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]'
+                  )}
+                >
+                  <d.icon size={18} className={difficulty === d.id ? 'text-[var(--pink)]' : 'text-[var(--text-secondary)]'} weight={difficulty === d.id ? 'fill' : 'regular'} />
+                  <p className="text-[13.5px] font-medium mt-1.5">{d.label}</p>
+                  <p className="text-[11.5px] text-[var(--text-secondary)] leading-snug">{d.desc}</p>
+                </button>
+              ))}
+            </div>
+          </Section>
         </div>
 
-        <button
-          onClick={handleStart}
-          disabled={
-            (sourceType === 'file' && !selectedFileId) ||
-            (sourceType === 'knowledge' && !selectedKnowledgeId)
-          }
-          className="btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Start Recitation Simulation
-        </button>
+        {/* Summary */}
+        <aside className="fn-card p-5 lg:sticky lg:top-4">
+          <div className="flex items-center gap-3">
+            <img src={examinerAvatar} alt={examinerName} className="w-12 h-12 rounded-full object-cover border border-th-pink/20" />
+            <div>
+              <p className="font-heading font-semibold text-[15px] leading-tight">{examinerName}</p>
+              <p className="text-[12px] text-[var(--text-secondary)]">Your examiner</p>
+            </div>
+          </div>
+          <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed mt-3">
+            {examinerName} will ask questions out loud. Answer by speaking or typing, then end the session to get scored on accuracy, safety, reasoning and confidence.
+          </p>
+
+          <dl className="mt-4 space-y-2 text-[13px] border-t border-[var(--border)] pt-4">
+            <SummaryRow label="Topic" value={selectedTopic} />
+            <SummaryRow label="Source" value={sourceLabel || 'Choose one'} muted={!canStart} />
+            <SummaryRow label="Style" value={difficulties.find(d => d.id === difficulty)?.label || ''} />
+          </dl>
+
+          <button
+            onClick={handleStart}
+            disabled={!canStart}
+            className="btn-primary w-full mt-5 py-3 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Play size={16} weight="fill" /> Start recitation
+          </button>
+        </aside>
       </div>
+    </div>
+  )
+}
+
+function Section({ step, title, hint, children }: { step: number; title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="fn-card p-5">
+      <div className="flex items-baseline gap-2.5 mb-3.5">
+        <span className="w-6 h-6 rounded-full bg-[var(--rose-soft)] border border-[var(--border)] text-[var(--pink)] text-xs font-semibold flex items-center justify-center shrink-0">{step}</span>
+        <h2 className="font-heading font-semibold text-[15px]">{title}</h2>
+        {hint && <span className="text-xs text-[var(--text-secondary)] ml-auto">{hint}</span>}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function PickerRow({ icon: RowIcon, title, sub, active, onClick }: { icon: typeof FileText; title: string; sub: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn('w-full flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors', active ? 'border-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]')}
+    >
+      <RowIcon size={16} className="text-[var(--pink)] shrink-0" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-medium truncate">{title}</span>
+        <span className="block text-[11.5px] text-[var(--text-secondary)] truncate">{sub}</span>
+      </span>
+      {active && <CheckCircle2 size={16} weight="fill" className="text-[var(--pink)] shrink-0" />}
+    </button>
+  )
+}
+
+function EmptyPicker({ text }: { text: string }) {
+  return <p className="px-3.5 py-3 rounded-xl border border-dashed border-[var(--accent)] text-[12.5px] text-[var(--text-secondary)]">{text}</p>
+}
+
+function SummaryRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="text-[var(--text-secondary)]">{label}</dt>
+      <dd className={cn('font-medium text-right truncate', muted && 'text-[var(--text-secondary)]')}>{value}</dd>
     </div>
   )
 }

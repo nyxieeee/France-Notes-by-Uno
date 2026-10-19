@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, Brain as BrainCircuit, CircleNotch as Loader2, ShieldWarning as ShieldAlert, Pulse as Activity, SpeakerHigh as Volume2, Headphones } from '@phosphor-icons/react'
+import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, CircleNotch as Loader2, ShieldWarning as ShieldAlert, SpeakerHigh as Volume2, Headphones, Check, ArrowUpRight, Warning, ArrowLeft, StopCircle } from '@phosphor-icons/react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { generateChatCompletion } from '@/lib/ai'
@@ -307,137 +307,128 @@ function SimulationSession() {
     gradeSession()
   }
 
+  const assistantAvatar = isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'
+  const modeLabel = activeMode === 'recitation' ? difficulty.replace('_', ' ') : 'Clinical instructor'
+
   return (
-      <div className="page-container h-[calc(100vh-80px)] flex flex-col max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-4 bg-[var(--card)] p-4 rounded-2xl border border-[var(--border)] shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-th-pink/20 shrink-0">
-              <img src={isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
-            </div>
-            <div>
-              <h2 className="font-bold text-sm">{activeMode === 'recitation' ? 'Live Recitation' : 'RetDem Practice'}: {sourceName || topic}</h2>
-              <p className="text-xs text-[var(--text-secondary)] capitalize">{activeMode === 'recitation' ? difficulty.replace('_', ' ') : 'Clinical Instructor Mode'}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Voice mode indicator */}
-            {('speechSynthesis' in window || 'webkitSpeechRecognition' in window) && (
-              <button
-                onClick={() => setVoiceMode(v => !v)}
-                className={cn(
-                  "text-xs font-bold px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5",
-                  voiceMode
-                    ? "bg-th-pink/10 text-[var(--pink)] border border-th-pink/20"
-                    : "bg-[var(--secondary-bg)] text-[var(--text-secondary)] border border-[var(--border)]"
-                )}
-                title={voiceMode ? "Voice mode on" : "Voice mode off"}
-              >
-                <Headphones size={13} />
-                {voiceMode ? 'Voice On' : 'Voice Off'}
-              </button>
-            )}
-            <button onClick={handleEnd} className="text-sm font-bold text-[var(--error)] hover:bg-th-error/10 px-4 py-2 rounded-full transition-colors">
-              End Session
-            </button>
-          </div>
+    <div className="page-container max-w-4xl h-[calc(100dvh-80px)] flex flex-col pb-24 lg:pb-6">
+      {/* Session header */}
+      <div className="fn-card px-4 py-3 mb-3 flex items-center gap-3">
+        <div className="relative shrink-0">
+          <img src={assistantAvatar} alt={aiAssistantName} className="w-11 h-11 rounded-full object-cover border border-th-pink/20" />
+          <span className={cn('absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[var(--card)]', isSpeaking || isTyping ? 'bg-[var(--pink)] animate-pulse' : 'bg-[var(--success)]')} />
         </div>
-
-        {/* Voice status bar */}
-        {(isSpeaking || isListening || isTyping) && (
-          <div className={cn(
-            "mb-4 px-4 py-2.5 rounded-2xl border flex items-center gap-3 text-sm font-medium",
-            isSpeaking ? "bg-blue-50/50 border-blue-200/30 text-blue-600" :
-            isListening ? "bg-green-50/50 border-green-200/30 text-green-600" :
-            "bg-th-pink/5 border-th-pink/10 text-[var(--pink)]"
-          )}>
-            {isSpeaking ? (
-              <><Volume2 size={16} className="animate-pulse" /> {aiAssistantName} is speaking...</>
-            ) : isListening ? (
-              <><Mic size={16} className="animate-pulse" /> Listening... {interimText && <span className="text-[var(--text-secondary)] font-normal italic">"{interimText}"</span>}</>
-            ) : (
-              <><Loader2 size={16} className="animate-spin" /> {aiAssistantName} is thinking...</>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11.5px] font-medium text-[var(--pink)]">{activeMode === 'recitation' ? 'Live recitation' : 'RetDem practice'}</p>
+          <h2 className="font-heading font-semibold text-[15px] leading-tight truncate">{sourceName || topic}</h2>
+          <p className="text-[11.5px] text-[var(--text-secondary)] capitalize">{modeLabel}</p>
+        </div>
+        {('speechSynthesis' in window || 'webkitSpeechRecognition' in window) && (
+          <button
+            onClick={() => setVoiceMode(v => !v)}
+            className={cn(
+              'flex text-[12.5px] font-medium p-2 sm:px-3 sm:py-1.5 rounded-full transition-colors items-center gap-1.5 border shrink-0',
+              voiceMode ? 'bg-[var(--rose-soft)] text-[var(--pink)] border-th-pink/20' : 'text-[var(--text-secondary)] border-[var(--border)]'
             )}
-          </div>
+            aria-pressed={voiceMode}
+            aria-label={voiceMode ? 'Turn voice off' : 'Turn voice on'}
+          >
+            <Headphones size={14} weight={voiceMode ? 'fill' : 'regular'} />
+            <span className="hidden sm:inline">{voiceMode ? 'Voice on' : 'Voice off'}</span>
+          </button>
         )}
+        <button onClick={handleEnd} className="text-[13px] font-medium text-[var(--error)] border border-th-error/20 hover:bg-th-error/5 px-3.5 py-1.5 rounded-full transition-colors flex items-center gap-1.5 shrink-0">
+          <StopCircle size={15} /> <span className="hidden sm:inline">End &amp; grade</span><span className="sm:hidden">End</span>
+        </button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto fn-card p-6 mb-4 space-y-6">
+      {/* Messages */}
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar fn-card p-4 sm:p-6 space-y-5">
         {messages.map(m => (
-          <div key={m.id} className={cn("flex gap-4 max-w-[85%]", m.role === 'user' ? "ml-auto flex-row-reverse" : "")}>
-            <div className={cn("w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-sm border border-th-pink/10", m.role === 'user' ? "bg-[var(--bg)] text-[var(--text-secondary)]" : "")}>
+          <div key={m.id} className={cn('flex gap-3 max-w-[88%] sm:max-w-[80%]', m.role === 'user' ? 'ml-auto flex-row-reverse' : '')}>
+            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-th-pink/15">
               {m.role === 'user' ? (
                 user?.avatar_url ? (
                   <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--text-secondary)] font-bold text-sm">
+                  <div className="w-full h-full flex items-center justify-center bg-[var(--rose-soft)] text-[var(--pink)] font-semibold text-sm">
                     {user?.full_name ? user.full_name.charAt(0) : <User size={16} />}
                   </div>
                 )
               ) : (
-                <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover" />
+                <img src={assistantAvatar} alt={aiAssistantName} className="w-full h-full object-cover" />
               )}
             </div>
-            <div className={cn("p-4 rounded-2xl text-sm leading-relaxed", m.role === 'user' ? "bg-[var(--pink)] text-white rounded-tr-none" : "bg-th-secondary-bg/50 rounded-tl-none")}>
-               <MarkdownText content={m.content} />
+            <div className={cn('px-4 py-3 rounded-2xl text-[14px] leading-relaxed min-w-0', m.role === 'user' ? 'bg-[var(--pink)] text-white rounded-tr-md' : 'bg-[var(--rose-soft)] rounded-tl-md')}>
+              <MarkdownText content={m.content} className={m.role === 'user' ? 'text-white' : undefined} />
             </div>
           </div>
         ))}
         {isTyping && (
-          <div className="flex gap-4">
-            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-sm border border-th-pink/10">
-              <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
-            </div>
-            <div className="p-4 rounded-2xl bg-th-secondary-bg/50 rounded-tl-none flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce"></span>
-              <span className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-              <span className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+          <div className="flex gap-3">
+            <img src={assistantAvatar} alt={aiAssistantName} className="w-8 h-8 rounded-full object-cover shrink-0 border border-th-pink/15" />
+            <div className="px-4 py-3.5 rounded-2xl bg-[var(--rose-soft)] rounded-tl-md flex items-center gap-1">
+              {[0, 0.2, 0.4].map(d => <span key={d} className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce" style={{ animationDelay: `${d}s` }} />)}
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="bg-[var(--card)] p-4 rounded-2xl border border-[var(--border)] shadow-sm flex items-center gap-4">
-        <button 
+      {/* Voice status */}
+      <div className="h-9 flex items-center px-1 text-[12.5px] text-[var(--text-secondary)]">
+        {isSpeaking ? (
+          <span className="flex items-center gap-1.5 text-[var(--pink)]"><Volume2 size={15} className="animate-pulse" /> {aiAssistantName} is speaking</span>
+        ) : isListening ? (
+          <span className="flex items-center gap-1.5 min-w-0"><Mic size={15} className="text-[var(--success)] animate-pulse shrink-0" /> Listening{interimText && <span className="italic truncate">&ldquo;{interimText}&rdquo;</span>}</span>
+        ) : isTyping ? (
+          <span className="flex items-center gap-1.5"><Loader2 size={15} className="animate-spin text-[var(--pink)]" /> {aiAssistantName} is thinking</span>
+        ) : (
+          <span>{voiceMode ? 'Tap the mic to answer out loud, or type below.' : 'Type your answer below.'}</span>
+        )}
+      </div>
+
+      {/* Composer */}
+      <div className="fn-card p-2 flex items-end gap-2">
+        <button
           onClick={toggleListen}
+          aria-label={isListening ? 'Stop listening' : 'Start speaking'}
           className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all", 
-            isListening ? "bg-[var(--error)] text-white animate-pulse" : "bg-[var(--secondary-bg)] text-[var(--text-secondary)] hover:bg-[var(--pink)] hover:text-white"
+            'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors',
+            isListening ? 'bg-[var(--error)] text-white animate-pulse' : 'bg-[var(--rose-soft)] text-[var(--pink)] hover:bg-th-pink/20'
           )}
         >
-          {isListening ? <MicOff size={22} /> : <Mic size={22} />}
+          {isListening ? <MicOff size={20} /> : <Mic size={20} />}
         </button>
-        
-        <div className="flex-1 relative">
-              <textarea 
-                value={input + (isListening && interimText && !input ? interimText : '')}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={isListening ? "Speak now..." : voiceMode ? "Speak or type your answer..." : "Type your response here..."}
-                className="w-full bg-[var(--bg)] rounded-2xl px-5 py-3.5 text-base outline-none border border-transparent focus:border-[var(--pink)] resize-none block align-middle"
-                rows={1}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSend()
-                  }
-                }}
-              />
-              {isListening && interimText && !input && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="flex gap-0.5">
-                    <span className="w-1 h-3 bg-[var(--pink)] rounded-full animate-pulse" style={{ animationDelay: '0s' }} />
-                    <span className="w-1 h-4 bg-[var(--pink)] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                    <span className="w-1 h-2 bg-[var(--pink)] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-                  </div>
-                </div>
-              )}
-            </div>
 
-        <button 
+        <div className="flex-1 relative">
+          <textarea
+            value={input + (isListening && interimText && !input ? interimText : '')}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={isListening ? 'Speak now...' : voiceMode ? 'Speak or type your answer...' : 'Type your response here...'}
+            className="w-full bg-transparent px-2 py-2.5 text-[15px] outline-none resize-none block max-h-32"
+            rows={1}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSend()
+              }
+            }}
+          />
+          {isListening && interimText && !input && (
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5">
+              {[3, 4, 2].map((h, i) => <span key={i} className="w-1 bg-[var(--pink)] rounded-full animate-pulse" style={{ height: h * 4, animationDelay: `${i * 0.2}s` }} />)}
+            </div>
+          )}
+        </div>
+
+        <button
           onClick={handleSend}
           disabled={(!input.trim() && !isListening) || isTyping}
-          className="w-12 h-12 rounded-2xl bg-[var(--pink)] text-white flex items-center justify-center disabled:opacity-50 shrink-0 transition-all"
+          aria-label="Send answer"
+          className="w-11 h-11 rounded-xl bg-[var(--pink)] text-white flex items-center justify-center disabled:opacity-40 shrink-0 transition-opacity"
         >
-          <Send size={20} className="ml-0.5" />
+          <Send size={18} weight="fill" />
         </button>
       </div>
     </div>
@@ -446,7 +437,9 @@ function SimulationSession() {
 
 function SimulationReport() {
   const { isFrance, aiAssistantName } = usePersonalization()
-  const { scores, feedback, reset, gradingFailed, gradeSession } = useSimulationStore()
+  const { scores, feedback, reset, gradingFailed, gradeSession, topic, sourceName } = useSimulationStore()
+  const examinerName = isFrance ? 'Doc Uno' : aiAssistantName
+  const examinerAvatar = isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'
 
   if (gradingFailed) {
     return (
@@ -454,9 +447,9 @@ function SimulationReport() {
         <div className="w-16 h-16 rounded-2xl bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center mb-4">
           <ShieldAlert size={30} weight="duotone" />
         </div>
-        <h2 className="text-xl font-semibold">Couldn't grade this session</h2>
+        <h2 className="font-heading text-xl font-semibold">Couldn't grade this session</h2>
         <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-sm">
-          {isFrance ? 'Doc Uno' : aiAssistantName} couldn't finish the evaluation. Your conversation is still here — try grading again.
+          {examinerName} couldn't finish the evaluation. Your conversation is still here, so try grading again.
         </p>
         <div className="flex gap-2 mt-6">
           <button onClick={() => gradeSession()} className="btn-primary px-6 py-2.5 text-sm">Try grading again</button>
@@ -468,65 +461,114 @@ function SimulationReport() {
 
   if (!scores || !feedback) {
     return (
-      <div className="page-container flex flex-col items-center justify-center h-[50vh]">
-        <Loader2 size={40} className="animate-spin text-[var(--pink)] mb-4" />
-        <p className="font-bold text-[var(--text-secondary)]">{isFrance ? "Doc Uno" : aiAssistantName} is grading your performance...</p>
+      <div className="page-container flex flex-col items-center justify-center h-[55vh] text-center">
+        <div className="relative mb-5">
+          <img src={examinerAvatar} alt={examinerName} className="w-20 h-20 rounded-full object-cover border-2 border-th-pink/20" />
+          <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[var(--card)] border border-[var(--border)] flex items-center justify-center">
+            <Loader2 size={18} className="animate-spin text-[var(--pink)]" />
+          </span>
+        </div>
+        <h2 className="font-heading font-semibold text-lg">Grading your session</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">{examinerName} is reviewing your answers for accuracy, safety, reasoning and confidence.</p>
       </div>
     )
   }
 
+  const overall = Math.round((scores.accuracy + scores.safety + scores.reasoning + scores.confidence) / 4)
+  const verdict = overall >= 85 ? 'Excellent work' : overall >= 70 ? 'Solid performance' : overall >= 50 ? 'Getting there' : 'Keep practicing'
+
   return (
-    <div className="page-container max-w-3xl mx-auto pb-20">
-      <div className="text-center mb-10">
-        <div className="inline-flex w-20 h-20 bg-[var(--success)] text-white rounded-2xl items-center justify-center mb-6 shadow-fn">
-          <ShieldAlert size={40} />
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Performance Evaluation</h1>
-        <p className="text-[var(--text-secondary)] font-medium">Here is how you handled the clinical scenario.</p>
-      </div>
+    <div className="page-container max-w-4xl pb-20">
+      <button onClick={reset} className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--pink)] mb-4">
+        <ArrowLeft size={15} /> Simulation hub
+      </button>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <ScoreCard label="Accuracy" score={scores.accuracy} />
-        <ScoreCard label="Safety" score={scores.safety} />
-        <ScoreCard label="Reasoning" score={scores.reasoning} />
-        <ScoreCard label="Confidence" score={scores.confidence} />
-      </div>
+      {/* Overall */}
+      <section className="fn-card p-5 sm:p-6 mb-5 flex flex-col sm:flex-row sm:items-center gap-5">
+        <ScoreRing value={overall} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-medium text-[var(--pink)]">Performance evaluation</p>
+          <h1 className="font-heading font-semibold text-2xl">{verdict}</h1>
+          <p className="text-[13px] text-[var(--text-secondary)] mt-0.5 truncate">{sourceName || topic}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:w-[260px] shrink-0">
+          <ScoreBar label="Accuracy" score={scores.accuracy} />
+          <ScoreBar label="Safety" score={scores.safety} />
+          <ScoreBar label="Reasoning" score={scores.reasoning} />
+          <ScoreBar label="Confidence" score={scores.confidence} />
+        </div>
+      </section>
 
-      <div className="space-y-6">
-        <div className="fn-card p-6 border-l-4 border-l-[var(--success)]">
-          <h3 className="font-bold text-lg mb-3">What You Did Right</h3>
-          <ul className="space-y-2">
-            {feedback.correct.map((f, i) => <li key={i} className="text-sm text-[var(--text-secondary)] flex items-start gap-2"><span className="text-[var(--success)]">✓</span> {f}</li>)}
-          </ul>
-        </div>
-        <div className="fn-card p-6 border-l-4 border-l-[var(--warning)]">
-          <h3 className="font-bold text-lg mb-3">Areas to Improve</h3>
-          <ul className="space-y-2">
-            {feedback.missed.map((f, i) => <li key={i} className="text-sm text-[var(--text-secondary)] flex items-start gap-2"><span className="text-[var(--warning)]">•</span> {f}</li>)}
-          </ul>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <FeedbackList title="What you did right" icon={Check} tone="success" items={feedback.correct} />
+        <FeedbackList title="Areas to improve" icon={ArrowUpRight} tone="warning" items={feedback.missed} />
         {feedback.safetyViolations.length > 0 && (
-          <div className="fn-card p-6 border-l-4 border-l-[var(--error)] bg-th-error/5">
-            <h3 className="font-bold text-lg mb-3 text-[var(--error)]">Critical Safety Violations</h3>
-            <ul className="space-y-2">
-              {feedback.safetyViolations.map((f, i) => <li key={i} className="text-sm text-[var(--error)] flex items-start gap-2"><span>!</span> {f}</li>)}
-            </ul>
+          <div className="md:col-span-2">
+            <FeedbackList title="Critical safety violations" icon={Warning} tone="error" items={feedback.safetyViolations} />
           </div>
         )}
       </div>
 
-      <div className="mt-10 text-center">
-        <button onClick={reset} className="btn-primary px-8 py-3">Return to Simulation Hub</button>
+      <div className="mt-8 flex justify-center">
+        <button onClick={reset} className="btn-primary px-8 py-3 text-sm">Return to Simulation Hub</button>
       </div>
     </div>
   )
 }
 
-function ScoreCard({ label, score }: { label: string, score: number }) {
+function ScoreRing({ value }: { value: number }) {
+  const r = 34
+  const c = 2 * Math.PI * r
   return (
-    <div className="fn-card p-4 text-center">
-      <p className="text-xs font-bold text-[var(--text-secondary)] mb-2">{label}</p>
-      <div className="text-3xl font-bold text-[var(--pink)]">{score}<span className="text-sm text-[var(--text-secondary)]">/100</span></div>
+    <div className="relative w-24 h-24 shrink-0">
+      <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+        <circle cx="40" cy="40" r={r} fill="none" strokeWidth="7" className="stroke-th-pink/15" />
+        <circle cx="40" cy="40" r={r} fill="none" strokeWidth="7" strokeLinecap="round" stroke="var(--pink)" strokeDasharray={c} strokeDashoffset={c * (1 - value / 100)} />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-semibold leading-none">{value}</span>
+        <span className="text-[10.5px] text-[var(--text-secondary)]">overall</span>
+      </div>
     </div>
+  )
+}
+
+function ScoreBar({ label, score }: { label: string; score: number }) {
+  return (
+    <div>
+      <div className="flex justify-between text-[12px] mb-1">
+        <span className="text-[var(--text-secondary)]">{label}</span>
+        <span className="font-semibold">{score}</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-th-pink/15 overflow-hidden">
+        <div className="h-full rounded-full bg-[var(--pink)]" style={{ width: `${score}%` }} />
+      </div>
+    </div>
+  )
+}
+
+const TONES = {
+  success: { text: 'text-[var(--success)]', chip: 'bg-th-success/15 text-[var(--success)]' },
+  warning: { text: 'text-[var(--warning)]', chip: 'bg-th-warning/15 text-[var(--warning)]' },
+  error: { text: 'text-[var(--error)]', chip: 'bg-th-error/10 text-[var(--error)]' },
+}
+
+function FeedbackList({ title, icon: ToneIcon, tone, items }: { title: string; icon: typeof Check; tone: keyof typeof TONES; items: string[] }) {
+  return (
+    <section className={cn('fn-card p-5', tone === 'error' && 'border-th-error/30')}>
+      <h3 className={cn('font-heading font-semibold text-[15px] mb-3', tone === 'error' && TONES.error.text)}>{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-[13px] text-[var(--text-secondary)]">Nothing noted here.</p>
+      ) : (
+        <ul className="space-y-2.5">
+          {items.map((f, i) => (
+            <li key={i} className="text-[13.5px] leading-relaxed flex items-start gap-2.5">
+              <span className={cn('w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5', TONES[tone].chip)}><ToneIcon size={12} weight="bold" /></span>
+              <span className={tone === 'error' ? TONES.error.text : 'text-[var(--text-secondary)]'}>{f}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }

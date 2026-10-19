@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { useChatStore, ChatSession } from '@/stores/chatStore'
+import { useChatStore } from '@/stores/chatStore'
+import type { ChatSession } from '@/stores/chatStore'
 import { useAuthStore } from '@/stores/authStore'
-import { PaperPlaneRight as Send, Sparkle as Sparkles, User, Trash as Trash2, ChatCircleDots as MessageCircle, Question as HelpCircle, Lightbulb, Lightning as Zap, List as Menu, X, Plus, ChatText as MessageSquare, CaretLeft as ChevronLeft, CaretRight as ChevronRight, DotsThree as MoreHorizontal } from '@phosphor-icons/react'
+import { PaperPlaneRight as Send, User, Trash as Trash2, Question as HelpCircle, Lightbulb, Lightning as Zap, Heartbeat, List as Menu, X, Plus, ChatText as MessageSquare } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatTime } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
@@ -26,6 +27,7 @@ export default function AIPage() {
   const { isFrance, aiAssistantName, greetingName } = usePersonalization()
   const [input, setInput] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [confirmClear, setConfirmClear] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -84,6 +86,7 @@ export default function AIPage() {
     { icon: HelpCircle, label: "Explain myocardial infarction simply" },
     { icon: Zap, label: "Mnemonics for cranial nerves" },
     { icon: Lightbulb, label: "Tips for SATA questions" },
+    { icon: Heartbeat, label: "Priority nursing actions for sepsis" },
   ]
 
   // Grouping function for dates
@@ -132,14 +135,14 @@ export default function AIPage() {
         key={session.id}
         onClick={() => handleSelectSession(session.id)}
         className={cn(
-          "w-full group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all border text-left mb-1 text-sm font-semibold select-none",
+          "w-full group flex items-center justify-between gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors text-left mb-0.5 text-[13px] select-none",
           isActive 
-            ? "bg-th-pink/10 border-[var(--pink)] text-[var(--pink)] shadow-sm font-semibold" 
-            : "bg-transparent border-transparent text-[var(--text-secondary)] hover:bg-th-secondary-bg/30 hover:text-[var(--text)]"
+            ? "bg-[var(--rose-soft)] text-[var(--pink)] font-medium" 
+            : "text-[var(--text-secondary)] hover:bg-[var(--rose-soft)] hover:text-[var(--text)]"
         )}
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <MessageSquare size={16} className={isActive ? "text-[var(--pink)]" : "text-th-text-secondary/60"} />
+          <MessageSquare size={15} weight={isActive ? 'fill' : 'regular'} className="shrink-0" />
           <span className="truncate block flex-1 leading-snug">{session.title}</span>
         </div>
         
@@ -148,13 +151,13 @@ export default function AIPage() {
             <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--border)] rounded-lg p-0.5 shadow-sm">
               <button 
                 onClick={(e) => handleDeleteSession(e, session.id)} 
-                className="text-xs font-bold text-[var(--error)] hover:bg-red-50 px-1.5 py-0.5 rounded"
+                className="text-xs font-medium text-[var(--error)] hover:bg-th-error/10 px-1.5 py-0.5 rounded"
               >
                 Delete
               </button>
               <button 
                 onClick={() => setConfirmDeleteId(null)} 
-                className="text-xs text-[var(--text-secondary)] hover:bg-gray-100 px-1.5 py-0.5 rounded"
+                className="text-xs text-[var(--text-secondary)] hover:bg-[var(--rose-soft)] px-1.5 py-0.5 rounded"
               >
                 Cancel
               </button>
@@ -162,7 +165,8 @@ export default function AIPage() {
           ) : (
             <button
               onClick={() => setConfirmDeleteId(session.id)}
-              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-[var(--secondary-bg)] rounded-md text-[var(--text-secondary)] hover:text-[var(--error)] transition-all shrink-0"
+              aria-label="Delete chat"
+              className="lg:opacity-0 group-hover:opacity-100 p-1 hover:bg-[var(--card)] rounded-md text-[var(--text-secondary)] hover:text-[var(--error)] transition-all shrink-0"
               title="Delete chat thread"
             >
               <Trash2 size={14} />
@@ -176,8 +180,8 @@ export default function AIPage() {
   const renderHistoryList = () => {
     if (sessions.length === 0) {
       return (
-        <div className="text-center py-8 px-4 text-xs text-th-text-secondary/60 font-medium">
-          No chat history yet. Start a conversation below!
+        <div className="text-center py-8 px-4 text-[12.5px] text-[var(--text-secondary)]">
+          No chats yet. Your conversations will show up here.
         </div>
       )
     }
@@ -186,25 +190,25 @@ export default function AIPage() {
       <div className="space-y-4">
         {grouped.today.length > 0 && (
           <div>
-            <h4 className="text-[11px] font-semibold text-th-text-secondary/50 px-3 mb-1.5">Today</h4>
+            <h4 className="text-[11px] font-medium text-[var(--text-secondary)] px-3 mb-1">Today</h4>
             {grouped.today.map(renderSessionItem)}
           </div>
         )}
         {grouped.yesterday.length > 0 && (
           <div>
-            <h4 className="text-[11px] font-semibold text-th-text-secondary/50 px-3 mb-1.5">Yesterday</h4>
+            <h4 className="text-[11px] font-medium text-[var(--text-secondary)] px-3 mb-1">Yesterday</h4>
             {grouped.yesterday.map(renderSessionItem)}
           </div>
         )}
         {grouped.last7Days.length > 0 && (
           <div>
-            <h4 className="text-[11px] font-semibold text-th-text-secondary/50 px-3 mb-1.5">Previous 7 Days</h4>
+            <h4 className="text-[11px] font-medium text-[var(--text-secondary)] px-3 mb-1">Previous 7 Days</h4>
             {grouped.last7Days.map(renderSessionItem)}
           </div>
         )}
         {grouped.older.length > 0 && (
           <div>
-            <h4 className="text-[11px] font-semibold text-th-text-secondary/50 px-3 mb-1.5">Older</h4>
+            <h4 className="text-[11px] font-medium text-[var(--text-secondary)] px-3 mb-1">Older</h4>
             {grouped.older.map(renderSessionItem)}
           </div>
         )}
@@ -241,10 +245,11 @@ export default function AIPage() {
       >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between shrink-0">
-          <h3 className="font-heading font-semibold text-sm text-[var(--text)] tracking-tight">Chat History</h3>
+          <h3 className="font-heading font-semibold text-[15px]">Chats</h3>
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden w-8 h-8 rounded-xl bg-th-secondary-bg/50 flex items-center justify-center text-[var(--text-secondary)]"
+            aria-label="Close history"
+            className="lg:hidden w-8 h-8 rounded-lg hover:bg-[var(--rose-soft)] flex items-center justify-center text-[var(--text-secondary)]"
           >
             <X size={16} />
           </button>
@@ -254,10 +259,10 @@ export default function AIPage() {
         <div className="p-3 shrink-0">
           <button 
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[var(--pink)] text-white rounded-2xl font-bold hover:bg-[var(--pink-hover)] transition-all shadow-fn-md"
+            className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-sm"
           >
             <Plus size={16} />
-            <span>New Chat</span>
+            <span>New chat</span>
           </button>
         </div>
 
@@ -270,61 +275,65 @@ export default function AIPage() {
       {/* Main Chat Workspace */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-th-card/50 backdrop-blur-md flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-             {/* Toggle Sidebar Button */}
-             <button 
-               onClick={() => setSidebarOpen(!isSidebarOpen)}
-               className="p-2 -ml-2 rounded-xl bg-th-secondary-bg/50 hover:bg-th-pink/10 text-[var(--text-secondary)] hover:text-[var(--pink)] transition-all"
-               title={isSidebarOpen ? "Collapse history" : "Expand history"}
-             >
-               <Menu size={18} />
-             </button>
-
-             <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-fn border border-th-pink/30 shrink-0">
-                <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
-             </div>
-             <div>
-                <h2 className="text-lg font-bold tracking-tight leading-none mb-1">Ask {aiAssistantName} {isFrance ? '' : ''}</h2>
-                <div className="flex items-center gap-1.5">
-                   <span className="w-1.5 h-1.5 bg-[var(--success)] rounded-full animate-pulse"></span>
-                   <span className="text-[11px] font-bold text-[var(--text-secondary)]">
-                     {isFrance ? "Always here for you, babe" : "Clinical Mentor Active"}
-                   </span>
-                </div>
-             </div>
+        <div className="px-3 sm:px-6 py-3 border-b border-[var(--border)] bg-[var(--card)] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(!isSidebarOpen)}
+              className="btn-icon p-2"
+              aria-label={isSidebarOpen ? 'Hide chat history' : 'Show chat history'}
+            >
+              <Menu size={18} />
+            </button>
+            <div className="relative shrink-0">
+              <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-10 h-10 rounded-full object-cover border border-th-pink/20" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--success)] border-2 border-[var(--card)]" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-heading font-semibold text-[15px] leading-tight truncate">{aiAssistantName}</h2>
+              <p className="text-[12px] text-[var(--text-secondary)] truncate">
+                {isFrance ? 'Always here for you, babe' : 'Your clinical study mentor'}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-             <button onClick={clearHistory} className="btn-icon text-[var(--error)]" title="Clear all chats">
-                <Trash2 size={18} />
-             </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {confirmClear ? (
+              <div className="flex items-center gap-1 text-[12.5px]">
+                <span className="hidden sm:inline text-[var(--text-secondary)] mr-1">Delete all chats?</span>
+                <button onClick={() => { clearHistory(); setConfirmClear(false) }} className="px-2.5 py-1 rounded-full font-medium text-white bg-[var(--error)]">Delete</button>
+                <button onClick={() => setConfirmClear(false)} className="px-2.5 py-1 rounded-full text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]">Cancel</button>
+              </div>
+            ) : (
+              <>
+                <button onClick={handleNewChat} className="btn-icon p-2" aria-label="New chat"><Plus size={18} /></button>
+                {sessions.length > 0 && (
+                  <button onClick={() => setConfirmClear(true)} className="btn-icon p-2 hover:text-[var(--error)]" aria-label="Clear all chats"><Trash2 size={18} /></button>
+                )}
+              </>
+            )}
           </div>
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 custom-scrollbar space-y-4 sm:space-y-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-8 custom-scrollbar space-y-4 sm:space-y-5">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-10">
-               <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 animate-float">
-                  <MessageCircle size={40} />
-               </div>
-               <h3 className="text-xl font-bold mb-2">Hello, {greetingName}!</h3>
-               <p className="text-[var(--text-secondary)] max-w-sm mb-10">
-                 I'm {aiAssistantName}, your AI nursing companion. Ask me anything about your studies, patient care, or just for some motivation! {isFrance ? '' : ''}
-               </p>
-               
-               <div className="grid grid-cols-1 gap-3 w-full max-w-md px-4">
-                  {suggestions.map((s, i) => (
-                    <button 
-                      key={i}
-                      onClick={() => sendMessage(s.label)}
-                      className="flex items-center gap-3 p-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl text-left hover:border-[var(--pink)] transition-all group"
-                    >
-                      <s.icon size={18} className="text-[var(--pink)] group-hover:scale-110 transition-transform" />
-                      <span className="text-sm font-semibold">{s.label}</span>
-                    </button>
-                  ))}
-               </div>
+            <div className="flex flex-col items-center justify-center min-h-full text-center py-8">
+              <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-20 h-20 rounded-full object-cover border-2 border-th-pink/20 shadow-fn mb-4" />
+              <h3 className="font-heading font-semibold text-xl">Hi {greetingName}, what are we studying?</h3>
+              <p className="text-sm text-[var(--text-secondary)] max-w-md mt-1 mb-7">
+                I'm {aiAssistantName}. Ask about pathophysiology, meds, care plans or exam strategy, or just ask for some motivation.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendMessage(s.label)}
+                    className="flex items-center gap-3 p-3.5 bg-[var(--card)] border border-[var(--border)] rounded-xl text-left hover:bg-[var(--rose-soft)] hover:border-th-pink/30 transition-colors"
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center shrink-0"><s.icon size={16} /></span>
+                    <span className="text-[13px] font-medium">{s.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
             <>
@@ -334,32 +343,31 @@ export default function AIPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    "flex gap-4 max-w-3xl",
+                    "flex gap-3 max-w-3xl",
                     msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
                   )}
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-th-pink/20",
-                    msg.role === 'user' ? "bg-[var(--secondary-bg)] text-[var(--text-secondary)]" : ""
+                    "w-8 h-8 rounded-full overflow-hidden shrink-0 border border-th-pink/15"
                   )}>
                     {msg.role === 'user' ? (
                       user?.avatar_url ? (
                         <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[var(--secondary-bg)] text-[var(--text-secondary)] font-bold text-lg">
-                          {user?.full_name ? user.full_name.charAt(0) : <User size={20} />}
+                        <div className="w-full h-full flex items-center justify-center bg-[var(--rose-soft)] text-[var(--pink)] font-semibold text-sm">
+                          {user?.full_name ? user.full_name.charAt(0) : <User size={16} />}
                         </div>
                       )
                     ) : (
                       <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover" />
                     )}
                   </div>
-                  <div className="space-y-1.5 flex flex-col">
+                  <div className={cn("space-y-1 flex flex-col min-w-0", msg.role === 'user' ? "items-end" : "")}>
                     <div className={cn(
-                      "p-4 rounded-2xl text-sm leading-relaxed",
+                      "px-4 py-3 rounded-2xl text-[14px] leading-relaxed",
                       msg.role === 'user' 
-                        ? "bg-[var(--pink)] text-white rounded-tr-none shadow-fn" 
-                        : "bg-[var(--card)] text-[var(--text)] rounded-tl-none border border-[var(--border)] shadow-sm"
+                        ? "bg-[var(--pink)] text-white rounded-tr-md" 
+                        : "bg-[var(--card)] text-[var(--text)] rounded-tl-md border border-[var(--border)]"
                     )}>
                       <MarkdownText 
                         content={msg.content} 
@@ -367,7 +375,7 @@ export default function AIPage() {
                       />
                     </div>
                     <span className={cn(
-                      "text-[11px] font-bold text-[var(--text-secondary)] px-2",
+                      "text-[11px] text-[var(--text-secondary)] px-1",
                       msg.role === 'user' ? "text-right" : ""
                     )}>
                       {formatTime(msg.created_at)}
@@ -380,15 +388,15 @@ export default function AIPage() {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-4 max-w-3xl"
+                  className="flex gap-3 max-w-3xl"
                 >
-                   <div className="w-10 h-10 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-th-pink/20">
+                   <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-th-pink/15">
                      <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
                    </div>
-                  <div className="bg-[var(--card)] border border-[var(--border)] p-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5">
+                  <div className="bg-[var(--card)] border border-[var(--border)] px-4 py-3.5 rounded-2xl rounded-tl-md flex items-center gap-1.5">
                      <div className="w-1.5 h-1.5 bg-[var(--pink)] rounded-full animate-bounce"></div>
-                     <div className="w-1.5 h-1.5 bg-[var(--pink)] rounded-full animate-bounce animation-delay-200"></div>
-                     <div className="w-1.5 h-1.5 bg-[var(--pink)] rounded-full animate-bounce animation-delay-400"></div>
+                     <div className="w-1.5 h-1.5 bg-[var(--pink)] rounded-full animate-bounce " style={{ animationDelay: '0.2s' }}></div>
+                     <div className="w-1.5 h-1.5 bg-[var(--pink)] rounded-full animate-bounce " style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </motion.div>
               )}
@@ -398,27 +406,27 @@ export default function AIPage() {
         </div>
 
         {/* Input Area */}
-        <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-t from-[var(--bg)] to-transparent shrink-0" style={{ paddingBottom: 'max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem))' }}>
+        <div className="px-3 sm:px-5 md:px-8 pt-2 bg-[var(--bg)] shrink-0" style={{ paddingBottom: 'max(0.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem))' }}>
           <div className="max-w-4xl mx-auto">
             <form 
               onSubmit={handleSend}
-              className="relative flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-2 pl-6 shadow-fn group focus-within:ring-2 focus-within:ring-th-pink/50 focus-within:border-[var(--pink)] transition-all"
+              className="relative flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-1.5 pl-4 shadow-fn focus-within:border-[var(--pink)] transition-colors"
             >
-               <Sparkles className="text-[var(--pink)] shrink-0 animate-pulse-soft" size={20} />
                <input 
                  type="text" 
                  value={input}
                  onChange={(e) => setInput(e.target.value)}
                  placeholder={`Message ${aiAssistantName}...`}
-                 className="w-full bg-transparent border-none outline-none py-3 text-sm placeholder:text-th-text-secondary/50"
+                 className="w-full bg-transparent border-none outline-none py-2.5 text-[15px] placeholder:text-th-text-secondary/60"
                  disabled={isTyping}
                />
                <button 
                  type="submit"
                  disabled={!input.trim() || isTyping}
-                 className="p-3 bg-[var(--pink)] hover:bg-[var(--pink-hover)] text-white rounded-full transition-all disabled:opacity-30 disabled:scale-95 shrink-0"
+                 aria-label="Send message"
+                 className="w-10 h-10 flex items-center justify-center bg-[var(--pink)] hover:bg-[var(--pink-hover)] text-white rounded-xl transition-opacity disabled:opacity-35 shrink-0"
                >
-                 <Send size={16} />
+                 <Send size={17} weight="fill" />
                </button>
             </form>
           </div>
