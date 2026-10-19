@@ -172,7 +172,7 @@ export default function TopBar() {
   }
 
   return (
-    <header className="h-16 border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur-md flex items-center justify-between gap-4 px-4 md:px-8 sticky top-0 z-40">
+    <header className="h-16 border-b border-[var(--border)] bg-th-card/80 backdrop-blur-md flex items-center justify-between gap-4 px-4 md:px-8 sticky top-0 z-40">
       <div className="flex items-center gap-4 flex-1">
         <div 
           className="md:hidden flex items-center cursor-pointer"
@@ -192,7 +192,7 @@ export default function TopBar() {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
             setSearchQuery('')
           }}
-          className="hidden sm:flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded-full px-4 py-2 w-full max-w-md transition-all focus-within:ring-2 focus-within:ring-[var(--pink)]/30 focus-within:border-[var(--pink)]/40"
+          className="hidden sm:flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded-full px-4 py-2 w-full max-w-md transition-all focus-within:ring-2 focus-within:ring-th-pink/30 focus-within:border-th-pink/40"
         >
           <Search size={16} className="text-[var(--text-secondary)] shrink-0" />
           <input 
@@ -200,7 +200,7 @@ export default function TopBar() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search notes, materials, quizzes..." 
-            className="bg-transparent border-none outline-none text-[13px] w-full placeholder:text-[var(--text-secondary)]/60"
+            className="bg-transparent border-none outline-none text-[13px] w-full placeholder:text-th-text-secondary/60"
           />
         </form>
       </div>
@@ -255,7 +255,7 @@ export default function TopBar() {
                 <div className="hidden md:block absolute -top-1.5 right-[13px] w-3 h-3 bg-[var(--card)] border-t border-l border-[var(--border)] rotate-45 z-40"></div>
 
                 <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--border)] relative z-50">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--pink)]/20 bg-[var(--secondary-bg)] shrink-0">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-th-pink/20 bg-[var(--secondary-bg)] shrink-0">
                     <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={`${aiAssistantName} Avatar`} className="w-full h-full object-cover" />
                   </div>
                   <div className="text-left">
@@ -268,7 +268,7 @@ export default function TopBar() {
 
                 {hasNotification && activeFact ? (
                   <div className="space-y-3 relative z-50">
-                    <div className="bg-[var(--pink)]/5 border border-[var(--pink)]/10 rounded-xl p-3 text-left">
+                    <div className="bg-th-pink/5 border border-th-pink/10 rounded-xl p-3 text-left">
                       <h5 
                         className="text-xs font-extrabold text-[var(--pink)] mb-1"
                         style={{ fontFamily: "'Baloo 2', sans-serif" }}
@@ -308,7 +308,7 @@ export default function TopBar() {
 
         <div 
           onClick={() => navigate('/profile')}
-          className="flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-xl cursor-pointer group transition-all duration-300 hover:bg-[var(--pink)]/5 active:scale-95 select-none"
+          className="flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-xl cursor-pointer group transition-all duration-300 hover:bg-th-pink/5 active:scale-95 select-none"
         >
           <div className="text-right hidden sm:block">
             <p className="text-sm font-semibold leading-none group-hover:text-[var(--pink)] transition-colors duration-300">{user?.full_name}</p>

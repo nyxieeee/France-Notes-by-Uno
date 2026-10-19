@@ -135,10 +135,10 @@ export default function PlannerPage() {
                 {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
               </h2>
               <div className="flex gap-2">
-                <button onClick={handlePrevMonth} className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--pink)]/50 transition-colors">
+                <button onClick={handlePrevMonth} className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-th-pink/50 transition-colors">
                   <ChevronLeft size={18} />
                 </button>
-                <button onClick={handleNextMonth} className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--pink)]/50 transition-colors">
+                <button onClick={handleNextMonth} className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-th-pink/50 transition-colors">
                   <ChevronRight size={18} />
                 </button>
               </div>
@@ -156,7 +156,7 @@ export default function PlannerPage() {
             <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Empty cells for start of month */}
               {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square rounded-2xl bg-[var(--bg)]/50 border border-transparent opacity-30"></div>
+                <div key={`empty-${i}`} className="aspect-square rounded-2xl bg-th-bg/50 border border-transparent opacity-30"></div>
               ))}
               
               {/* Actual days */}
@@ -175,8 +175,8 @@ export default function PlannerPage() {
                     className={cn(
                       "aspect-square rounded-2xl border transition-all cursor-pointer p-1 sm:p-2 flex flex-col relative group",
                       isToday 
-                        ? "bg-[var(--pink)]/5 border-[var(--pink)]" 
-                        : "bg-[var(--bg)] border-[var(--border)] hover:border-[var(--pink)]/50"
+                        ? "bg-th-pink/5 border-[var(--pink)]" 
+                        : "bg-[var(--bg)] border-[var(--border)] hover:border-th-pink/50"
                     )}
                   >
                     <span className={cn(
@@ -221,7 +221,7 @@ export default function PlannerPage() {
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
               {upcomingReminders.length > 0 ? (
                 upcomingReminders.map(reminder => (
-                  <div key={reminder.id} className="p-3 rounded-2xl border border-[var(--border)] bg-[var(--bg)] hover:border-[var(--pink)]/40 transition-colors group">
+                  <div key={reminder.id} className="p-3 rounded-2xl border border-[var(--border)] bg-[var(--bg)] hover:border-th-pink/40 transition-colors group">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -237,13 +237,13 @@ export default function PlannerPage() {
                       <div className="flex gap-1 shrink-0">
                          <button 
                            onClick={() => toggleReminder(reminder.id)}
-                           className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] hover:bg-[var(--success)]/10 hover:text-[var(--success)] transition-colors"
+                           className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] hover:bg-th-success/10 hover:text-[var(--success)] transition-colors"
                          >
                            <CheckCircle2 size={14} />
                          </button>
                          <button 
                            onClick={() => removeReminder(reminder.id)}
-                           className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] hover:bg-[var(--error)]/10 hover:text-[var(--error)] transition-colors"
+                           className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] hover:bg-th-error/10 hover:text-[var(--error)] transition-colors"
                          >
                            <Trash2 size={14} />
                          </button>
@@ -377,9 +377,9 @@ export default function PlannerPage() {
                                   setIsCategoryDropdownOpen(false)
                                 }}
                                 className={cn(
-                                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5",
+                                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5",
                                   newType === category.value 
-                                    ? "bg-[var(--pink)]/10 text-[var(--pink)]" 
+                                    ? "bg-th-pink/10 text-[var(--pink)]" 
                                     : "text-[var(--text)]"
                                 )}
                               >

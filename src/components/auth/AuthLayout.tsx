@@ -17,9 +17,9 @@ export default function AuthLayout({ children, footerNote }: { children: ReactNo
       {/* Brand panel */}
       <aside className="hidden lg:flex relative w-[55%] overflow-hidden bg-gradient-to-br from-[var(--rose-soft)] via-[var(--bg)] to-[var(--secondary-bg)] flex-col">
         <ParisIllustration className="absolute inset-x-0 bottom-0 w-full h-[52%]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg)]/70 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-th-bg/70 via-transparent to-transparent" />
 
-        <p className="absolute right-12 top-12 font-script text-2xl text-[var(--pink)]/80 leading-tight rotate-[-8deg] text-center">
+        <p className="absolute right-12 top-12 font-script text-2xl text-th-pink/80 leading-tight rotate-[-8deg] text-center">
           Future RNs are built by<br />small, consistent efforts ♡
         </p>
         <p className="absolute left-10 bottom-12 font-script text-xl text-[var(--pink)] leading-tight rotate-[-10deg]">
@@ -40,7 +40,7 @@ export default function AuthLayout({ children, footerNote }: { children: ReactNo
           <div className="mt-8 flex gap-8">
             {FEATURES.map(f => (
               <div key={f.label} className="flex flex-col items-center gap-2 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-[var(--card)]/80 border border-[var(--border)] flex items-center justify-center text-[var(--pink)] shadow-fn">
+                <div className="w-12 h-12 rounded-2xl bg-th-card/80 border border-[var(--border)] flex items-center justify-center text-[var(--pink)] shadow-fn">
                   <f.icon size={22} />
                 </div>
                 <span className="text-xs text-[var(--text-secondary)] whitespace-pre-line leading-tight">{f.label}</span>
@@ -62,7 +62,7 @@ export default function AuthLayout({ children, footerNote }: { children: ReactNo
           {children}
         </motion.div>
         {footerNote && (
-          <p className="mt-6 font-script text-xl text-[var(--pink)]/75 rotate-[-4deg]">{footerNote}</p>
+          <p className="mt-6 font-script text-xl text-th-pink/75 rotate-[-4deg]">{footerNote}</p>
         )}
       </main>
     </div>

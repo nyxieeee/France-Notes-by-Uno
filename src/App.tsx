@@ -26,6 +26,7 @@ import PodcastReviewPage from '@/pages/Podcast/PodcastReviewPage'
 import LabsReferencePage from '@/pages/Labs/LabsReferencePage'
 import NotesPage from '@/pages/Notes/NotesPage'
 import SearchPage from '@/pages/Search/SearchPage'
+import NursingToolsPage from '@/pages/NursingTools/NursingToolsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isInitialLoading } = useAuthStore()
@@ -39,7 +40,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-th-pink/30 border-t-[var(--pink)] rounded-full animate-spin" />
           <p className="text-[var(--text-secondary)] text-sm font-body">Authenticating...</p>
         </div>
       </div>
@@ -61,7 +62,7 @@ function App() {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-th-pink/30 border-t-[var(--pink)] rounded-full animate-spin" />
           <p className="text-[var(--text-secondary)] text-sm font-body">Loading...</p>
         </div>
       </div>
@@ -105,6 +106,7 @@ function App() {
             <Route path="labs-reference" element={<LabsReferencePage />} />
             <Route path="notes" element={<NotesPage />} />
             <Route path="search" element={<SearchPage />} />
+            <Route path="nursing-tools" element={<NursingToolsPage />} />
           </Route>
 
           {/* Fallback */}

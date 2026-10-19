@@ -59,8 +59,8 @@ function SpeakerAvatar({ speaker, active }: { speaker: 'DOC_UNO' | 'NURSE_FLOREN
       className={cn(
         'w-10 h-10 rounded-full flex items-center justify-center text-xl border-2 shrink-0 transition-all',
         active
-          ? 'border-[var(--pink)] bg-[var(--pink)]/20'
-          : 'border-[var(--border)] bg-[var(--secondary-bg)]/30 opacity-50'
+          ? 'border-[var(--pink)] bg-th-pink/20'
+          : 'border-[var(--border)] bg-th-secondary-bg/30 opacity-50'
       )}
     >
       {isUno ? '🩺' : '👩‍⚕️'}
@@ -87,7 +87,7 @@ function TranscriptLine({ line, active, index }: { line: DialogueLine; active: b
       transition={{ delay: index * 0.03, duration: 0.25 }}
       className={cn(
         'flex gap-3 items-start p-3 rounded-2xl transition-all duration-300',
-        active ? 'bg-[var(--pink)]/10 border border-[var(--pink)]/20' : 'hover:bg-[var(--secondary-bg)]/30'
+        active ? 'bg-th-pink/10 border border-th-pink/20' : 'hover:bg-th-secondary-bg/30'
       )}
     >
       <SpeakerAvatar speaker={line.speaker} active={active} />
@@ -477,7 +477,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
               "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border",
               showHistoryView
                 ? "bg-[var(--pink)] text-white border-[var(--pink)] shadow-md"
-                : "bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/50"
+                : "bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/50"
             )}
           >
             <History size={15} />
@@ -520,13 +520,13 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                     className={cn(
                       "p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer",
                       activeEpisodeId === ep.id
-                        ? "bg-[var(--pink)]/10 border-[var(--pink)]"
-                        : "bg-[var(--bg)] border-[var(--border)] hover:border-[var(--pink)]/40"
+                        ? "bg-th-pink/10 border-[var(--pink)]"
+                        : "bg-[var(--bg)] border-[var(--border)] hover:border-th-pink/40"
                     )}
                     onClick={() => loadSavedEpisode(ep)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--pink)]/20 text-[var(--pink)] flex items-center justify-center font-black shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-th-pink/20 text-[var(--pink)] flex items-center justify-center font-black shrink-0">
                         🎙️
                       </div>
                       <div className="min-w-0">
@@ -606,7 +606,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(p => !p)}
-                  className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-[var(--pink)]/50 transition-all"
+                  className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-th-pink/50 transition-all"
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedTopicObj?.color || 'var(--pink)' }} />
@@ -628,8 +628,8 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                           key={t.id}
                           onClick={() => { setSelectedTopicId(t.id); setDropdownOpen(false) }}
                           className={cn(
-                            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5',
-                            selectedTopicId === t.id ? 'bg-[var(--pink)]/10 text-[var(--pink)]' : 'text-[var(--text)]'
+                            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5',
+                            selectedTopicId === t.id ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text)]'
                           )}
                         >
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
@@ -647,7 +647,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                 <div className="relative">
                   <button
                     onClick={() => setDropdownOpen(p => !p)}
-                    className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-[var(--pink)]/50 transition-all"
+                    className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-th-pink/50 transition-all"
                   >
                     <div className="flex items-center gap-2 truncate">
                       <FileText size={16} className="text-[var(--pink)] shrink-0" />
@@ -669,8 +669,8 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                             key={item.id}
                             onClick={() => { setSelectedItemId(item.id); setDropdownOpen(false) }}
                             className={cn(
-                              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5',
-                              selectedItemId === item.id ? 'bg-[var(--pink)]/10 text-[var(--pink)]' : 'text-[var(--text)]'
+                              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5',
+                              selectedItemId === item.id ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text)]'
                             )}
                           >
                             <FileText size={14} className="text-[var(--pink)] shrink-0" />
@@ -693,7 +693,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                 <div className="relative">
                   <button
                     onClick={() => setDropdownOpen(p => !p)}
-                    className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-[var(--pink)]/50 transition-all"
+                    className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-th-pink/50 transition-all"
                   >
                     <div className="flex items-center gap-2 truncate">
                       <Bookmark size={16} className="text-[var(--pink)] shrink-0" />
@@ -715,8 +715,8 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                             key={k.id}
                             onClick={() => { setSelectedKnowledgeId(k.id); setDropdownOpen(false) }}
                             className={cn(
-                              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5',
-                              selectedKnowledgeId === k.id ? 'bg-[var(--pink)]/10 text-[var(--pink)]' : 'text-[var(--text)]'
+                              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5',
+                              selectedKnowledgeId === k.id ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text)]'
                             )}
                           >
                             <Bookmark size={14} className="text-[var(--pink)] shrink-0" />
@@ -758,7 +758,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
               className="fn-card p-8 flex flex-col items-center text-center"
             >
               <div className="relative mb-5">
-                <div className="absolute inset-0 bg-[var(--pink)]/20 blur-xl rounded-full scale-150 animate-pulse" />
+                <div className="absolute inset-0 bg-th-pink/20 blur-xl rounded-full scale-150 animate-pulse" />
                 <div className="w-20 h-20 bg-gradient-to-br from-[var(--pink)] to-[#FF7FA3] rounded-full flex items-center justify-center relative shadow-lg">
                   <Mic2 size={36} className="text-white animate-bounce" />
                 </div>
@@ -868,7 +868,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                   <div className="flex items-center gap-3">
                     <button
                       onClick={handleRestart}
-                      className="w-10 h-10 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] hover:border-[var(--pink)]/50 hover:text-[var(--pink)] transition-all"
+                      className="w-10 h-10 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] hover:border-th-pink/50 hover:text-[var(--pink)] transition-all"
                       title="Restart episode"
                     >
                       <RotateCcw size={16} />

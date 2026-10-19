@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Lightning as Zap, ChatCircleDots as MessageCircle, Flask as FlaskConical, Calculator, Headphones, CaretRight as ChevronRight } from '@phosphor-icons/react'
+import { Lightning as Zap, ChatCircleDots as MessageCircle, Flask as FlaskConical, Calculator, NotePencil, CaretRight as ChevronRight } from '@phosphor-icons/react'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function QuickTools() {
@@ -9,7 +9,7 @@ export default function QuickTools() {
     { icon: MessageCircle, label: aiAssistantName, caption: 'Ask, learn, get instant help', to: '/ai' },
     { icon: FlaskConical, label: 'Reference Lab Charts', caption: 'Lab values & clinical pearls', to: '/labs-reference' },
     { icon: Calculator, label: 'Dosage Calculator', caption: 'Doses, drips & conversions', to: '/dosage-calculator' },
-    { icon: Headphones, label: 'Nursepod', caption: 'Listen & learn on the go', to: '/podcast-review' },
+    { icon: NotePencil, label: 'Notes', caption: 'Type or handwrite your notes', to: '/notes' },
   ]
 
   return (
@@ -27,7 +27,7 @@ export default function QuickTools() {
               <p className="text-[13px] font-medium text-[var(--text)]">{tool.label}</p>
               <p className="text-[11px] text-[var(--text-secondary)] truncate">{tool.caption}</p>
             </div>
-            <ChevronRight size={15} className="text-[var(--text-secondary)]/60 group-hover:text-[var(--pink)] transition-colors" />
+            <ChevronRight size={15} className="text-th-text-secondary/60 group-hover:text-[var(--pink)] transition-colors" />
           </Link>
         ))}
       </div>

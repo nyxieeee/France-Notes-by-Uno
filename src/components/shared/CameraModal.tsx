@@ -72,7 +72,7 @@ export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-[var(--bg)]/90 backdrop-blur-md p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-th-bg/90 backdrop-blur-md p-4"
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
@@ -112,7 +112,7 @@ export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
         </div>
 
         {/* Controls */}
-        <div className="p-6 bg-[var(--bg)]/50 flex justify-center items-center gap-4">
+        <div className="p-6 bg-th-bg/50 flex justify-center items-center gap-4">
           {capturedImage ? (
             <>
               <button onClick={handleRetake} className="btn-secondary flex items-center gap-2">

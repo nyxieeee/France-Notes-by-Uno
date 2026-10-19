@@ -157,7 +157,7 @@ export default function HandwritingCanvas({ drawing, onChange }: {
   return (
     <div className="flex flex-col gap-3">
       {/* Toolbar */}
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1.5 p-2 rounded-2xl bg-[var(--card)]/95 backdrop-blur border border-[var(--border)] shadow-fn">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1.5 p-2 rounded-2xl bg-th-card/95 backdrop-blur border border-[var(--border)] shadow-fn">
         {([
           { id: 'pen', icon: PenNib, label: 'Pen' },
           { id: 'highlighter', icon: Highlighter, label: 'Highlighter' },

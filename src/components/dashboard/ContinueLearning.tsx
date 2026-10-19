@@ -66,15 +66,15 @@ export default function ContinueLearning() {
             return (
               <button key={card.id} onClick={card.open} className="fn-card overflow-hidden text-left group hover:border-[var(--accent)]">
                 <div className={`h-20 bg-gradient-to-br ${TINTS[i % TINTS.length]} flex items-center justify-center relative`}>
-                  <Icon size={30} weight="light" className="text-[var(--pink)]/70 group-hover:scale-110 transition-transform" />
-                  <span className="absolute top-2 left-2 text-[9.5px] font-semibold text-[var(--pink)] bg-[var(--card)]/85 px-2 py-0.5 rounded-full">
+                  <Icon size={30} weight="light" className="text-th-pink/70 group-hover:scale-110 transition-transform" />
+                  <span className="absolute top-2 left-2 text-[9.5px] font-semibold text-[var(--pink)] bg-th-card/85 px-2 py-0.5 rounded-full">
                     {card.kind}
                   </span>
                 </div>
                 <div className="p-3">
                   <p className="text-[13px] font-semibold text-[var(--text)] line-clamp-1">{card.title}</p>
                   <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1">{card.subtitle}</p>
-                  <p className="text-[10.5px] text-[var(--text-secondary)]/80 mt-1.5">{formatRelativeDate(card.date)}</p>
+                  <p className="text-[10.5px] text-th-text-secondary/80 mt-1.5">{formatRelativeDate(card.date)}</p>
                 </div>
               </button>
             )

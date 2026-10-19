@@ -1,35 +1,29 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { House as Home, Archive, Brain as BrainCircuit, ChatCircleDots as MessageCircle, Gear as Settings, MagnifyingGlass as Search, Stethoscope, Calendar, Books as Library, DotsThree as MoreHorizontal, X, Calculator, Headphones, Flask as FlaskConical } from '@phosphor-icons/react'
+import { House as Home, Archive, MagnifyingGlass as Search, DotsThree as MoreHorizontal, X, Headphones } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-import { usePersonalization } from '@/hooks/usePersonalization'
+import { useNavigation, isNavItemActive } from './navigation'
 
 const primaryNavItems = [
   { icon: Home,       label: 'Home',   path: '/home' },
   { icon: Archive,    label: 'Study',  path: '/study-box' },
   { icon: Headphones, label: 'Listen', path: '/podcast-review' },
-  { icon: Search,     label: 'Search', path: '/knowledge-garden' },
+  { icon: Search,     label: 'Search', path: '/search' },
 ]
 
 export default function MobileNav() {
-  const { aiAssistantName } = usePersonalization()
-  const moreNavItems = [
-    { icon: BrainCircuit,  label: 'Quizzes', path: '/quiz' },
-    { icon: MessageCircle, label: `Ask ${aiAssistantName}`, path: '/ai' },
-    { icon: Library,       label: 'Reviewers', path: '/reviewer-library' },
-    { icon: Stethoscope,   label: 'Simulations', path: '/simulations', isBeta: true },
-    { icon: Calendar,      label: 'Planner', path: '/planner' },
-    { icon: FlaskConical,  label: 'Lab Charts', path: '/labs-reference' },
-    { icon: Calculator,    label: 'Dosage Calc', path: '/dosage-calculator' },
-    { icon: Settings,      label: 'Profile', path: '/profile' },
-  ]
+  // Everything not in the bottom bar goes in the More sheet, Quizzes and Notes first
+  const moreNavItems = useNavigation()
+    .flatMap(g => g.items)
+    .filter(item => !primaryNavItems.some(p => p.path === item.path))
+    .sort((a, b) => Number(['/quiz', '/notes'].includes(b.path)) - Number(['/quiz', '/notes'].includes(a.path)))
 
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
 
-  const isMoreActive = moreNavItems.some(item => location.pathname.startsWith(item.path))
+  const isMoreActive = moreNavItems.some(item => isNavItemActive(item, location.pathname))
 
   // Close drawer when navigating
   useEffect(() => {
@@ -89,9 +83,9 @@ export default function MobileNav() {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  className={({ isActive }) => cn(
+                  className={() => cn(
                     'flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl transition-colors relative text-center',
-                    isActive
+                    isNavItemActive(item, location.pathname)
                       ? 'bg-[var(--secondary-bg)] text-[var(--pink)]'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]'
                   )}
@@ -99,7 +93,7 @@ export default function MobileNav() {
                   <div className="w-10 h-10 rounded-full bg-[var(--rose-soft)] border border-[var(--border)] flex items-center justify-center text-[var(--pink)]">
                     <item.icon size={18} />
                   </div>
-                  <span className="text-[10.5px] font-semibold leading-tight">{item.label}</span>
+                  <span className="text-[10.5px] font-semibold leading-tight">{item.shortLabel ?? item.label}</span>
                   {item.isBeta && (
                     <span className="absolute top-1.5 right-1.5 bg-[var(--pink)] text-white text-[7px] font-bold px-1 py-0.5 rounded tracking-wider">
                       BETA
@@ -113,7 +107,7 @@ export default function MobileNav() {
       </AnimatePresence>
 
       {/* Bottom Nav Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--card)]/90 backdrop-blur-xl border-t border-[var(--border)] flex items-center justify-around px-2 z-50"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-th-card/90 backdrop-blur-xl border-t border-[var(--border)] flex items-center justify-around px-2 z-50"
         style={{ 
           height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)'

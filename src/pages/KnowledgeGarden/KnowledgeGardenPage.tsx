@@ -87,8 +87,8 @@ export default function KnowledgeGardenPage() {
                 className="fn-card overflow-hidden flex flex-col"
               >
                 <button onClick={() => openArticle(ref)} className={`h-24 bg-gradient-to-br ${TINTS[i % TINTS.length]} flex items-center justify-center relative`}>
-                  <BookOpen size={32} weight="light" className="text-[var(--pink)]/70" />
-                  <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold text-[var(--pink)] bg-[var(--card)]/85 px-2 py-0.5 rounded-full capitalize">{ref.category}</span>
+                  <BookOpen size={32} weight="light" className="text-th-pink/70" />
+                  <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold text-[var(--pink)] bg-th-card/85 px-2 py-0.5 rounded-full capitalize">{ref.category}</span>
                 </button>
                 <div className="p-4 flex-1 flex flex-col">
                   <button onClick={() => openArticle(ref)} className="text-left">

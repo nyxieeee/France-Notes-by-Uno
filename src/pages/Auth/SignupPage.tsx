@@ -103,7 +103,7 @@ export default function SignupPage() {
               onClick={() => setIsYearDropdownOpen(o => !o)}
               className="fn-input rounded-xl bg-[var(--card)] pl-11 pr-9 py-2.5 text-sm text-left relative"
             >
-              <BookOpen size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/70" />
+              <BookOpen size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-th-text-secondary/70" />
               <span className={yearLevel ? 'text-[var(--text)]' : 'text-[var(--text-secondary)]'}>
                 {YEAR_LEVELS.find(o => o.value === yearLevel)?.label || 'Select'}
               </span>

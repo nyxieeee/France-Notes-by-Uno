@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { TrendUp as TrendingUp, CaretRight as ChevronRight, Heart } from '@phosphor-icons/react'
 import { useQuizStore } from '@/stores/quizStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
-import { useReviewerStore } from '@/stores/reviewerStore'
+import { useNotesStore } from '@/stores/notesStore'
+import { useSimulationStore } from '@/stores/simulationStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 const RING_RADIUS = 34
@@ -10,8 +11,9 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 
 export default function ProgressCard() {
   const { quizzes } = useQuizStore()
-  const { items, savedKnowledge } = useStudyBoxStore()
-  const { reviewers } = useReviewerStore()
+  const { items } = useStudyBoxStore()
+  const { notes } = useNotesStore()
+  const { history } = useSimulationStore()
   const { isFrance, aiAssistantName, greetingName } = usePersonalization()
 
   const scored = quizzes.filter(q => q.completed && q.score !== null)
@@ -22,8 +24,8 @@ export default function ProgressCard() {
   const breakdown = [
     { label: 'Study Materials', value: items.length },
     { label: 'Quizzes', value: scored.length },
-    { label: 'Reviewers', value: reviewers.length },
-    { label: 'Saved Articles', value: savedKnowledge.length },
+    { label: 'Simulations', value: history.length },
+    { label: 'Notes', value: notes.length },
   ]
 
   const cheer = scored.length === 0

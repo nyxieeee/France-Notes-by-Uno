@@ -98,7 +98,7 @@ export default function ReviewerLibraryPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="md:col-span-3">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-th-text-secondary/50" size={18} />
             <input 
               type="text" 
               placeholder="Search reviewers by title or source..." 
@@ -165,7 +165,7 @@ export default function ReviewerLibraryPage() {
                      }}
                      className={cn(
                        "p-2 sm:p-2.5 rounded-xl transition-all",
-                       reviewer.is_favorite ? "text-[var(--pink)] bg-[var(--pink)]/10" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"
+                       reviewer.is_favorite ? "text-[var(--pink)] bg-th-pink/10" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"
                      )}
                      title={reviewer.is_favorite ? "Remove from favorites" : "Add to favorites"}
                    >
@@ -176,7 +176,7 @@ export default function ReviewerLibraryPage() {
                        e.stopPropagation()
                        deleteReviewer(reviewer.id)
                      }}
-                     className="p-2 sm:p-2.5 rounded-xl text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--error)]/10 transition-all"
+                     className="p-2 sm:p-2.5 rounded-xl text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-th-error/10 transition-all"
                      title="Delete reviewer"
                    >
                      <Trash2 size={18} />
@@ -231,7 +231,7 @@ export default function ReviewerLibraryPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[var(--bg)]/90 backdrop-blur-md overflow-y-auto"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-th-bg/90 backdrop-blur-md overflow-y-auto"
           >
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -244,9 +244,9 @@ export default function ReviewerLibraryPage() {
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="relative mb-6">
                     {/* Glowing outer circle */}
-                    <div className="absolute inset-0 bg-[var(--pink)]/20 blur-xl rounded-full scale-125 animate-pulse"></div>
+                    <div className="absolute inset-0 bg-th-pink/20 blur-xl rounded-full scale-125 animate-pulse"></div>
                     {/* Animated book/heart container */}
-                    <div className="w-20 h-20 bg-[var(--pink)]/10 rounded-full flex items-center justify-center text-[var(--pink)] relative border border-[var(--pink)]/20 animate-spin-slow">
+                    <div className="w-20 h-20 bg-th-pink/10 rounded-full flex items-center justify-center text-[var(--pink)] relative border border-th-pink/20 animate-spin-slow">
                       <Sparkles size={40} className="animate-bounce" />
                     </div>
                   </div>
@@ -375,9 +375,9 @@ export default function ReviewerLibraryPage() {
                                           setIsTopicDropdownOpen(false)
                                         }}
                                         className={cn(
-                                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5",
+                                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5",
                                           selectedTopicId === t.id 
-                                            ? "bg-[var(--pink)]/10 text-[var(--pink)]" 
+                                            ? "bg-th-pink/10 text-[var(--pink)]" 
                                             : "text-[var(--text)]"
                                         )}
                                       >
@@ -400,7 +400,7 @@ export default function ReviewerLibraryPage() {
                       <>
                         <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">2. Select Notes/Files from Study Box</label>
                         {items.length === 0 ? (
-                          <div className="p-4 bg-[var(--pink)]/5 rounded-2xl border border-[var(--pink)]/10 text-center">
+                          <div className="p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10 text-center">
                             <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
                               {isFrance 
                                 ? <>Your Study Box is empty, France! 🌸<br />Pumunta muna sa Study Box page para mag-upload ng mga medical notes o files.</>
@@ -409,15 +409,15 @@ export default function ReviewerLibraryPage() {
                             </p>
                           </div>
                         ) : (
-                          <div className="max-h-40 overflow-y-auto border border-[var(--border)] rounded-2xl p-3 bg-[var(--bg)]/50 space-y-2 custom-scrollbar">
+                          <div className="max-h-40 overflow-y-auto border border-[var(--border)] rounded-2xl p-3 bg-th-bg/50 space-y-2 custom-scrollbar">
                             {items.map(item => {
                               const isChecked = selectedUploadIds.includes(item.id)
                               return (
                                 <label 
                                   key={item.id}
                                   className={cn(
-                                    "flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer bg-white text-xs font-semibold hover:border-[var(--pink)]/50",
-                                    isChecked ? "border-[var(--pink)] bg-[var(--pink)]/5" : "border-[var(--border)]"
+                                    "flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer bg-white text-xs font-semibold hover:border-th-pink/50",
+                                    isChecked ? "border-[var(--pink)] bg-th-pink/5" : "border-[var(--border)]"
                                   )}
                                 >
                                   <input 
@@ -457,7 +457,7 @@ export default function ReviewerLibraryPage() {
                         className={cn(
                           "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all hover:scale-[1.02]",
                           reviewerType === 'study_guide' 
-                            ? "border-[var(--pink)] bg-[var(--pink)]/5" 
+                            ? "border-[var(--pink)] bg-th-pink/5" 
                             : "border-[var(--border)] bg-white"
                         )}
                       >
@@ -472,7 +472,7 @@ export default function ReviewerLibraryPage() {
                         className={cn(
                           "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all hover:scale-[1.02]",
                           reviewerType === 'slides' 
-                            ? "border-[var(--pink)] bg-[var(--pink)]/5" 
+                            ? "border-[var(--pink)] bg-th-pink/5" 
                             : "border-[var(--border)] bg-white"
                         )}
                       >
@@ -531,7 +531,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 bg-[var(--bg)]/90 backdrop-blur-md overflow-y-auto pt-10 md:pt-4"
+      className="fixed inset-0 z-[100] flex items-start md:items-center justify-center p-4 bg-th-bg/90 backdrop-blur-md overflow-y-auto pt-10 md:pt-4"
     >
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -540,7 +540,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         className="bg-[var(--card)] w-full max-w-5xl max-h-[90vh] md:h-[85vh] rounded-[2.5rem] shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col my-auto"
       >
         {/* Header */}
-        <div className="p-4 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 border-b border-[var(--border)] bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20 relative">
+        <div className="p-4 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 border-b border-[var(--border)] bg-gradient-to-br from-th-pink/10 to-th-secondary-bg/20 relative">
           <button 
             onClick={onClose}
             className="absolute top-4 md:top-6 right-4 md:right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"
@@ -572,7 +572,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         {/* Content Tabs */}
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           {/* Sidebar Tabs */}
-          <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[var(--border)] p-3 md:p-4 bg-[var(--bg)]/30 overflow-y-auto custom-scrollbar md:max-h-none max-h-40 shrink-0">
+          <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[var(--border)] p-3 md:p-4 bg-th-bg/30 overflow-y-auto custom-scrollbar md:max-h-none max-h-40 shrink-0">
             <div className="space-y-2">
               {(() => {
                 const isPresentation = reviewer.content.slides && reviewer.content.slides.length > 0;
@@ -603,7 +603,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
               })()}
             </div>
             
-            <div className="mt-8 p-4 bg-[var(--pink)]/5 rounded-2xl border border-[var(--pink)]/10">
+            <div className="mt-8 p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10">
                <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-1">
                  {isFrance ? "Doc Uno's Insight 🩺" : `${aiAssistantName}'s Clinical Insight 🩺`}
                </p>
@@ -636,7 +636,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                         <MarkdownText content={reviewer.content.summary} />
                       </div>
                     </div>
-                    <div className="bg-[var(--secondary-bg)]/20 p-4 md:p-6 rounded-3xl border border-[var(--border)]">
+                    <div className="bg-th-secondary-bg/20 p-4 md:p-6 rounded-3xl border border-[var(--border)]">
                        <h4 className="font-bold text-xs md:text-sm mb-3 uppercase tracking-widest text-[var(--pink)]">
                          {isFrance ? "Doc Uno's Simple Explanation" : `${aiAssistantName}'s Clinical Breakdown`}
                        </h4><div className="text-sm md:text-base italic leading-relaxed text-[var(--text-secondary)]">
@@ -737,7 +737,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         </div>
 
         {/* Footer Actions */}
-        <div className="p-3 md:p-6 border-t border-[var(--border)] bg-[var(--bg)]/50 flex flex-col md:flex-row gap-2 md:gap-3 md:items-center md:justify-between">
+        <div className="p-3 md:p-6 border-t border-[var(--border)] bg-th-bg/50 flex flex-col md:flex-row gap-2 md:gap-3 md:items-center md:justify-between">
            <button onClick={onClose} className="btn-ghost w-full md:w-auto justify-center md:justify-start text-xs">Close Reviewer</button>
            <div className="flex flex-wrap items-center justify-center md:justify-end gap-1.5 md:gap-2">
               <button 
@@ -832,7 +832,7 @@ function SlideViewer({ slides }: { slides: any[] }) {
           <Play className="text-[var(--pink)]" size={20} weight="fill" />
           Slide Deck
         </h3>
-        <span className="text-[10px] md:text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest bg-[var(--secondary-bg)]/20 px-2 md:px-3 py-1 rounded-full border border-[var(--border)] shrink-0">
+        <span className="text-[10px] md:text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest bg-th-secondary-bg/20 px-2 md:px-3 py-1 rounded-full border border-[var(--border)] shrink-0">
           {currentSlideIdx + 1}/{slides.length}
         </span>
       </div>
@@ -890,7 +890,7 @@ function SlideViewer({ slides }: { slides: any[] }) {
       
       {/* Presenter Notes */}
       {currentSlide.presenter_notes && (
-        <div className="bg-[var(--pink)]/5 p-6 rounded-3xl border border-[var(--pink)]/10">
+        <div className="bg-th-pink/5 p-6 rounded-3xl border border-th-pink/10">
           <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-2 flex items-center gap-1.5">
             {isFrance ? "Doc Uno's Presentation Script 🩺" : `${aiAssistantName}'s Presentation Script 🩺`}
           </p>

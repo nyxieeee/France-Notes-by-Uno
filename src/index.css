@@ -19,6 +19,21 @@
     --error: #D46A7B;
     --rose-soft: #FCEDEC;
     --shadow-rgb: 190, 91, 108;
+
+    /* Same colors as space-separated RGB so Tailwind can apply opacity (e.g. bg-th-pink/10) */
+    --bg-rgb: 251 244 242;
+    --card-rgb: 255 255 255;
+    --secondary-bg-rgb: 248 230 229;
+    --pink-rgb: 190 91 108;
+    --pink-hover-rgb: 166 75 91;
+    --accent-rgb: 239 201 204;
+    --text-rgb: 74 50 55;
+    --text-secondary-rgb: 142 116 122;
+    --border-rgb: 240 224 222;
+    --success-rgb: 127 181 146;
+    --warning-rgb: 229 183 106;
+    --error-rgb: 212 106 123;
+    --rose-soft-rgb: 252 237 236;
   }
 
   .dark {
@@ -36,6 +51,21 @@
     --error: #EC8D9C;
     --rose-soft: #2E2226;
     --shadow-rgb: 0, 0, 0;
+
+    /* Same colors as space-separated RGB so Tailwind can apply opacity (e.g. bg-th-pink/10) */
+    --bg-rgb: 28 21 23;
+    --card-rgb: 38 29 32;
+    --secondary-bg-rgb: 51 39 43;
+    --pink-rgb: 217 121 138;
+    --pink-hover-rgb: 229 146 161;
+    --accent-rgb: 107 63 72;
+    --text-rgb: 247 236 238;
+    --text-secondary-rgb: 195 173 178;
+    --border-rgb: 58 45 49;
+    --success-rgb: 140 199 160;
+    --warning-rgb: 235 194 124;
+    --error-rgb: 236 141 156;
+    --rose-soft-rgb: 46 34 38;
   }
 
   * {

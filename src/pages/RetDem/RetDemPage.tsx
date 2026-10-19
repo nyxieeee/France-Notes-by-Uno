@@ -121,7 +121,7 @@ export default function RetDemPage() {
 
             <div className="mb-6 flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-th-text-secondary/50" size={18} />
                 <input 
                   type="text" 
                   placeholder="Search procedures (e.g., wound care, IV, injections)..." 
@@ -249,7 +249,7 @@ export default function RetDemPage() {
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -10 }}
-                      className="flex items-center gap-3 px-4 py-2.5 fn-card bg-gradient-to-r from-[var(--success)]/5 to-transparent border-[var(--success)]/30"
+                      className="flex items-center gap-3 px-4 py-2.5 fn-card bg-gradient-to-r from-th-success/5 to-transparent border-th-success/30"
                     >
                       <CheckCircle2 size={14} className="text-[var(--success)] shrink-0" />
                       <span className="text-xs font-bold text-[var(--success)] shrink-0">#{i + 1}</span>
@@ -257,7 +257,7 @@ export default function RetDemPage() {
                       <span className="text-xs text-[var(--text-secondary)] shrink-0">{f.text.length} chars</span>
                       <button
                         onClick={() => removeUploadedFile(f.id)}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-[var(--error)]/10 text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors shrink-0"
+                        className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-th-error/10 text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors shrink-0"
                       ><X size={13} /></button>
                     </motion.div>
                   ))}
@@ -272,7 +272,7 @@ export default function RetDemPage() {
                 onClick={() => !isExtracting && fileInputRef.current?.click()}
                 className={cn(
                   "fn-card border-2 border-dashed p-5 flex items-center gap-4 cursor-pointer transition-all",
-                  isDragging ? "border-[var(--pink)] bg-[var(--pink)]/5 scale-[1.01]" : "border-[var(--border)] hover:border-[var(--pink)]/50 hover:bg-[var(--secondary-bg)]/50"
+                  isDragging ? "border-[var(--pink)] bg-th-pink/5 scale-[1.01]" : "border-[var(--border)] hover:border-th-pink/50 hover:bg-th-secondary-bg/50"
                 )}
               >
                 <div className={cn(
@@ -335,13 +335,13 @@ export default function RetDemPage() {
                   </button>
                   <button
                     onClick={clearUploadedFiles}
-                    className="px-4 py-3 rounded-2xl border border-[var(--border)] text-xs font-bold text-[var(--text-secondary)] hover:border-[var(--error)]/40 hover:text-[var(--error)] transition-colors"
+                    className="px-4 py-3 rounded-2xl border border-[var(--border)] text-xs font-bold text-[var(--text-secondary)] hover:border-th-error/40 hover:text-[var(--error)] transition-colors"
                   >Clear all</button>
                 </motion.div>
               )}
 
               {generateError && (
-                <div className="mt-3 p-3 rounded-2xl bg-[var(--error)]/10 border border-[var(--error)]/20 text-xs font-semibold text-[var(--error)] text-center">
+                <div className="mt-3 p-3 rounded-2xl bg-th-error/10 border border-th-error/20 text-xs font-semibold text-[var(--error)] text-center">
                   {generateError}
                 </div>
               )}
@@ -353,12 +353,12 @@ export default function RetDemPage() {
                 onClick={() => setActiveTab('library')}
                 className={cn(
                   "px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 relative",
-                  activeTab === 'library' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-[var(--pink)]/80"
+                  activeTab === 'library' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-th-pink/80"
                 )}
               >
                 <BookOpen size={16} />
                 Procedures Library
-                <span className="px-2 py-0.5 text-[10px] rounded-full bg-[var(--pink)]/10 text-[var(--pink)] font-bold">
+                <span className="px-2 py-0.5 text-[10px] rounded-full bg-th-pink/10 text-[var(--pink)] font-bold">
                   {procedures.length}
                 </span>
                 {activeTab === 'library' && (
@@ -372,12 +372,12 @@ export default function RetDemPage() {
                 onClick={() => setActiveTab('history')}
                 className={cn(
                   "px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 relative",
-                  activeTab === 'history' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-[var(--pink)]/80"
+                  activeTab === 'history' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-th-pink/80"
                 )}
               >
                 <History size={16} />
                 Upload History
-                <span className="px-2 py-0.5 text-[10px] rounded-full bg-[var(--pink)]/10 text-[var(--pink)] font-bold">
+                <span className="px-2 py-0.5 text-[10px] rounded-full bg-th-pink/10 text-[var(--pink)] font-bold">
                   {uploadHistory.length}
                 </span>
                 {activeTab === 'history' && (
@@ -468,7 +468,7 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
         onClick={(e) => e.stopPropagation()}
       >
         {confirmDelete ? (
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--error)]/30 rounded-xl px-2 py-1 shadow-sm">
+          <div className="flex items-center gap-1 bg-[var(--card)] border border-th-error/30 rounded-xl px-2 py-1 shadow-sm">
             <span className="text-[10px] font-bold text-[var(--error)]">Delete?</span>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete() }}
@@ -482,7 +482,7 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
         ) : (
           <button
             onClick={(e) => { e.stopPropagation(); setConfirmDelete(true) }}
-            className="w-8 h-8 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-[var(--error)]/40 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-th-error/40 transition-all"
           >
             <Trash2 size={14} />
           </button>
@@ -588,7 +588,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
             {uploadedFiles.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {uploadedFiles.map((f, i) => (
-                  <div key={f.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--success)]/10 text-[var(--success)] text-xs font-bold border border-[var(--success)]/20">
+                  <div key={f.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-th-success/10 text-[var(--success)] text-xs font-bold border border-th-success/20">
                     <CheckCircle2 size={11} />
                     #{i + 1} {f.name}
                   </div>
@@ -616,7 +616,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Checklist & Info */}
         <div className="space-y-6">
-           <div className="fn-card p-6 bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20">
+           <div className="fn-card p-6 bg-gradient-to-br from-th-pink/10 to-th-secondary-bg/20">
               <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
                  <ListChecks className="text-[var(--pink)]" size={20} />
                  Materials Checklist
@@ -628,8 +628,8 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                      className={cn(
                        "flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer group",
                        checkedMaterials.includes(m) 
-                         ? "bg-white border-[var(--pink)]/30 text-[var(--text-secondary)]" 
-                         : "bg-white/50 border-[var(--border)] hover:border-[var(--pink)]/50"
+                         ? "bg-white border-th-pink/30 text-[var(--text-secondary)]" 
+                         : "bg-white/50 border-[var(--border)] hover:border-th-pink/50"
                      )}
                    >
                      <div 
@@ -714,7 +714,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                   transition={{ delay: i * 0.05 }}
                   className={cn(
                     "fn-card p-6 group hover:shadow-fn transition-all border-l-4",
-                    isRevealed ? "border-l-[var(--pink)]" : "border-l-[var(--text-secondary)]/30"
+                    isRevealed ? "border-l-[var(--pink)]" : "border-l-th-text-secondary/30"
                   )}
                 >
                    <div className="flex gap-6">
@@ -734,7 +734,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                             <motion.div 
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: 'auto' }}
-                              className="p-4 bg-[var(--bg)] rounded-2xl border border-[var(--border)] group-hover:border-[var(--pink)]/30 transition-all"
+                              className="p-4 bg-[var(--bg)] rounded-2xl border border-[var(--border)] group-hover:border-th-pink/30 transition-all"
                             >
                               <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-1">Rationale</p>
                               <div className="text-sm text-[var(--text-secondary)] font-medium italic leading-relaxed">
@@ -744,7 +744,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                          ) : (
                             <button 
                               onClick={() => setRevealedSteps(prev => [...prev, step.step])}
-                              className="w-full p-4 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-[var(--pink)]/50 text-[var(--text-secondary)] text-xs font-bold transition-all flex items-center justify-center gap-2"
+                              className="w-full p-4 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-th-pink/50 text-[var(--text-secondary)] text-xs font-bold transition-all flex items-center justify-center gap-2"
                             >
                               <Sparkles size={14} /> Reveal Rationale (CI Mode)
                             </button>
@@ -785,7 +785,7 @@ function HistoryFileCard({ file, onDelete }: {
   return (
     <div className="fn-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[var(--pink)] transition-all">
       <div className="flex items-start gap-4 flex-1 min-w-0">
-        <div className="w-12 h-12 rounded-2xl bg-[var(--pink)]/10 text-[var(--pink)] flex items-center justify-center shrink-0">
+        <div className="w-12 h-12 rounded-2xl bg-th-pink/10 text-[var(--pink)] flex items-center justify-center shrink-0">
           <FileText size={22} />
         </div>
         <div className="flex-1 min-w-0">
@@ -798,7 +798,7 @@ function HistoryFileCard({ file, onDelete }: {
             <span>{file.text.length.toLocaleString()} characters</span>
           </div>
           
-          <p className="text-xs text-[var(--text-secondary)] line-clamp-1 mt-2 bg-[var(--secondary-bg)]/40 px-3 py-1.5 rounded-xl border border-[var(--border)] italic font-semibold">
+          <p className="text-xs text-[var(--text-secondary)] line-clamp-1 mt-2 bg-th-secondary-bg/40 px-3 py-1.5 rounded-xl border border-[var(--border)] italic font-semibold">
             "{file.text.slice(0, 120)}..."
           </p>
         </div>
@@ -813,7 +813,7 @@ function HistoryFileCard({ file, onDelete }: {
         </button>
 
         {showConfirm ? (
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--error)]/30 rounded-xl px-2 py-1 shadow-sm">
+          <div className="flex items-center gap-1 bg-[var(--card)] border border-th-error/30 rounded-xl px-2 py-1 shadow-sm">
             <span className="text-[10px] font-bold text-[var(--error)]">Delete?</span>
             <button
               onClick={onDelete}
@@ -827,7 +827,7 @@ function HistoryFileCard({ file, onDelete }: {
         ) : (
           <button
             onClick={() => setShowConfirm(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-[var(--error)]/40 transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-th-error/40 transition-all"
           >
             <Trash2 size={14} />
           </button>
@@ -864,7 +864,7 @@ function HistoryFileCard({ file, onDelete }: {
                   <X size={16} />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto bg-[var(--secondary-bg)]/50 border border-[var(--border)] rounded-2xl p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
+              <div className="flex-1 overflow-y-auto bg-th-secondary-bg/50 border border-[var(--border)] rounded-2xl p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
                 {file.text}
               </div>
               <div className="mt-6 flex justify-end">

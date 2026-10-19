@@ -12,6 +12,7 @@ import { useReminderStore } from '@/stores/reminderStore'
 import { useQuizStore } from '@/stores/quizStore'
 import { useChatStore } from '@/stores/chatStore'
 import { useNotesStore } from '@/stores/notesStore'
+import { useSimulationStore } from '@/stores/simulationStore'
 
 export default function AppShell() {
   useEffect(() => {
@@ -24,6 +25,7 @@ export default function AppShell() {
     useQuizStore.getState().fetchQuizzes()
     useChatStore.getState().fetchMessages()
     useNotesStore.getState().fetchNotes()
+    useSimulationStore.getState().fetchHistory()
   }, [])
 
   return (

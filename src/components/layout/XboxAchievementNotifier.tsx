@@ -115,12 +115,12 @@ export default function XboxAchievementNotifier() {
           className="fixed top-20 right-4 md:right-6 z-[9999] w-[calc(100vw-32px)] max-w-[380px] pointer-events-none select-none"
         >
           {/* Xbox Style Glow Container */}
-          <div className="relative overflow-hidden p-[1px] rounded-full bg-gradient-to-r from-[var(--pink)] via-[var(--accent)] to-[var(--pink)] shadow-2xl shadow-[var(--pink)]/20">
+          <div className="relative overflow-hidden p-[1px] rounded-full bg-gradient-to-r from-[var(--pink)] via-[var(--accent)] to-[var(--pink)] shadow-2xl shadow-th-pink/20">
             {/* Ambient Background blur */}
-            <div className="absolute inset-0 bg-[var(--card)]/95 backdrop-blur-xl rounded-full" />
+            <div className="absolute inset-0 bg-th-card/95 backdrop-blur-xl rounded-full" />
             
             {/* The main panel */}
-            <div className="relative flex items-center gap-4 py-3 px-5 rounded-full bg-[var(--card)]/90 text-left">
+            <div className="relative flex items-center gap-4 py-3 px-5 rounded-full bg-th-card/90 text-left">
               {/* Circular Achievement Badge */}
               <div className="relative shrink-0 w-11 h-11 rounded-full bg-gradient-to-tr from-[var(--pink)] to-[var(--accent)] flex items-center justify-center text-xl shadow-md">
                 <Award size={18} className="absolute text-white/20 animate-spin-slow shrink-0" />

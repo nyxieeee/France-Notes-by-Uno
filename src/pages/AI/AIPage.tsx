@@ -134,12 +134,12 @@ export default function AIPage() {
         className={cn(
           "w-full group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all border text-left mb-1 text-sm font-semibold select-none",
           isActive 
-            ? "bg-[var(--pink)]/10 border-[var(--pink)] text-[var(--pink)] shadow-sm font-extrabold" 
-            : "bg-transparent border-transparent text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]/30 hover:text-[var(--text)]"
+            ? "bg-th-pink/10 border-[var(--pink)] text-[var(--pink)] shadow-sm font-extrabold" 
+            : "bg-transparent border-transparent text-[var(--text-secondary)] hover:bg-th-secondary-bg/30 hover:text-[var(--text)]"
         )}
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <MessageSquare size={16} className={isActive ? "text-[var(--pink)]" : "text-[var(--text-secondary)]/60"} />
+          <MessageSquare size={16} className={isActive ? "text-[var(--pink)]" : "text-th-text-secondary/60"} />
           <span className="truncate block flex-1 leading-snug">{session.title}</span>
         </div>
         
@@ -176,7 +176,7 @@ export default function AIPage() {
   const renderHistoryList = () => {
     if (sessions.length === 0) {
       return (
-        <div className="text-center py-8 px-4 text-xs text-[var(--text-secondary)]/60 font-medium">
+        <div className="text-center py-8 px-4 text-xs text-th-text-secondary/60 font-medium">
           No chat history yet. Start a conversation below! 🌱
         </div>
       )
@@ -186,25 +186,25 @@ export default function AIPage() {
       <div className="space-y-4">
         {grouped.today.length > 0 && (
           <div>
-            <h4 className="text-[10px] font-extrabold text-[var(--text-secondary)]/50 uppercase tracking-widest px-3 mb-1.5">Today</h4>
+            <h4 className="text-[10px] font-extrabold text-th-text-secondary/50 uppercase tracking-widest px-3 mb-1.5">Today</h4>
             {grouped.today.map(renderSessionItem)}
           </div>
         )}
         {grouped.yesterday.length > 0 && (
           <div>
-            <h4 className="text-[10px] font-extrabold text-[var(--text-secondary)]/50 uppercase tracking-widest px-3 mb-1.5">Yesterday</h4>
+            <h4 className="text-[10px] font-extrabold text-th-text-secondary/50 uppercase tracking-widest px-3 mb-1.5">Yesterday</h4>
             {grouped.yesterday.map(renderSessionItem)}
           </div>
         )}
         {grouped.last7Days.length > 0 && (
           <div>
-            <h4 className="text-[10px] font-extrabold text-[var(--text-secondary)]/50 uppercase tracking-widest px-3 mb-1.5">Previous 7 Days</h4>
+            <h4 className="text-[10px] font-extrabold text-th-text-secondary/50 uppercase tracking-widest px-3 mb-1.5">Previous 7 Days</h4>
             {grouped.last7Days.map(renderSessionItem)}
           </div>
         )}
         {grouped.older.length > 0 && (
           <div>
-            <h4 className="text-[10px] font-extrabold text-[var(--text-secondary)]/50 uppercase tracking-widest px-3 mb-1.5">Older</h4>
+            <h4 className="text-[10px] font-extrabold text-th-text-secondary/50 uppercase tracking-widest px-3 mb-1.5">Older</h4>
             {grouped.older.map(renderSessionItem)}
           </div>
         )}
@@ -244,7 +244,7 @@ export default function AIPage() {
           <h3 className="font-heading font-black text-sm text-[var(--text)] tracking-tight">Chat History</h3>
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden w-8 h-8 rounded-xl bg-[var(--secondary-bg)]/50 flex items-center justify-center text-[var(--text-secondary)]"
+            className="lg:hidden w-8 h-8 rounded-xl bg-th-secondary-bg/50 flex items-center justify-center text-[var(--text-secondary)]"
           >
             <X size={16} />
           </button>
@@ -270,18 +270,18 @@ export default function AIPage() {
       {/* Main Chat Workspace */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--card)]/50 backdrop-blur-md flex items-center justify-between shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-th-card/50 backdrop-blur-md flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
              {/* Toggle Sidebar Button */}
              <button 
                onClick={() => setSidebarOpen(!isSidebarOpen)}
-               className="p-2 -ml-2 rounded-xl bg-[var(--secondary-bg)]/50 hover:bg-[var(--pink)]/10 text-[var(--text-secondary)] hover:text-[var(--pink)] transition-all"
+               className="p-2 -ml-2 rounded-xl bg-th-secondary-bg/50 hover:bg-th-pink/10 text-[var(--text-secondary)] hover:text-[var(--pink)] transition-all"
                title={isSidebarOpen ? "Collapse history" : "Expand history"}
              >
                <Menu size={18} />
              </button>
 
-             <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-fn border border-[var(--pink)]/30 shrink-0">
+             <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-fn border border-th-pink/30 shrink-0">
                 <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
              </div>
              <div>
@@ -339,7 +339,7 @@ export default function AIPage() {
                   )}
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-[var(--pink)]/20",
+                    "w-10 h-10 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-th-pink/20",
                     msg.role === 'user' ? "bg-[var(--secondary-bg)] text-[var(--text-secondary)]" : ""
                   )}>
                     {msg.role === 'user' ? (
@@ -382,7 +382,7 @@ export default function AIPage() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-4 max-w-3xl"
                 >
-                   <div className="w-10 h-10 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-[var(--pink)]/20">
+                   <div className="w-10 h-10 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-th-pink/20">
                      <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
                    </div>
                   <div className="bg-[var(--card)] border border-[var(--border)] p-4 rounded-[2rem] rounded-tl-none shadow-sm flex items-center gap-1.5">
@@ -402,7 +402,7 @@ export default function AIPage() {
           <div className="max-w-4xl mx-auto">
             <form 
               onSubmit={handleSend}
-              className="relative flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-[2.5rem] p-2 pl-6 shadow-fn group focus-within:ring-2 focus-within:ring-[var(--pink)]/50 focus-within:border-[var(--pink)] transition-all"
+              className="relative flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-[2.5rem] p-2 pl-6 shadow-fn group focus-within:ring-2 focus-within:ring-th-pink/50 focus-within:border-[var(--pink)] transition-all"
             >
                <Sparkles className="text-[var(--pink)] shrink-0 animate-pulse-soft" size={20} />
                <input 
@@ -410,7 +410,7 @@ export default function AIPage() {
                  value={input}
                  onChange={(e) => setInput(e.target.value)}
                  placeholder={`Message ${aiAssistantName}...`}
-                 className="w-full bg-transparent border-none outline-none py-3 text-sm placeholder:text-[var(--text-secondary)]/50"
+                 className="w-full bg-transparent border-none outline-none py-3 text-sm placeholder:text-th-text-secondary/50"
                  disabled={isTyping}
                />
                <button 

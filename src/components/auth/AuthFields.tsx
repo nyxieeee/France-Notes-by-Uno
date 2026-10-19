@@ -11,7 +11,7 @@ export function AuthField({ label, icon: FieldIcon, trailing, className, ...inpu
     <label className="block">
       <span className="block text-[13px] font-medium text-[var(--text)] mb-1.5">{label}</span>
       <span className="relative block">
-        <FieldIcon size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/70 pointer-events-none" />
+        <FieldIcon size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-th-text-secondary/70 pointer-events-none" />
         <input
           {...input}
           className={cn('fn-input rounded-xl bg-[var(--card)] pl-11 py-2.5 text-sm', trailing ? 'pr-11' : '', className)}
@@ -33,7 +33,7 @@ export function PasswordField(props: Omit<FieldProps, 'type' | 'trailing'>) {
           type="button"
           onClick={() => setVisible(v => !v)}
           aria-label={visible ? 'Hide password' : 'Show password'}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/70 hover:text-[var(--pink)]"
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-th-text-secondary/70 hover:text-[var(--pink)]"
         >
           {visible ? <EyeSlash size={18} /> : <Eye size={18} />}
         </button>
@@ -90,7 +90,7 @@ export function OrDivider({ label = 'or' }: { label?: string }) {
 export function AuthError({ message }: { message: string | null }) {
   if (!message) return null
   return (
-    <p role="alert" className="mb-4 px-3 py-2.5 rounded-xl bg-[var(--error)]/10 border border-[var(--error)]/25 text-[var(--error)] text-[13px]">
+    <p role="alert" className="mb-4 px-3 py-2.5 rounded-xl bg-th-error/10 border border-th-error/25 text-[var(--error)] text-[13px]">
       {message}
     </p>
   )

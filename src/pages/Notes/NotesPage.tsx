@@ -61,7 +61,7 @@ export default function NotesPage() {
       />
 
       {error && (
-        <p className="mb-4 px-4 py-3 rounded-xl bg-[var(--error)]/10 border border-[var(--error)]/25 text-[var(--error)] text-sm">
+        <p className="mb-4 px-4 py-3 rounded-xl bg-th-error/10 border border-th-error/25 text-[var(--error)] text-sm">
           Notes couldn't be loaded or saved ({error}). If this is the first time using Notes, the database table may still need to be set up.
         </p>
       )}
@@ -75,7 +75,7 @@ export default function NotesPage() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search notes..."
-              className="bg-transparent outline-none text-sm w-full placeholder:text-[var(--text-secondary)]/70"
+              className="bg-transparent outline-none text-sm w-full placeholder:text-th-text-secondary/70"
             />
           </div>
 
@@ -132,7 +132,7 @@ export default function NotesPage() {
                         ? `Handwritten · ${note.drawing?.pages ?? 1} page${(note.drawing?.pages ?? 1) > 1 ? 's' : ''}`
                         : note.content.replace(/[#*_>`-]/g, '').trim().slice(0, 80) || 'Empty note'}
                     </p>
-                    <p className="text-[10.5px] text-[var(--text-secondary)]/80 mt-0.5">
+                    <p className="text-[10.5px] text-th-text-secondary/80 mt-0.5">
                       {topicName(note.topic_id) ? `${topicName(note.topic_id)} · ` : ''}Updated {formatRelativeDate(note.updated_at).toLowerCase()}
                     </p>
                   </div>
@@ -270,12 +270,12 @@ function HandwritingEditor({ note, topics, onBack, onSave, onDelete }: EditorPro
   return (
     <section className="fn-card flex flex-col min-h-[60vh] overflow-hidden">
       <EditorBar note={note} topics={topics} saveState={saveState} onBack={() => { flush(); onBack() }} onSave={onSave} onDelete={onDelete} />
-      <div className="p-4 sm:p-6 bg-[var(--bg)]/60 flex-1">
+      <div className="p-4 sm:p-6 bg-th-bg/60 flex-1">
         <input
           value={title}
           onChange={e => { setTitle(e.target.value); queue({ title: e.target.value }) }}
           placeholder="Untitled handwritten note"
-          className="w-full bg-transparent outline-none text-2xl font-heading font-semibold placeholder:text-[var(--text-secondary)]/50 mb-3"
+          className="w-full bg-transparent outline-none text-2xl font-heading font-semibold placeholder:text-th-text-secondary/50 mb-3"
         />
         <HandwritingCanvas drawing={drawing} onChange={next => queue({ drawing: next })} />
       </div>
@@ -307,7 +307,7 @@ function NoteEditor({ note, topics, onBack, onSave, onDelete }: EditorProps) {
           value={title}
           onChange={e => { setTitle(e.target.value); queue({ title: e.target.value }) }}
           placeholder="Untitled note"
-          className="bg-transparent outline-none text-2xl font-heading font-semibold placeholder:text-[var(--text-secondary)]/50 mb-1"
+          className="bg-transparent outline-none text-2xl font-heading font-semibold placeholder:text-th-text-secondary/50 mb-1"
         />
         <p className="text-[11px] text-[var(--text-secondary)] mb-4">Created {formatRelativeDate(note.created_at).toLowerCase()}</p>
 
@@ -320,7 +320,7 @@ function NoteEditor({ note, topics, onBack, onSave, onDelete }: EditorProps) {
             value={content}
             onChange={e => { setContent(e.target.value); queue({ content: e.target.value }) }}
             placeholder={'Start writing...\n\n# Key points\n- Normal K+ is 3.5–5.0 mEq/L\n- **Priority:** airway, breathing, circulation'}
-            className="flex-1 min-h-[45vh] bg-transparent outline-none resize-none text-[14.5px] leading-relaxed placeholder:text-[var(--text-secondary)]/50"
+            className="flex-1 min-h-[45vh] bg-transparent outline-none resize-none text-[14.5px] leading-relaxed placeholder:text-th-text-secondary/50"
           />
         )}
       </div>

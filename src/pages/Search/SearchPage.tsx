@@ -150,7 +150,7 @@ export default function SearchPage() {
         <div className="min-w-0">
           <p className="text-[13.5px] font-medium truncate">{hit.title}</p>
           {hit.snippet && <p className="text-xs text-[var(--text-secondary)] line-clamp-2">{hit.snippet}</p>}
-          <p className="text-[10.5px] text-[var(--text-secondary)]/80 mt-0.5">{hit.meta}</p>
+          <p className="text-[10.5px] text-th-text-secondary/80 mt-0.5">{hit.meta}</p>
         </div>
       </button>
     ))
@@ -168,7 +168,7 @@ export default function SearchPage() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[13.5px] font-medium line-clamp-2">{question.question}</p>
-            <p className="text-[10.5px] text-[var(--text-secondary)]/80 mt-0.5">From {quiz.title} · {formatRelativeDate(quiz.created_at)}</p>
+            <p className="text-[10.5px] text-th-text-secondary/80 mt-0.5">From {quiz.title} · {formatRelativeDate(quiz.created_at)}</p>
           </div>
           <CaretDown size={15} className={cn('text-[var(--text-secondary)] mt-1 transition-transform', open && 'rotate-180')} />
         </button>
@@ -200,7 +200,7 @@ export default function SearchPage() {
     <div className="page-container max-w-5xl">
       <PageHeader icon={MagnifyingGlass} title="Search" subtitle="Find anything in your notes, materials, reviewers and quizzes — or search trusted medical sources." />
 
-      <form onSubmit={e => { e.preventDefault(); submit(draft) }} className="flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-full pl-5 pr-2 py-2 shadow-fn focus-within:ring-2 focus-within:ring-[var(--pink)]/25">
+      <form onSubmit={e => { e.preventDefault(); submit(draft) }} className="flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-full pl-5 pr-2 py-2 shadow-fn focus-within:ring-2 focus-within:ring-th-pink/25">
         <MagnifyingGlass size={18} className="text-[var(--text-secondary)] shrink-0" />
         <input
           value={draft}

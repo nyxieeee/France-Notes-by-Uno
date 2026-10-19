@@ -137,7 +137,7 @@ export default function ProfilePage() {
   const stats = [
     { label: 'Courses', value: String(coursesCount), icon: GraduationCap, color: 'bg-blue-100 text-blue-600' },
     { label: 'Badges', value: String(badgesCount), icon: Award, color: 'bg-purple-100 text-purple-600' },
-    { label: 'Favorites', value: String(favoritesCount), icon: Heart, color: 'bg-[var(--pink)]/10 text-[var(--pink)]' }
+    { label: 'Favorites', value: String(favoritesCount), icon: Heart, color: 'bg-th-pink/10 text-[var(--pink)]' }
   ]
 
   const settingsOptions = [
@@ -213,7 +213,7 @@ export default function ProfilePage() {
                 </button>
                 <button 
                   onClick={logout}
-                  className="flex-1 btn-ghost flex items-center justify-center gap-2 py-2 text-xs rounded-xl text-[var(--error)] border border-[var(--error)]/10 hover:bg-[var(--error)]/5 hover:border-[var(--error)]/20 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 btn-ghost flex items-center justify-center gap-2 py-2 text-xs rounded-xl text-[var(--error)] border border-th-error/10 hover:bg-th-error/5 hover:border-th-error/20 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <LogOut size={15} />
                   <span>Logout</span>
@@ -223,12 +223,12 @@ export default function ProfilePage() {
 
           <div className="fn-card p-6">
              <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-[var(--pink)]/20 shrink-0">
+                <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-th-pink/20 shrink-0">
                    <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover" />
                 </div>
                 <h3 className="font-heading font-bold text-base text-[var(--text)]">{aiAssistantName} says... {isFrance ? '🩺✨' : '👩‍⚕️✨'}</h3>
              </div>
-             <div className="p-4 bg-[var(--pink)]/5 rounded-2xl border border-[var(--pink)]/10 text-center">
+             <div className="p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10 text-center">
                 <p className="text-sm italic leading-relaxed text-[var(--text-secondary)] font-medium">
                    {items.length === 0 ? (
                       isFrance 
@@ -275,7 +275,7 @@ export default function ProfilePage() {
 
           {/* Settings Section */}
           <div className="fn-card overflow-hidden">
-             <div className="p-6 border-b border-[var(--border)] bg-gradient-to-r from-[var(--pink)]/10 to-transparent">
+             <div className="p-6 border-b border-[var(--border)] bg-gradient-to-r from-th-pink/10 to-transparent">
                 <h3 className="font-heading font-bold text-lg flex items-center gap-2">
                    <Settings className="text-[var(--pink)]" size={20} />
                    Settings & Preferences
@@ -297,7 +297,7 @@ export default function ProfilePage() {
                           <p className="text-xs text-[var(--text-secondary)] font-medium">{option.sub}</p>
                        </div>
                     </div>
-                    <ChevronRight size={18} className="text-[var(--text-secondary)]/30 group-hover:text-[var(--pink)] group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-th-text-secondary/30 group-hover:text-[var(--pink)] group-hover:translate-x-1 transition-all" />
                   </button>
                 ))}
              </div>
@@ -319,7 +319,7 @@ export default function ProfilePage() {
                      <div className={cn(
                        "w-full aspect-square bg-[var(--bg)] rounded-[1.5rem] border-2 flex items-center justify-center text-2xl transition-all shadow-sm",
                        badge.unlocked 
-                         ? "border-[var(--pink)] bg-[var(--pink)]/5 ring-2 ring-[var(--pink)]/20" 
+                         ? "border-[var(--pink)] bg-th-pink/5 ring-2 ring-th-pink/20" 
                          : "border-dashed border-[var(--border)] grayscale opacity-40 group-hover:opacity-65"
                      )}>
                         {badge.icon}
@@ -361,11 +361,11 @@ export default function ProfilePage() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fn-card w-full max-w-md relative z-10 flex flex-col max-h-[85vh]"
             >
-              <div className="flex items-center justify-between p-6 border-b border-[var(--border)] bg-gradient-to-r from-[var(--secondary-bg)]/20 to-transparent">
+              <div className="flex items-center justify-between p-6 border-b border-[var(--border)] bg-gradient-to-r from-th-secondary-bg/20 to-transparent">
                 <h3 className="font-heading font-bold text-lg">{activeSetting}</h3>
                 <button 
                   onClick={() => setActiveSetting(null)}
-                  className="w-8 h-8 rounded-full bg-[var(--bg)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--pink)]/10 hover:text-[var(--pink)] transition-colors"
+                  className="w-8 h-8 rounded-full bg-[var(--bg)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-th-pink/10 hover:text-[var(--pink)] transition-colors"
                 >
                   <X size={18} />
                 </button>
@@ -400,7 +400,7 @@ export default function ProfilePage() {
                         className="relative cursor-pointer"
                         onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
                       >
-                        <div className={`fn-input flex items-center bg-[var(--card)] ${!editForm.year_level ? 'text-[var(--text-secondary)]/70' : 'text-[var(--text)]'}`}>
+                        <div className={`fn-input flex items-center bg-[var(--card)] ${!editForm.year_level ? 'text-th-text-secondary/70' : 'text-[var(--text)]'}`}>
                           {editForm.year_level ? [
                             { value: '1st Year', label: '1st Year' },
                             { value: '2nd Year', label: '2nd Year' },
@@ -409,7 +409,7 @@ export default function ProfilePage() {
                             { value: 'RN', label: 'Registered Nurse' }
                           ].find(o => o.value === editForm.year_level)?.label : "Select year level"}
                         </div>
-                        <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                        <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-th-text-secondary/50 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} size={18} />
                       </div>
                       
                       {isYearDropdownOpen && (
@@ -427,7 +427,7 @@ export default function ProfilePage() {
                           ].map(option => (
                             <div
                               key={option.value}
-                              className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${editForm.year_level === option.value ? 'bg-[var(--pink)]/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
+                              className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${editForm.year_level === option.value ? 'bg-th-pink/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
                               onClick={() => {
                                 setEditForm({ ...editForm, year_level: option.value });
                                 setIsYearDropdownOpen(false);
@@ -491,7 +491,7 @@ export default function ProfilePage() {
                     
                     <button 
                       onClick={() => navigate('/update-password')}
-                      className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--border)] hover:border-[var(--pink)] hover:bg-[var(--pink)]/5 transition-colors text-left group"
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--border)] hover:border-[var(--pink)] hover:bg-th-pink/5 transition-colors text-left group"
                     >
                       <div>
                         <p className="font-bold text-sm group-hover:text-[var(--pink)]">Change Password</p>
@@ -512,7 +512,7 @@ export default function ProfilePage() {
                           onClick={() => theme === 'dark' && toggleTheme()}
                           className={cn(
                             "p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all",
-                            theme === 'light' ? "border-[var(--pink)] bg-[var(--pink)]/5 text-[var(--pink)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/50"
+                            theme === 'light' ? "border-[var(--pink)] bg-th-pink/5 text-[var(--pink)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/50"
                           )}
                         >
                           <Sun size={24} />
@@ -522,7 +522,7 @@ export default function ProfilePage() {
                           onClick={() => theme === 'light' && toggleTheme()}
                           className={cn(
                             "p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all",
-                            theme === 'dark' ? "border-[var(--pink)] bg-[var(--pink)]/5 text-[var(--pink)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/50"
+                            theme === 'dark' ? "border-[var(--pink)] bg-th-pink/5 text-[var(--pink)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/50"
                           )}
                         >
                           <Moon size={24} />

@@ -278,7 +278,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
       layout
       className={cn(
         'fn-card border-2 transition-all cursor-pointer overflow-hidden',
-        expanded ? 'border-[var(--pink)]/40' : 'hover:border-[var(--pink)]/20'
+        expanded ? 'border-th-pink/40' : 'hover:border-th-pink/20'
       )}
       onClick={() => setExpanded(p => !p)}
     >
@@ -311,7 +311,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={copyLabSummary}
-            className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-[var(--pink)]/10 rounded-xl transition-all"
+            className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-th-pink/10 rounded-xl transition-all"
             title="Copy Lab Reference"
           >
             {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
@@ -376,7 +376,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
               </div>
 
               {lab.clinicalPearl && (
-                <div className="flex gap-2.5 p-3 bg-[var(--pink)]/8 border border-[var(--pink)]/20 rounded-2xl">
+                <div className="flex gap-2.5 p-3 bg-th-pink/8 border border-th-pink/20 rounded-2xl">
                   <AlertTriangle size={14} className="text-[var(--pink)] shrink-0 mt-0.5" />
                   <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                     <span className="font-bold text-[var(--pink)]">Clinical Pearl: </span>
@@ -502,7 +502,7 @@ export default function LabsReferencePage() {
                 'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all border-2 shrink-0',
                 activeTab === cat.id
                   ? 'text-white border-transparent shadow-md'
-                  : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/30'
+                  : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/30'
               )}
               style={activeTab === cat.id ? { backgroundColor: cat.color, borderColor: cat.color } : {}}
             >

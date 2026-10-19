@@ -25,7 +25,7 @@ export default function TodayTasks() {
       ) : (
         <ul className="space-y-1">
           {tasks.map(task => (
-            <li key={task.id} className="flex items-start gap-3 py-2 border-b border-[var(--border)]/70 last:border-0">
+            <li key={task.id} className="flex items-start gap-3 py-2 border-b border-th-border/70 last:border-0">
               <button
                 onClick={() => toggleReminder(task.id)}
                 aria-label={`Mark ${task.title} as done`}

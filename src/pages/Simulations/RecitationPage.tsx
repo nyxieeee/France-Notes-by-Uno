@@ -130,9 +130,9 @@ function RecitationSetup() {
                               setIsTopicDropdownOpen(false)
                             }}
                             className={cn(
-                              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5",
+                              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5",
                               selectedTopic === t.title 
-                                ? "bg-[var(--pink)]/10 text-[var(--pink)]" 
+                                ? "bg-th-pink/10 text-[var(--pink)]" 
                                 : "text-[var(--text)]"
                             )}
                           >
@@ -150,7 +150,7 @@ function RecitationSetup() {
                             setSelectedTopic("General Nursing")
                             setIsTopicDropdownOpen(false)
                           }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5 bg-[var(--pink)]/10 text-[var(--pink)]"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5 bg-th-pink/10 text-[var(--pink)]"
                         >
                           <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[var(--pink)]" />
                           <span className="truncate">General Nursing</span>
@@ -167,7 +167,7 @@ function RecitationSetup() {
         {/* Study Source Selector */}
         <div className="space-y-4">
           <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">
-            Study Source <span className="normal-case font-normal text-[var(--text-secondary)]/60 ml-1">(optional — let {isFrance ? "Doc Uno" : aiAssistantName} test you on your own materials)</span>
+            Study Source <span className="normal-case font-normal text-th-text-secondary/60 ml-1">(optional — let {isFrance ? "Doc Uno" : aiAssistantName} test you on your own materials)</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
@@ -185,8 +185,8 @@ function RecitationSetup() {
                 className={cn(
                   "p-4 rounded-2xl border-2 cursor-pointer transition-all text-left relative",
                   sourceType === s.id
-                    ? "border-[var(--pink)] bg-[var(--pink)]/5"
-                    : "border-[var(--border)] hover:border-[var(--pink)]/50"
+                    ? "border-[var(--pink)] bg-th-pink/5"
+                    : "border-[var(--border)] hover:border-th-pink/50"
                 )}
               >
                 <s.icon size={18} className={cn("mb-2", sourceType === s.id ? "text-[var(--pink)]" : "text-[var(--text-secondary)]")} />
@@ -215,8 +215,8 @@ function RecitationSetup() {
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
                         selectedFileId === file.id
-                          ? "border-[var(--pink)] bg-[var(--pink)]/5"
-                          : "border-[var(--border)] hover:border-[var(--pink)]/50"
+                          ? "border-[var(--pink)] bg-th-pink/5"
+                          : "border-[var(--border)] hover:border-th-pink/50"
                       )}
                     >
                       <FileText size={16} className="text-[var(--pink)] shrink-0" />
@@ -252,8 +252,8 @@ function RecitationSetup() {
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
                         selectedKnowledgeId === ref.id
-                          ? "border-[var(--pink)] bg-[var(--pink)]/5"
-                          : "border-[var(--border)] hover:border-[var(--pink)]/50"
+                          ? "border-[var(--pink)] bg-th-pink/5"
+                          : "border-[var(--border)] hover:border-th-pink/50"
                       )}
                     >
                       <BookOpen size={16} className="text-[var(--pink)] shrink-0" />
@@ -273,7 +273,7 @@ function RecitationSetup() {
 
           {/* Active source badge */}
           {((sourceType === 'file' && selectedFileId) || (sourceType === 'knowledge' && selectedKnowledgeId)) && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--pink)]/10 border border-[var(--pink)]/20 text-sm">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-th-pink/10 border border-th-pink/20 text-sm">
               <CheckCircle2 size={14} className="text-[var(--pink)]" />
               <span className="font-medium text-[var(--pink)] text-xs">
                 {isFrance ? 'Doc Uno' : aiAssistantName} will base questions on:{' '}
@@ -307,7 +307,7 @@ function RecitationSetup() {
                 onClick={() => setDifficulty(d.id as DifficultyMode)}
                 className={cn(
                   "p-5 rounded-2xl border-2 cursor-pointer transition-all",
-                  difficulty === d.id ? "border-[var(--pink)] bg-[var(--pink)]/5" : "border-[var(--border)] hover:border-[var(--pink)]/50"
+                  difficulty === d.id ? "border-[var(--pink)] bg-th-pink/5" : "border-[var(--border)] hover:border-th-pink/50"
                 )}
               >
                 <h3 className="font-bold mb-1">{d.label}</h3>

@@ -2,8 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, Brain as BrainCircuit, CircleNotch as Loader2, ShieldWarning as ShieldAlert, Pulse as Activity, SpeakerHigh as Volume2, Headphones } from '@phosphor-icons/react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useAuthStore } from '@/stores/authStore'
-import { generateChatCompletion, generateJSON } from '@/lib/ai'
-import { getRecitationPrompt, getRetDemPrompt, getSimulationEvaluationPrompt } from '@/lib/simulationPrompts'
+import { generateChatCompletion } from '@/lib/ai'
+import { getRecitationPrompt, getRetDemPrompt } from '@/lib/simulationPrompts'
 import { cn } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -20,7 +20,7 @@ export function SimulationEngine() {
 
 function SimulationSession() {
   const { isFrance, aiAssistantName } = usePersonalization()
-  const { activeMode, topic, difficulty, messages, addMessage, endSession, setScores, sourceName } = useSimulationStore()
+  const { activeMode, topic, difficulty, messages, addMessage, endSession, gradeSession, sourceName } = useSimulationStore()
   const { user } = useAuthStore()
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -302,47 +302,16 @@ function SimulationSession() {
     }
   }
 
-  const handleEnd = async () => {
+  const handleEnd = () => {
     endSession()
-    try {
-      const systemPrompt = getSimulationEvaluationPrompt()
-      const formattedTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n')
-      
-      const prompt = `The simulation has ended. Please evaluate the user's performance across the entire chat transcript below and output the JSON report.
-
-CHAT TRANSCRIPT:
-${formattedTranscript}`
-
-      const report = await generateJSON(prompt, systemPrompt, 'recitation')
-      
-      setScores(
-        { accuracy: report.accuracy || 0, safety: report.safety || 0, reasoning: report.reasoning || 0, confidence: report.confidence || 0 },
-        { correct: report.feedback?.correct || [], missed: report.feedback?.missed || [], safetyViolations: report.feedback?.safetyViolations || [] }
-      )
-    } catch(e) {
-      console.error('Grading Error:', e)
-      // Fallback supportive report so the page never hangs!
-      setScores(
-        { accuracy: 82, safety: 85, reasoning: 80, confidence: 85 },
-        { 
-          correct: [
-            `${isFrance ? "France" : "You"} kept a calm clinical demeanor throughout the questions.`,
-            "Demonstrated solid initial safety principles and patient care steps."
-          ], 
-          missed: [
-            "Make sure to review pathophysiology details and double-check specific medication dosages."
-          ], 
-          safetyViolations: [] 
-        }
-      )
-    }
+    gradeSession()
   }
 
   return (
       <div className="page-container h-[calc(100vh-80px)] flex flex-col max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-4 bg-[var(--card)] p-4 rounded-2xl border border-[var(--border)] shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-[var(--pink)]/20 shrink-0">
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-th-pink/20 shrink-0">
               <img src={isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
             </div>
             <div>
@@ -358,7 +327,7 @@ ${formattedTranscript}`
                 className={cn(
                   "text-xs font-bold px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5",
                   voiceMode
-                    ? "bg-[var(--pink)]/10 text-[var(--pink)] border border-[var(--pink)]/20"
+                    ? "bg-th-pink/10 text-[var(--pink)] border border-th-pink/20"
                     : "bg-[var(--secondary-bg)] text-[var(--text-secondary)] border border-[var(--border)]"
                 )}
                 title={voiceMode ? "Voice mode on" : "Voice mode off"}
@@ -367,7 +336,7 @@ ${formattedTranscript}`
                 {voiceMode ? 'Voice On' : 'Voice Off'}
               </button>
             )}
-            <button onClick={handleEnd} className="text-sm font-bold text-[var(--error)] hover:bg-[var(--error)]/10 px-4 py-2 rounded-full transition-colors">
+            <button onClick={handleEnd} className="text-sm font-bold text-[var(--error)] hover:bg-th-error/10 px-4 py-2 rounded-full transition-colors">
               End Session
             </button>
           </div>
@@ -379,7 +348,7 @@ ${formattedTranscript}`
             "mb-4 px-4 py-2.5 rounded-2xl border flex items-center gap-3 text-sm font-medium",
             isSpeaking ? "bg-blue-50/50 border-blue-200/30 text-blue-600" :
             isListening ? "bg-green-50/50 border-green-200/30 text-green-600" :
-            "bg-[var(--pink)]/5 border-[var(--pink)]/10 text-[var(--pink)]"
+            "bg-th-pink/5 border-th-pink/10 text-[var(--pink)]"
           )}>
             {isSpeaking ? (
               <><Volume2 size={16} className="animate-pulse" /> {aiAssistantName} is speaking...</>
@@ -394,7 +363,7 @@ ${formattedTranscript}`
         <div className="flex-1 overflow-y-auto fn-card p-6 mb-4 space-y-6">
         {messages.map(m => (
           <div key={m.id} className={cn("flex gap-4 max-w-[85%]", m.role === 'user' ? "ml-auto flex-row-reverse" : "")}>
-            <div className={cn("w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-sm border border-[var(--pink)]/10", m.role === 'user' ? "bg-[var(--bg)] text-[var(--text-secondary)]" : "")}>
+            <div className={cn("w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-sm border border-th-pink/10", m.role === 'user' ? "bg-[var(--bg)] text-[var(--text-secondary)]" : "")}>
               {m.role === 'user' ? (
                 user?.avatar_url ? (
                   <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
@@ -407,17 +376,17 @@ ${formattedTranscript}`
                 <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover" />
               )}
             </div>
-            <div className={cn("p-4 rounded-2xl text-sm leading-relaxed", m.role === 'user' ? "bg-[var(--pink)] text-white rounded-tr-none" : "bg-[var(--secondary-bg)]/50 rounded-tl-none")}>
+            <div className={cn("p-4 rounded-2xl text-sm leading-relaxed", m.role === 'user' ? "bg-[var(--pink)] text-white rounded-tr-none" : "bg-th-secondary-bg/50 rounded-tl-none")}>
                <MarkdownText content={m.content} />
             </div>
           </div>
         ))}
         {isTyping && (
           <div className="flex gap-4">
-            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-sm border border-[var(--pink)]/10">
+            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-sm border border-th-pink/10">
               <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
             </div>
-            <div className="p-4 rounded-2xl bg-[var(--secondary-bg)]/50 rounded-tl-none flex items-center gap-1">
+            <div className="p-4 rounded-2xl bg-th-secondary-bg/50 rounded-tl-none flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce"></span>
               <span className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce" style={{ animationDelay: '0.2s' }}></span>
               <span className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce" style={{ animationDelay: '0.4s' }}></span>
@@ -477,7 +446,25 @@ ${formattedTranscript}`
 
 function SimulationReport() {
   const { isFrance, aiAssistantName } = usePersonalization()
-  const { scores, feedback, reset } = useSimulationStore()
+  const { scores, feedback, reset, gradingFailed, gradeSession } = useSimulationStore()
+
+  if (gradingFailed) {
+    return (
+      <div className="page-container flex flex-col items-center justify-center h-[60vh] text-center">
+        <div className="w-16 h-16 rounded-2xl bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center mb-4">
+          <ShieldAlert size={30} weight="duotone" />
+        </div>
+        <h2 className="text-xl font-semibold">Couldn't grade this session</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-sm">
+          {isFrance ? 'Doc Uno' : aiAssistantName} couldn't finish the evaluation. Your conversation is still here — try grading again.
+        </p>
+        <div className="flex gap-2 mt-6">
+          <button onClick={() => gradeSession()} className="btn-primary px-6 py-2.5 text-sm">Try grading again</button>
+          <button onClick={reset} className="btn-secondary px-6 py-2.5 text-sm">Back to hub</button>
+        </div>
+      </div>
+    )
+  }
 
   if (!scores || !feedback) {
     return (
@@ -519,7 +506,7 @@ function SimulationReport() {
           </ul>
         </div>
         {feedback.safetyViolations.length > 0 && (
-          <div className="fn-card p-6 border-l-4 border-l-[var(--error)] bg-[var(--error)]/5">
+          <div className="fn-card p-6 border-l-4 border-l-[var(--error)] bg-th-error/5">
             <h3 className="font-bold text-lg mb-3 text-[var(--error)]">Critical Safety Violations 🚨</h3>
             <ul className="space-y-2">
               {feedback.safetyViolations.map((f, i) => <li key={i} className="text-sm text-[var(--error)] flex items-start gap-2"><span>!</span> {f}</li>)}

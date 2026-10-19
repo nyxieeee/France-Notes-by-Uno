@@ -24,9 +24,9 @@ export default function HeroBanner() {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--rose-soft)] shadow-fn min-h-[190px]">
       <ParisIllustration className="absolute right-0 bottom-0 h-full w-[62%] sm:w-[55%] opacity-90" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[var(--rose-soft)] via-[var(--rose-soft)]/85 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[var(--rose-soft)] via-th-rose-soft/85 to-transparent" />
 
-      <p className="hidden lg:block absolute right-[30%] top-6 font-script text-xl text-[var(--pink)]/80 leading-tight rotate-[-4deg]">
+      <p className="hidden lg:block absolute right-[30%] top-6 font-script text-xl text-th-pink/80 leading-tight rotate-[-4deg]">
         Same dreams,<br />bigger plans ♡
       </p>
 

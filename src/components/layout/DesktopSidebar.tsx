@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { House as Home, Archive, Books as Library, Brain as BrainCircuit, Stethoscope, ChatCircleDots as MessageCircle, Gear as Settings, Sparkle as Sparkles, Calendar, Calculator, Microphone as Mic2, Flask as FlaskConical } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { useNavigation, isNavItemActive } from './navigation'
 
 const docUnoMessages = [
   "You've got this, future nurse! I'm always here to support you! I love you! 🩺💖",
@@ -32,40 +32,8 @@ const nurseFlorenceMessages = [
 ]
 
 export default function DesktopSidebar() {
-  const { 
-    isFrance, 
-    appName, 
-    aiAssistantName, 
-    studyBoxName, 
-    knowledgeGardenName,
-  } = usePersonalization()
-
-  const navGroups = [
-    { label: null, items: [
-      { icon: Home, label: 'Home', path: '/home' },
-    ]},
-    { label: 'Study', items: [
-      { icon: Archive, label: studyBoxName, path: '/study-box' },
-      { icon: Library, label: 'Reviewer Library', path: '/reviewer-library' },
-      { icon: BrainCircuit, label: 'Quizzes', path: '/quiz' },
-      { icon: Stethoscope, label: 'Clinical Simulations', path: '/simulations', isBeta: true },
-    ]},
-    { label: 'Listen & Learn', items: [
-      { icon: Mic2, label: 'Nursepod', path: '/podcast-review' },
-    ]},
-    { label: 'Search', items: [
-      { icon: Sparkles, label: knowledgeGardenName, path: '/knowledge-garden' },
-    ]},
-    { label: 'Nursing Tools', items: [
-      { icon: MessageCircle, label: `Ask ${aiAssistantName}`, path: '/ai' },
-      { icon: FlaskConical, label: 'Reference Lab Charts', path: '/labs-reference' },
-      { icon: Calculator, label: 'Dosage Calculator', path: '/dosage-calculator' },
-    ]},
-    { label: 'Planning & Progress', items: [
-      { icon: Calendar, label: 'Planner', path: '/planner' },
-      { icon: Settings, label: 'Profile & Settings', path: '/profile' },
-    ]},
-  ]
+  const { isFrance, appName, aiAssistantName } = usePersonalization()
+  const navGroups = useNavigation()
 
   const activeMessages = isFrance ? docUnoMessages : nurseFlorenceMessages
   const [message, setMessage] = useState(() => activeMessages[Math.floor(Math.random() * activeMessages.length)])
@@ -94,7 +62,7 @@ export default function DesktopSidebar() {
         {navGroups.map((group, gi) => (
           <div key={gi}>
             {group.label && (
-              <p className="px-3 mb-1 text-[11px] font-semibold text-[var(--text-secondary)]/80 tracking-wide">
+              <p className="px-3 mb-1 text-[11px] font-semibold text-th-text-secondary/80 tracking-wide">
                 {group.label}
               </p>
             )}
@@ -103,18 +71,18 @@ export default function DesktopSidebar() {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  className={({ isActive }) => cn(
+                  className={() => cn(
                     "flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] transition-colors duration-150 group",
-                    isActive 
+                    isNavItemActive(item, location.pathname)
                       ? "bg-[var(--secondary-bg)] text-[var(--pink)] font-semibold" 
                       : "text-[var(--text-secondary)] hover:bg-[var(--rose-soft)] hover:text-[var(--text)]"
                   )}
                 >
-                  {({ isActive }) => (
+                  {() => (
                     <>
-                      <item.icon size={18} weight={isActive ? 'fill' : 'regular'} className="shrink-0" />
+                      <item.icon size={18} weight={isNavItemActive(item, location.pathname) ? 'fill' : 'regular'} className="shrink-0" />
                       <span className="flex-1 truncate">{item.label}</span>
-                      {'isBeta' in item && item.isBeta && (
+                      {item.isBeta && (
                         <span className="text-[8px] font-bold text-[var(--pink)] px-1.5 py-0.5 rounded-md uppercase tracking-wider bg-[var(--rose-soft)] border border-[var(--accent)]">
                           Beta
                         </span>

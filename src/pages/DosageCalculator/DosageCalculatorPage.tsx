@@ -44,8 +44,8 @@ const ResultBadge = ({ label, value, unit, accent = false }: { label: string; va
     className={cn(
       'flex flex-col items-center justify-center p-5 rounded-3xl border-2',
       accent
-        ? 'bg-[var(--pink)]/10 border-[var(--pink)]/40 text-[var(--pink)]'
-        : 'bg-[var(--secondary-bg)]/30 border-[var(--border)] text-[var(--text)]'
+        ? 'bg-th-pink/10 border-th-pink/40 text-[var(--pink)]'
+        : 'bg-th-secondary-bg/30 border-[var(--border)] text-[var(--text)]'
     )}
   >
     <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1">{label}</p>
@@ -227,7 +227,7 @@ export default function DosageCalculatorPage() {
               "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border",
               showHistory
                 ? "bg-[var(--pink)] text-white border-[var(--pink)] shadow-md"
-                : "bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/50"
+                : "bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/50"
             )}
           >
             <History size={15} />
@@ -313,7 +313,7 @@ export default function DosageCalculatorPage() {
                     'flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-sm font-bold transition-all duration-200',
                     activeTab === tab.id
                       ? 'bg-[var(--pink)] text-white shadow-md'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--secondary-bg)]/50'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-th-secondary-bg/50'
                   )}
                 >
                   <tab.icon size={16} />
@@ -334,7 +334,7 @@ export default function DosageCalculatorPage() {
                     transition={{ duration: 0.18 }}
                   >
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-2xl bg-[var(--pink)]/10 flex items-center justify-center text-[var(--pink)]">
+                      <div className="w-10 h-10 rounded-2xl bg-th-pink/10 flex items-center justify-center text-[var(--pink)]">
                         <Droplets size={20} />
                       </div>
                       <div>
@@ -371,7 +371,7 @@ export default function DosageCalculatorPage() {
                                   'py-3 rounded-2xl border-2 text-sm font-black transition-all',
                                   ivInputs.dropFactor === String(df)
                                     ? 'bg-[var(--pink)] border-[var(--pink)] text-white shadow-md scale-105'
-                                    : 'bg-[var(--bg)] border-[var(--border)] text-[var(--text)] hover:border-[var(--pink)]/50'
+                                    : 'bg-[var(--bg)] border-[var(--border)] text-[var(--text)] hover:border-th-pink/50'
                                 )}
                               >
                                 {df}
@@ -417,7 +417,7 @@ export default function DosageCalculatorPage() {
                             initial={{ opacity: 0, y: -8 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -8 }}
-                            className="flex items-center gap-2 p-3 bg-[var(--error)]/10 border border-[var(--error)]/30 rounded-2xl text-sm font-semibold text-[var(--error)]"
+                            className="flex items-center gap-2 p-3 bg-th-error/10 border border-th-error/30 rounded-2xl text-sm font-semibold text-[var(--error)]"
                           >
                             <AlertCircle size={16} /> {ivError}
                           </motion.div>
@@ -446,13 +446,13 @@ export default function DosageCalculatorPage() {
                                 <CheckCircle2 size={16} />
                                 <p className="text-xs font-bold uppercase tracking-widest">Results</p>
                               </div>
-                              <span className="text-[10px] font-bold bg-[var(--success)]/10 text-[var(--success)] px-2 py-0.5 rounded-full">Saved to Supabase</span>
+                              <span className="text-[10px] font-bold bg-th-success/10 text-[var(--success)] px-2 py-0.5 rounded-full">Saved to Supabase</span>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <ResultBadge label="Flow Rate" value={String(ivResult.gttsMin)} unit="gtts / min" accent />
                               <ResultBadge label="Hourly Rate" value={String(ivResult.mlHr)} unit="mL / hr" />
                             </div>
-                            <div className="p-4 bg-[var(--secondary-bg)]/20 rounded-2xl border border-[var(--border)] text-xs text-[var(--text-secondary)] leading-relaxed">
+                            <div className="p-4 bg-th-secondary-bg/20 rounded-2xl border border-[var(--border)] text-xs text-[var(--text-secondary)] leading-relaxed">
                               <span className="font-bold text-[var(--text)]">Formula used: </span>
                               Flow Rate (gtts/min) = Volume (mL) × Drop Factor (gtts/mL) ÷ Time (min)
                             </div>
@@ -470,7 +470,7 @@ export default function DosageCalculatorPage() {
                     transition={{ duration: 0.18 }}
                   >
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-2xl bg-[var(--pink)]/10 flex items-center justify-center text-[var(--pink)]">
+                      <div className="w-10 h-10 rounded-2xl bg-th-pink/10 flex items-center justify-center text-[var(--pink)]">
                         <Pill size={20} />
                       </div>
                       <div>
@@ -543,7 +543,7 @@ export default function DosageCalculatorPage() {
                             initial={{ opacity: 0, y: -8 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -8 }}
-                            className="flex items-center gap-2 p-3 bg-[var(--error)]/10 border border-[var(--error)]/30 rounded-2xl text-sm font-semibold text-[var(--error)]"
+                            className="flex items-center gap-2 p-3 bg-th-error/10 border border-th-error/30 rounded-2xl text-sm font-semibold text-[var(--error)]"
                           >
                             <AlertCircle size={16} /> {medError}
                           </motion.div>
@@ -572,10 +572,10 @@ export default function DosageCalculatorPage() {
                                 <CheckCircle2 size={16} />
                                 <p className="text-xs font-bold uppercase tracking-widest">Volume to Administer</p>
                               </div>
-                              <span className="text-[10px] font-bold bg-[var(--success)]/10 text-[var(--success)] px-2 py-0.5 rounded-full">Saved to Supabase</span>
+                              <span className="text-[10px] font-bold bg-th-success/10 text-[var(--success)] px-2 py-0.5 rounded-full">Saved to Supabase</span>
                             </div>
                             <ResultBadge label="Give" value={String(medResult)} unit="mL" accent />
-                            <div className="p-4 bg-[var(--secondary-bg)]/20 rounded-2xl border border-[var(--border)] text-xs text-[var(--text-secondary)] leading-relaxed">
+                            <div className="p-4 bg-th-secondary-bg/20 rounded-2xl border border-[var(--border)] text-xs text-[var(--text-secondary)] leading-relaxed">
                               <span className="font-bold text-[var(--text)]">Formula used: </span>
                               Volume to Give = (Ordered Dose ÷ Dose on Hand) × Volume on Hand
                             </div>
@@ -592,7 +592,7 @@ export default function DosageCalculatorPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="mt-6 p-4 bg-[var(--warning)]/10 border border-[var(--warning)]/30 rounded-2xl flex items-start gap-3"
+              className="mt-6 p-4 bg-th-warning/10 border border-th-warning/30 rounded-2xl flex items-start gap-3"
             >
               <AlertCircle size={16} className="text-[var(--warning)] mt-0.5 shrink-0" style={{ color: '#F59E0B' }} />
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">

@@ -1,4 +1,8 @@
 import { create } from 'zustand'
+import { supabase } from '@/lib/supabase'
+import { generateJSON } from '@/lib/ai'
+import { getSimulationEvaluationPrompt } from '@/lib/simulationPrompts'
+import type { SimulationSession } from '@/types'
 
 export type SimulationMode = 'recitation' | 'retdem' | null
 export type DifficultyMode = 'gentle' | 'clinical_instructor' | 'doc_uno'
@@ -16,6 +20,7 @@ export type SimulationState = {
   topic: string | null
   isActive: boolean
   isEvaluating: boolean
+  gradingFailed: boolean
   isRecording: boolean
   messages: Message[]
   scores: {
@@ -32,6 +37,7 @@ export type SimulationState = {
   sessionId: string | null
   sourceText?: string | null
   sourceName?: string | null
+  history: SimulationSession[]
 }
 
 type SimulationActions = {
@@ -40,15 +46,20 @@ type SimulationActions = {
   addMessage: (role: 'user' | 'assistant', content: string) => void
   setRecording: (status: boolean) => void
   setScores: (scores: SimulationState['scores'], feedback: SimulationState['feedback']) => void
+  gradeSession: () => Promise<void>
+  fetchHistory: () => Promise<void>
+  deleteSession: (id: string) => Promise<void>
   reset: () => void
 }
 
-export const useSimulationStore = create<SimulationState & SimulationActions>((set) => ({
+export const useSimulationStore = create<SimulationState & SimulationActions>((set, get) => ({
   activeMode: null,
   difficulty: 'gentle',
   topic: null,
   isActive: false,
   isEvaluating: false,
+  gradingFailed: false,
+  history: [],
   isRecording: false,
   messages: [],
   scores: null,
@@ -71,7 +82,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
     sourceName
   }),
 
-  endSession: () => set({ isActive: false, isEvaluating: true }),
+  endSession: () => set({ isActive: false, isEvaluating: true, gradingFailed: false }),
 
   addMessage: (role, content) => set((state) => ({
     messages: [...state.messages, {
@@ -86,11 +97,67 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
 
   setScores: (scores, feedback) => set({ scores, feedback }),
 
+  // Grade the finished transcript, then save the result so it shows up in the hub and on Home
+  gradeSession: async () => {
+    const { messages, activeMode, topic, difficulty, sourceName } = get()
+    set({ gradingFailed: false, scores: null, feedback: null })
+    try {
+      const transcript = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n')
+      const report = await generateJSON(
+        `The simulation has ended. Please evaluate the user's performance across the entire chat transcript below and output the JSON report.\n\nCHAT TRANSCRIPT:\n${transcript}`,
+        getSimulationEvaluationPrompt(),
+        'recitation',
+      )
+      if (typeof report?.accuracy !== 'number') throw new Error('Evaluation came back without scores')
+
+      const scores = { accuracy: report.accuracy, safety: report.safety || 0, reasoning: report.reasoning || 0, confidence: report.confidence || 0 }
+      const feedback = { correct: report.feedback?.correct || [], missed: report.feedback?.missed || [], safetyViolations: report.feedback?.safetyViolations || [] }
+      set({ scores, feedback })
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user || !activeMode || !topic) return
+      const { data, error } = await supabase
+        .from('simulation_sessions')
+        .insert([{ user_id: session.user.id, mode: activeMode, topic, difficulty, source_name: sourceName || null, scores, feedback }])
+        .select()
+        .single()
+      if (error) console.error('Error saving simulation result:', error)
+      else set(state => ({ history: [data as SimulationSession, ...state.history] }))
+    } catch (error) {
+      // No made-up scores — tell the student grading failed and let them retry
+      console.error('Grading error:', error)
+      set({ gradingFailed: true })
+    }
+  },
+
+  fetchHistory: async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
+    const { data, error } = await supabase
+      .from('simulation_sessions')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+    if (error) console.error('Error fetching simulation history:', error)
+    else set({ history: data as SimulationSession[] })
+  },
+
+  deleteSession: async (id) => {
+    const previous = get().history
+    set({ history: previous.filter(s => s.id !== id) })
+    const { error } = await supabase.from('simulation_sessions').delete().eq('id', id)
+    if (error) {
+      console.error('Error deleting simulation result:', error)
+      set({ history: previous })
+    }
+  },
+
   reset: () => set({
     activeMode: null,
     topic: null,
     isActive: false,
     isEvaluating: false,
+    gradingFailed: false,
     messages: [],
     scores: null,
     feedback: null,
