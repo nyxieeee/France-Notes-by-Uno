@@ -26,8 +26,8 @@ const GEMINI_MODEL         = 'gemini-2.5-flash-lite'
 //  retdem      → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
 //  recitation  → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
 //  vision      → Mistral Small      (image input, no fallback)
-//  studybox    → Groq DEFAULT_MODEL (categorization + summary) [openai/gpt-oss-120b]
-//  knowledge   → Groq FAST_MODEL    (search queries)
+//  studybox    → Mistral            (categorization + summary)
+//  knowledge   → Gemini             (search queries, Google Search grounding)
 //  reviewer    → Mistral            (long output, 1B token pool free)
 //  ppt         → Mistral            (long output, 1B token pool free)
 //  funfact     → Gemini             (separate quota, creative)
