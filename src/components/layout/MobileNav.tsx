@@ -66,7 +66,7 @@ export default function MobileNav() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="md:hidden fixed left-3 right-3 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] z-50 bg-[var(--card)] border border-[var(--border)] rounded-3xl shadow-fn-lg p-4"
+            className="md:hidden fixed left-3 right-3 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] z-50 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-lg p-4"
           >
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-sm font-heading font-semibold">More</span>

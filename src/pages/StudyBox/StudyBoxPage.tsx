@@ -14,6 +14,7 @@ import { generateCompletion } from '@/lib/ai'
 import { extractTextFromFile } from '@/lib/extractor'
 import { useAuthStore } from '@/stores/authStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { tintFor } from '@/lib/tints'
 
 export default function StudyBoxPage() {
   const { 
@@ -266,7 +267,7 @@ export default function StudyBoxPage() {
                   className="absolute right-0 mt-2 w-56 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-md p-3 z-50 origin-top-right"
                 >
                   {/* Sort */}
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 px-1">Sort by</p>
+                  <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-1.5 px-1">Sort by</p>
                   <div className="flex flex-col gap-0.5 mb-3">
                     {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['az', 'Name A–Z']] as const).map(([val, label]) => (
                       <button
@@ -281,7 +282,7 @@ export default function StudyBoxPage() {
                   </div>
 
                   {/* Show */}
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 px-1">Show</p>
+                  <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-1.5 px-1">Show</p>
                   <div className="flex flex-col gap-0.5 mb-3">
                     <button
                       onClick={() => setShowFavorites(false)}
@@ -294,7 +295,7 @@ export default function StudyBoxPage() {
                   </div>
 
                   {/* Type */}
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 px-1">File type</p>
+                  <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-1.5 px-1">File type</p>
                   <div className="flex flex-col gap-0.5 mb-3">
                     {([['all', 'All types'], ['pdf', 'PDF'], ['docx', 'Word (DOCX)'], ['pptx', 'PowerPoint'], ['image', 'Images'], ['txt', 'Text']] as const).map(([val, label]) => (
                       <button
@@ -312,7 +313,7 @@ export default function StudyBoxPage() {
                   {activeFilterCount > 0 && (
                     <button
                       onClick={() => { setSortBy('newest'); setShowFavorites(false); setFileTypeFilter('all') }}
-                      className="w-full mt-1 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors rounded-xl hover:bg-[var(--secondary-bg)]"
+                      className="w-full mt-1 py-1.5 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors rounded-xl hover:bg-[var(--secondary-bg)]"
                     >
                       Reset filters
                     </button>
@@ -340,7 +341,7 @@ export default function StudyBoxPage() {
               onClick={() => setSelectedItem(item)}
             >
               <div 
-                className="aspect-[4/3] bg-[var(--bg)] flex items-center justify-center relative overflow-hidden"
+                className="aspect-[16/10] bg-[var(--bg)] flex items-center justify-center relative overflow-hidden"
               >
                 {item.preview_image ? (
                   <img 
@@ -349,22 +350,12 @@ export default function StudyBoxPage() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col justify-between p-6 relative bg-gradient-to-br from-th-pink/10 to-th-secondary-bg/20">
-                    <div className="space-y-2 w-full opacity-60">
-                      <div className="h-2.5 bg-[var(--border)] rounded-full w-3/4"></div>
-                      <div className="h-2 bg-[var(--border)] rounded-full w-5/6"></div>
-                      <div className="h-2 bg-[var(--border)] rounded-full w-2/3"></div>
-                      <div className="h-2 bg-[var(--border)] rounded-full w-1/2"></div>
-                    </div>
-                    
-                    <div className="absolute right-4 bottom-4 text-5xl opacity-45 group-hover:opacity-65 group-hover:scale-110 transition-all duration-300">
-                      {getFileIcon(item.file_type)}
-                    </div>
-                    
-                    <span 
-                      className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md text-white w-max"
-                      style={{ backgroundColor: topics.find(t => t.id === item.topic_id)?.color || 'var(--pink)' }}
-                    >
+                  <div className={`w-full h-full flex items-center justify-center relative bg-gradient-to-br ${tintFor(item.id)}`}>
+                    {(() => {
+                      const TypeIcon = item.file_type === 'image' ? ImageIcon : item.file_name.startsWith('[Reference]') ? Globe : FileText
+                      return <TypeIcon size={38} weight="light" className="text-th-pink/70 group-hover:scale-110 transition-transform duration-300" />
+                    })()}
+                    <span className="absolute left-3 bottom-3 right-3 truncate text-[10.5px] font-semibold px-2 py-0.5 rounded-full text-[var(--pink)] bg-th-card/85 w-max max-w-[calc(100%-1.5rem)]">
                       {topics.find(t => t.id === item.topic_id)?.title || 'General'}
                     </span>
                   </div>
@@ -408,7 +399,7 @@ export default function StudyBoxPage() {
                   </button>
                 </div>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">{formatRelativeDate(item.created_at)}</span>
+                  <span className="text-[11px] font-bold text-[var(--text-secondary)]">{formatRelativeDate(item.created_at)}</span>
                   <div className="flex gap-0.5 z-10">
                     <button 
                       onClick={(e) => {
@@ -464,7 +455,7 @@ export default function StudyBoxPage() {
             exit={{ y: 100, opacity: 0 }}
             className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-2xl"
           >
-            <div className="bg-[var(--card)] border-2 border-[var(--pink)] rounded-[2rem] p-4 shadow-2xl flex items-center justify-between gap-4 backdrop-blur-xl bg-opacity-90">
+            <div className="bg-[var(--card)] border-2 border-[var(--pink)] rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4 backdrop-blur-xl bg-opacity-90">
               <div className="flex items-center gap-4 pl-2">
                 <div className="w-10 h-10 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full flex items-center justify-center font-bold">
                   {selectedItemIds.length}
@@ -473,7 +464,7 @@ export default function StudyBoxPage() {
                   <p className="text-sm font-bold">Sources selected</p>
                   <button 
                     onClick={clearSelection}
-                    className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors"
+                    className="text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors"
                   >
                     Clear Selection
                   </button>
@@ -1011,7 +1002,7 @@ body {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-[var(--card)] w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl border border-[var(--border)] overflow-hidden flex flex-col my-auto"
+        className="bg-[var(--card)] w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-[var(--border)] overflow-hidden flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -1034,7 +1025,7 @@ body {
 
           <div className="min-w-0 pr-10 md:pr-12">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 bg-white rounded-md text-[var(--text-secondary)] shadow-sm border border-[var(--border)]">
+              <span className="text-[11px] font-bold px-2.5 py-0.5 bg-white rounded-md text-[var(--text-secondary)] shadow-sm border border-[var(--border)]">
                 {getTopicTitle(currentItem.topic_id)}
               </span>
               <span className="text-[10px] text-[var(--text-secondary)] font-medium whitespace-nowrap">
@@ -1053,9 +1044,9 @@ body {
         <div className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col gap-8 bg-th-secondary-bg/10">
           
           {/* Main Paper Document Container */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-[2rem] shadow-sm p-4 sm:p-6 md:p-10 flex flex-col gap-6 relative select-text shrink-0">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm p-4 sm:p-6 md:p-10 flex flex-col gap-6 relative select-text shrink-0">
             {/* Soft decorative badge on the paper */}
-            <div className="absolute top-4 right-6 text-[10px] font-bold text-th-text-secondary/30 uppercase tracking-widest">
+            <div className="absolute top-4 right-6 text-[11px] font-bold text-th-text-secondary/30">
               Original Document
             </div>
 
@@ -1070,7 +1061,7 @@ body {
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
                 <BookOpen size={16} className="text-[var(--pink)]" />
-                <span className="text-xs font-bold uppercase tracking-wider">Document Reader</span>
+                <span className="text-xs font-bold">Document Reader</span>
               </div>
 
               {/* Source Link for Reference items */}
@@ -1125,7 +1116,7 @@ body {
             </div>
 
             {/* Paper Footer / Page details */}
-            <div className="border-t border-th-border/60 pt-4 mt-6 flex justify-between items-center text-[10px] text-th-text-secondary/50 font-bold uppercase tracking-widest">
+            <div className="border-t border-th-border/60 pt-4 mt-6 flex justify-between items-center text-[11px] text-th-text-secondary/50 font-bold">
               <span>Type: {currentItem.file_type}</span>
               <span>{currentItem.extracted_text.split(/\s+/).length} Words</span>
             </div>
@@ -1137,7 +1128,7 @@ body {
               <div className="w-full border-t-2 border-dashed border-[var(--border)]"></div>
             </div>
             <div className="relative z-10 bg-[var(--card)] px-6 py-2 rounded-full border border-[var(--border)] shadow-sm">
-              <span className="text-xs font-bold text-[var(--text)] uppercase tracking-widest flex items-center gap-2">
+              <span className="text-xs font-bold text-[var(--text)] flex items-center gap-2">
                 <Sparkles size={14} className="text-[var(--pink)] animate-pulse" /> 
                 {isFrance ? "Doc Uno's Study Space" : `${aiAssistantName}'s Study Space`}
               </span>
@@ -1145,7 +1136,7 @@ body {
           </div>
 
           {/* AI Summary Section */}
-          <div id="doc-unos-love-notes-card" className="bg-gradient-to-tr from-[var(--pink)]/[0.02] to-[var(--pink)]/[0.08] border-2 border-th-pink/20 rounded-[2rem] p-4 sm:p-6 md:p-8 flex flex-col gap-5 relative overflow-hidden shrink-0">
+          <div id="doc-unos-love-notes-card" className="bg-gradient-to-tr from-[var(--pink)]/[0.02] to-[var(--pink)]/[0.08] border-2 border-th-pink/20 rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col gap-5 relative overflow-hidden shrink-0">
             {/* Love theme decor elements */}
             <div 
               className="absolute top-0 right-0 p-6 pointer-events-none"
@@ -1160,7 +1151,7 @@ body {
                   <Sparkles size={20} className="animate-pulse" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--pink)] block">
+                  <span className="text-[11px] font-bold text-[var(--pink)] block">
                     {isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Notes`}
                   </span>
                   <h3 className="font-bold text-base text-[var(--text)]">Clinical Summary & Study Guide {isFrance ? '🩺💖' : '🩺✨'}</h3>
@@ -1194,7 +1185,7 @@ body {
               {isGeneratingSummary ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center gap-4 animate-in fade-in zoom-in duration-300">
                   <div className="relative w-20 h-20 shrink-0 mb-2">
-                    <div className="w-20 h-20 rounded-[2rem] overflow-hidden border-2 border-th-pink/30 shadow-md animate-float">
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-th-pink/30 shadow-md animate-float">
                       <img src={isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'} alt={aiAssistantName} className="w-full h-full object-cover" />
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-white rounded-full shadow-sm flex items-center justify-center text-[var(--pink)] border border-th-pink/10 animate-spin" style={{ animationDuration: '3s' }}>
@@ -1226,10 +1217,10 @@ body {
                   
                   {/* Custom Boyfriend Signature Section */}
                   <div className="mt-6 pt-6 border-t border-th-pink/20 text-center flex flex-col items-center justify-center gap-1 shrink-0">
-                    <span className="text-xs font-bold text-[var(--pink)] uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-[var(--pink)] flex items-center gap-1.5">
                       Made with 💖 by {isFrance ? 'Doc Uno for France' : `${aiAssistantName}`}
                     </span>
-                    <span className="text-[10px] font-bold text-th-text-secondary/50 uppercase tracking-widest">
+                    <span className="text-[11px] font-bold text-th-text-secondary/50">
                       {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                     </span>
                   </div>
@@ -1514,7 +1505,7 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[var(--card)] w-full max-w-2xl rounded-3xl p-4 sm:p-6 md:p-8 border border-[var(--border)] shadow-2xl relative my-4 md:my-8 max-h-[90vh] overflow-y-auto"
+        className="bg-[var(--card)] w-full max-w-2xl rounded-2xl p-4 sm:p-6 md:p-8 border border-[var(--border)] shadow-2xl relative my-4 md:my-8 max-h-[90vh] overflow-y-auto"
       >
         {/* Close Button */}
         <button 
@@ -1555,7 +1546,7 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
           <form onSubmit={handleGenerate} className="space-y-5">
             {/* Generator Type Selector */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2.5">
                 Generation Category
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -1592,7 +1583,7 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
 
             {/* Medical Topic/Condition */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
                 Medical Condition / Topic Name
               </label>
               <input
@@ -1607,7 +1598,7 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
 
             {/* Scenario Textarea */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2 flex justify-between">
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 flex justify-between">
                 <span>Patient Scenario / Clinical Details (Optional)</span>
                 <span className="text-[10px] font-normal lowercase tracking-normal text-th-text-secondary/60">help custom-tailor the content</span>
               </label>
@@ -1626,7 +1617,7 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
 
             {/* Reference Upload */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2.5">
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2.5">
                 Reference Materials <span className="text-[10px] font-normal lowercase tracking-normal text-th-text-secondary/60">(PDF, DOCX, images — optional)</span>
               </label>
               <input
@@ -1669,13 +1660,13 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
               <button
                 type="button"
                 onClick={onClose}
-                className="btn-secondary px-6 py-2.5 text-xs font-bold uppercase tracking-wider"
+                className="btn-secondary px-6 py-2.5 text-xs font-bold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-primary bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn px-6 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                className="btn-primary bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn px-6 py-2.5 text-xs font-bold flex items-center gap-1.5"
               >
                 Generate Document <ArrowRight size={14} />
               </button>

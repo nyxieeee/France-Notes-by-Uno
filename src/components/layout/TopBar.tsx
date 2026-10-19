@@ -270,7 +270,7 @@ export default function TopBar() {
                   <div className="space-y-3 relative z-50">
                     <div className="bg-th-pink/5 border border-th-pink/10 rounded-xl p-3 text-left">
                       <h5 
-                        className="text-xs font-extrabold text-[var(--pink)] mb-1"
+                        className="text-xs font-semibold text-[var(--pink)] mb-1"
                         style={{ fontFamily: "'Baloo 2', sans-serif" }}
                       >
                         {activeFact.title}

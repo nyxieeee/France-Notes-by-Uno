@@ -396,7 +396,7 @@ function SimulationSession() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="bg-[var(--card)] p-4 rounded-3xl border border-[var(--border)] shadow-sm flex items-center gap-4">
+      <div className="bg-[var(--card)] p-4 rounded-2xl border border-[var(--border)] shadow-sm flex items-center gap-4">
         <button 
           onClick={toggleListen}
           className={cn(
@@ -478,7 +478,7 @@ function SimulationReport() {
   return (
     <div className="page-container max-w-3xl mx-auto pb-20">
       <div className="text-center mb-10">
-        <div className="inline-flex w-20 h-20 bg-[var(--success)] text-white rounded-[2rem] items-center justify-center mb-6 shadow-fn">
+        <div className="inline-flex w-20 h-20 bg-[var(--success)] text-white rounded-2xl items-center justify-center mb-6 shadow-fn">
           <ShieldAlert size={40} />
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Performance Evaluation</h1>
@@ -525,7 +525,7 @@ function SimulationReport() {
 function ScoreCard({ label, score }: { label: string, score: number }) {
   return (
     <div className="fn-card p-4 text-center">
-      <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2">{label}</p>
+      <p className="text-xs font-bold text-[var(--text-secondary)] mb-2">{label}</p>
       <div className="text-3xl font-bold text-[var(--pink)]">{score}<span className="text-sm text-[var(--text-secondary)]">/100</span></div>
     </div>
   )

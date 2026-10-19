@@ -93,7 +93,7 @@ function TranscriptLine({ line, active, index }: { line: DialogueLine; active: b
       <SpeakerAvatar speaker={line.speaker} active={active} />
       <div className="flex-1 min-w-0">
         <p className={cn(
-          'text-[10px] font-bold uppercase tracking-widest mb-1',
+          'text-[11px] font-bold mb-1',
           active ? 'text-[var(--pink)]' : 'text-[var(--text-secondary)]'
         )}>
           {isUno ? 'Doc Uno 🩺' : 'Nurse Florence 👩‍⚕️'}
@@ -495,7 +495,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
             className="fn-card p-6 space-y-4"
           >
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-              <h3 className="font-black text-lg flex items-center gap-2">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
                 <History size={20} className="text-[var(--pink)]" /> Saved Episodes & History
               </h3>
               <button
@@ -526,7 +526,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                     onClick={() => loadSavedEpisode(ep)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-th-pink/20 text-[var(--pink)] flex items-center justify-center font-black shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-th-pink/20 text-[var(--pink)] flex items-center justify-center font-semibold shrink-0">
                         🎙️
                       </div>
                       <div className="min-w-0">
@@ -564,9 +564,9 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
         ) : (
           /* GENERATOR & TOPIC SELECTOR VIEW */
           <div className="fn-card p-6">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-4">Select Source Material</p>
+            <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-4">Select Source Material</p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-[var(--bg)] border border-[var(--border)] rounded-[2rem] p-1.5 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-1.5 mb-4">
               {([
                 { id: 'type' as SourceMode, label: '✏️ Free Text' },
                 { id: 'topic' as SourceMode, label: '📚 Topics' },
@@ -763,7 +763,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                   <Mic2 size={36} className="text-white animate-bounce" />
                 </div>
               </div>
-              <h3 className="text-xl font-black mb-2">Writing full podcast episode... 🎙️</h3>
+              <h3 className="text-xl font-semibold mb-2">Writing full podcast episode... 🎙️</h3>
               <p className="text-sm text-[var(--text-secondary)] max-w-md">
                 Doc Uno & Nurse Florence are developing an extensive professional episode with clinical case breakdowns and board exam strategies!
               </p>
@@ -796,12 +796,12 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-1">Now Playing</p>
+                        <p className="text-white/70 text-[11px] font-bold mb-1">Now Playing</p>
                         <span className="text-[10px] font-bold text-white/90 bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
                           <BookmarkCheck size={10} /> Google Neural AI Voice
                         </span>
                       </div>
-                      <h2 className="text-white font-black text-lg leading-tight truncate">{episodeTitle}</h2>
+                      <h2 className="text-white font-semibold text-lg leading-tight truncate">{episodeTitle}</h2>
                       <p className="text-white/80 text-xs font-semibold mt-1 flex items-center gap-2">
                         <span className="flex items-center gap-1"><span>🩺</span> Doc Uno</span>
                         <span className="text-white/50">×</span>
@@ -853,7 +853,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                           key={s}
                           onClick={() => setSpeed(s)}
                           className={cn(
-                            'px-2 py-1 rounded-lg text-[10px] font-black transition-all',
+                            'px-2 py-1 rounded-lg text-[10px] font-semibold transition-all',
                             speed === s
                               ? 'bg-[var(--pink)] text-white'
                               : 'bg-[var(--bg)] text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]'
@@ -887,7 +887,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
               {/* Transcript */}
               <div className="fn-card">
                 <div className="p-4 border-b border-[var(--border)] flex items-center gap-2">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Episode Transcript</p>
+                  <p className="text-[11px] font-bold text-[var(--text-secondary)]">Episode Transcript</p>
                 </div>
                 <div className="p-4 space-y-2 max-h-[480px] overflow-y-auto custom-scrollbar">
                   {script.map((line, i) => (

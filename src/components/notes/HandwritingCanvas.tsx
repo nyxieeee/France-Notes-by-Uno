@@ -111,7 +111,9 @@ export default function HandwritingCanvas({ drawing, onChange }: {
   const [width, setWidth] = useState(0)
   const undoStack = useRef<InkStroke[][]>([])
   const redoStack = useRef<InkStroke[][]>([])
-  const [, forceToolbar] = useState(0)
+  // Mirrors the stack sizes so the undo/redo buttons render from state, not refs
+  const [historySize, setHistorySize] = useState({ undo: 0, redo: 0 })
+  const syncHistory = () => setHistorySize({ undo: undoStack.current.length, redo: redoStack.current.length })
   const wrapRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -126,6 +128,7 @@ export default function HandwritingCanvas({ drawing, onChange }: {
     if (next.strokes && recordHistory) {
       undoStack.current = [...undoStack.current.slice(-HISTORY_LIMIT + 1), strokes]
       redoStack.current = []
+      syncHistory()
     }
     const merged = { strokes: next.strokes ?? strokes, paper: next.paper ?? paper, pages: next.pages ?? pages }
     if (next.strokes) setStrokes(merged.strokes)
@@ -139,14 +142,14 @@ export default function HandwritingCanvas({ drawing, onChange }: {
     if (!prev) return
     redoStack.current.push(strokes)
     commit({ strokes: prev }, false)
-    forceToolbar(n => n + 1)
+    syncHistory()
   }
   const redo = () => {
     const next = redoStack.current.pop()
     if (!next) return
     undoStack.current.push(strokes)
     commit({ strokes: next }, false)
-    forceToolbar(n => n + 1)
+    syncHistory()
   }
 
   const activeStroke: Omit<InkStroke, 'points'> | null =
@@ -207,8 +210,8 @@ export default function HandwritingCanvas({ drawing, onChange }: {
         )}
 
         <span className="w-px h-6 bg-[var(--border)] mx-1" />
-        <button onClick={undo} disabled={undoStack.current.length === 0} className="btn-icon p-2 disabled:opacity-30" aria-label="Undo" title="Undo"><ArrowCounterClockwise size={18} /></button>
-        <button onClick={redo} disabled={redoStack.current.length === 0} className="btn-icon p-2 disabled:opacity-30" aria-label="Redo" title="Redo"><ArrowClockwise size={18} /></button>
+        <button onClick={undo} disabled={historySize.undo === 0} className="btn-icon p-2 disabled:opacity-30" aria-label="Undo" title="Undo"><ArrowCounterClockwise size={18} /></button>
+        <button onClick={redo} disabled={historySize.redo === 0} className="btn-icon p-2 disabled:opacity-30" aria-label="Redo" title="Redo"><ArrowClockwise size={18} /></button>
 
         <div className="ml-auto flex items-center gap-1.5">
           <button

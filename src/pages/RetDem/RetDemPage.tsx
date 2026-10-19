@@ -154,7 +154,7 @@ export default function RetDemPage() {
                     initial={{ opacity: 0, scale: 0.92, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.92, y: 10 }}
-                    className="bg-[var(--card)] w-full max-w-lg rounded-[2rem] shadow-2xl border border-[var(--border)] p-8"
+                    className="bg-[var(--card)] w-full max-w-lg rounded-2xl shadow-2xl border border-[var(--border)] p-8"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="w-14 h-14 bg-[var(--pink)] rounded-[1.2rem] flex items-center justify-center text-white mb-6 shadow-fn">
@@ -402,7 +402,7 @@ export default function RetDemPage() {
                   ))
                 ) : (
                   <div className="md:col-span-2 flex flex-col items-center justify-center py-20 text-center fn-card border-dashed">
-                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-[2rem] flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
+                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
                       <Stethoscope size={40} />
                     </div>
                     <h3 className="text-xl font-bold mb-2">No procedures found 🩺</h3>
@@ -427,7 +427,7 @@ export default function RetDemPage() {
                   ))
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center fn-card border-dashed">
-                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-[2rem] flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
+                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
                       <History size={40} />
                     </div>
                     <h3 className="text-xl font-bold mb-2">No upload history yet 🩺</h3>
@@ -491,11 +491,11 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
 
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
+          <span className="text-[11px] font-bold px-2.5 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
             {proc.category}
           </span>
           {(proc as any).is_generated && (
-            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 bg-[var(--pink)] text-white rounded-full flex items-center gap-1 shadow-sm shrink-0">
+            <span className="text-[11px] font-bold px-2 py-1 bg-[var(--pink)] text-white rounded-full flex items-center gap-1 shadow-sm shrink-0">
               <Sparkles size={10} /> AI
             </span>
           )}
@@ -509,12 +509,9 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
         </p>
 
         <div className="flex items-center justify-between">
-          <div className="flex -space-x-2">
-            {[1,2,3].map(i => (
-              <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-[var(--bg)] flex items-center justify-center text-xs">🩺</div>
-            ))}
-            <div className="w-8 h-8 rounded-full border-2 border-white bg-[var(--secondary-bg)] flex items-center justify-center text-[10px] font-bold text-[var(--pink)]">+12</div>
-          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {proc.steps.length} step{proc.steps.length === 1 ? '' : 's'} · {proc.materials.length} material{proc.materials.length === 1 ? '' : 's'}
+          </p>
           <button className="btn-primary p-3 rounded-2xl flex items-center justify-center shadow-fn">
             <ChevronRight size={20} />
           </button>
@@ -574,14 +571,14 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
          <div className="flex-1">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
+              <span className="text-[11px] font-bold px-3 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
                 {procedure.category}
               </span>
               <span className="text-[10px] text-[var(--text-secondary)] font-medium flex items-center gap-1">
                 <Clock size={12} /> {procedure.duration}
               </span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">{procedure.title}</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">{procedure.title}</h1>
             <p className="text-[var(--text-secondary)] font-medium leading-relaxed max-w-2xl">
               {procedure.description}
             </p>
@@ -698,7 +695,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                  <BookOpen className="text-[var(--pink)]" size={24} />
                  Step-by-Step Procedure
               </h3>
-              <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">
+              <span className="text-xs font-bold text-[var(--text-secondary)]">
                  {procedure.steps.length} Steps Total
               </span>
            </div>
@@ -726,7 +723,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                       </div>
                       <div className="space-y-4 flex-1">
                          <div>
-                           <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-1">Action</p>
+                           <p className="text-[11px] font-bold text-[var(--pink)] mb-1">Action</p>
                            <p className="font-bold text-base leading-snug">{step.action}</p>
                          </div>
                          
@@ -736,7 +733,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                               animate={{ opacity: 1, height: 'auto' }}
                               className="p-4 bg-[var(--bg)] rounded-2xl border border-[var(--border)] group-hover:border-th-pink/30 transition-all"
                             >
-                              <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-1">Rationale</p>
+                              <p className="text-[11px] font-bold text-[var(--pink)] mb-1">Rationale</p>
                               <div className="text-sm text-[var(--text-secondary)] font-medium italic leading-relaxed">
                                  <MarkdownText content={step.rationale} />
                               </div>
@@ -847,7 +844,7 @@ function HistoryFileCard({ file, onDelete }: {
               initial={{ opacity: 0, scale: 0.92, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 10 }}
-              className="bg-[var(--card)] w-full max-w-2xl rounded-[2rem] shadow-2xl border border-[var(--border)] p-8 max-h-[80vh] flex flex-col"
+              className="bg-[var(--card)] w-full max-w-2xl rounded-2xl shadow-2xl border border-[var(--border)] p-8 max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between mb-4">

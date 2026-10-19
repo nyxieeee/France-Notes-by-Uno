@@ -135,8 +135,8 @@ export default function ProfilePage() {
   const badgesCount = badgesList.filter(b => b.unlocked).length
 
   const stats = [
-    { label: 'Courses', value: String(coursesCount), icon: GraduationCap, color: 'bg-blue-100 text-blue-600' },
-    { label: 'Badges', value: String(badgesCount), icon: Award, color: 'bg-purple-100 text-purple-600' },
+    { label: 'Topics', value: String(coursesCount), icon: GraduationCap, color: 'bg-[var(--rose-soft)] text-[var(--pink)]' },
+    { label: 'Badges', value: String(badgesCount), icon: Award, color: 'bg-[var(--rose-soft)] text-[var(--pink)]' },
     { label: 'Favorites', value: String(favoritesCount), icon: Heart, color: 'bg-th-pink/10 text-[var(--pink)]' }
   ]
 
@@ -160,18 +160,18 @@ export default function ProfilePage() {
              </div>
              
              <div className="relative mb-6 inline-block cursor-pointer group select-none" onClick={handleAvatarClick}>
-                <div className="w-28 h-28 rounded-[2.5rem] bg-[var(--secondary-bg)] border-4 border-[var(--pink)] overflow-hidden shadow-fn mx-auto transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg relative">
+                <div className="w-28 h-28 rounded-2xl bg-[var(--secondary-bg)] border-4 border-[var(--pink)] overflow-hidden shadow-fn mx-auto transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg relative">
                    {user?.avatar_url ? (
                      <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
                    ) : (
-                     <div className="w-full h-full flex items-center justify-center text-4xl text-[var(--pink)] font-bold">
+                     <div className="w-full h-full flex items-center justify-center text-3xl text-[var(--pink)] font-bold">
                         {user?.full_name?.charAt(0)}
                      </div>
                    )}
                    {/* Cool premium hover overlay */}
                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1">
                      <Camera size={18} className="text-white animate-pulse-soft" />
-                     <span className="text-white text-[10px] font-extrabold tracking-wider uppercase font-sans">Change</span>
+                     <span className="text-white text-[11px] font-semibold font-sans">Change</span>
                    </div>
                 </div>
                 <button 
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                   <stat.icon size={20} />
                 </div>
                 <p className="text-xl font-bold">{stat.value}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">{stat.label}</p>
+                <p className="text-[11px] font-bold text-[var(--text-secondary)]">{stat.label}</p>
               </motion.div>
             ))}
           </div>
@@ -375,7 +375,7 @@ export default function ProfilePage() {
                 {activeSetting === 'Personal Information' && (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1 mb-1 block">Full Name</label>
+                      <label className="text-xs font-bold text-[var(--text-secondary)] ml-1 mb-1 block">Full Name</label>
                       <input 
                         type="text" 
                         value={editForm.full_name}
@@ -385,7 +385,7 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1 mb-1 block">Nursing School</label>
+                      <label className="text-xs font-bold text-[var(--text-secondary)] ml-1 mb-1 block">Nursing School</label>
                       <input 
                         type="text" 
                         value={editForm.school}
@@ -395,7 +395,7 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div className="relative z-20">
-                      <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1 mb-1 block">Year Level</label>
+                      <label className="text-xs font-bold text-[var(--text-secondary)] ml-1 mb-1 block">Year Level</label>
                       <div 
                         className="relative cursor-pointer"
                         onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}

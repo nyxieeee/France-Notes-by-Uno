@@ -130,11 +130,11 @@ export default function XboxAchievementNotifier() {
               {/* Text content */}
               <div className="flex-1 min-w-0 pr-2">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-[0.25em] font-mono leading-none">
+                  <span className="text-[11px] font-bold text-[var(--pink)] font-mono leading-none">
                     Achievement Unlocked 🏆
                   </span>
                 </div>
-                <h4 className="text-sm font-extrabold text-[var(--text)] leading-snug truncate">
+                <h4 className="text-sm font-semibold text-[var(--text)] leading-snug truncate">
                   {activeNotification.label}
                 </h4>
                 <p className="text-[10px] italic font-semibold text-[var(--text-secondary)] leading-relaxed line-clamp-2">

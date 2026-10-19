@@ -78,7 +78,7 @@ export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
-        className="bg-[var(--card)] w-full max-w-2xl rounded-[2.5rem] shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col"
+        className="bg-[var(--card)] w-full max-w-2xl rounded-2xl shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="p-4 flex items-center justify-between border-b border-[var(--border)]">

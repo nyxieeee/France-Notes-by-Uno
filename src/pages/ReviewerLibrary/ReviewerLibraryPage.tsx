@@ -3,13 +3,14 @@ import { useReviewerStore } from '@/stores/reviewerStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useNavigate } from 'react-router-dom'
 import { usePersonalization } from '@/hooks/usePersonalization'
-import { Books as Library, MagnifyingGlass as Search, Heart, Play, CaretRight as ChevronRight, CaretUp as ChevronUp, Sparkle as Sparkles, BookOpen, Lightning as Zap, ArrowCounterClockwise as RotateCcw, X, FileText, Clock, DownloadSimple as Download, Printer, ShareNetwork as Share2, Trash as Trash2 } from '@phosphor-icons/react'
+import { Books as Library, MagnifyingGlass as Search, Heart, Play, CaretRight as ChevronRight, CaretUp as ChevronUp, Sparkle as Sparkles, BookOpen, Lightning as Zap, ArrowCounterClockwise as RotateCcw, X, FileText, Clock, DownloadSimple as Download, Printer, ShareNetwork as Share2, Trash as Trash2, Presentation } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { exportToPDF, exportToDOCX, exportToPPTX, printFlashcards } from '@/lib/export'
 import type { ReviewerItem } from '@/types'
+import { tintFor } from '@/lib/tints'
 
 export default function ReviewerLibraryPage() {
   const { isFrance, greetingName, aiAssistantName } = usePersonalization()
@@ -111,17 +112,17 @@ export default function ReviewerLibraryPage() {
         <div className="flex items-center justify-between px-2">
            <div className="text-center">
              <p className="text-xl font-bold">{reviewers.length}</p>
-             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Total</p>
+             <p className="text-[11px] font-bold text-[var(--text-secondary)]">Total</p>
            </div>
            <div className="h-8 w-[1px] bg-[var(--border)]"></div>
            <div className="text-center">
              <p className="text-xl font-bold text-[var(--pink)]">{reviewers.filter(r => r.is_favorite).length}</p>
-             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Favorites</p>
+             <p className="text-[11px] font-bold text-[var(--text-secondary)]">Favorites</p>
            </div>
            <div className="h-8 w-[1px] bg-[var(--border)]"></div>
            <div className="text-center">
              <p className="text-xl font-bold text-[var(--success)]">100%</p>
-             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">AI Powered</p>
+             <p className="text-[11px] font-bold text-[var(--text-secondary)]">AI Powered</p>
            </div>
         </div>
       </div>
@@ -139,15 +140,12 @@ export default function ReviewerLibraryPage() {
               onClick={() => setSelectedReviewer(reviewer)}
             >
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <div 
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-sm flex-shrink-0"
-                  style={{ backgroundColor: getTopicColor(reviewer.topic_id) }}
-                >
-                   <BookOpen size={24} />
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-[var(--pink)] border border-[var(--border)] flex-shrink-0 bg-gradient-to-br ${tintFor(reviewer.id)}`}>
+                   {reviewer.content.slides?.length ? <Presentation size={24} weight="duotone" /> : <BookOpen size={24} weight="duotone" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                     <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 bg-[var(--bg)] rounded-full text-[var(--text-secondary)]">
+                     <span className="text-[11px] font-bold px-2 py-0.5 bg-[var(--bg)] rounded-full text-[var(--text-secondary)]">
                        {getTopicTitle(reviewer.topic_id)}
                      </span>
                      <span className="text-[10px] text-[var(--text-secondary)]">• {formatRelativeDate(reviewer.created_at)}</span>
@@ -237,7 +235,7 @@ export default function ReviewerLibraryPage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-[var(--card)] w-full max-w-lg rounded-[2.5rem] shadow-fn-lg border border-[var(--border)] p-6 md:p-8 relative overflow-hidden"
+              className="bg-[var(--card)] w-full max-w-lg rounded-2xl shadow-fn-lg border border-[var(--border)] p-6 md:p-8 relative overflow-hidden"
             >
               {isGenerating ? (
                 /* LOADING SCREEN */
@@ -290,7 +288,7 @@ export default function ReviewerLibraryPage() {
 
                   {/* STEP 1: SOURCE TYPE TAB */}
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">1. Choose Study Source</label>
+                    <label className="text-[11px] font-bold text-[var(--text-secondary)]">1. Choose Study Source</label>
                     <div className="grid grid-cols-2 gap-2 bg-[var(--bg)] p-1 rounded-2xl border border-[var(--border)]">
                       <button
                         type="button"
@@ -326,7 +324,7 @@ export default function ReviewerLibraryPage() {
                     {generationSourceType === 'topic' ? (
                       /* TOPIC DROPDOWN */
                       <>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">2. Select BSN Subject Topic</label>
+                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">2. Select BSN Subject Topic</label>
                         <div className="relative">
                           <button
                             type="button"
@@ -398,7 +396,7 @@ export default function ReviewerLibraryPage() {
                     ) : (
                       /* FILE CHECKBOXES LIST */
                       <>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">2. Select Notes/Files from Study Box</label>
+                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">2. Select Notes/Files from Study Box</label>
                         {items.length === 0 ? (
                           <div className="p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10 text-center">
                             <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -449,7 +447,7 @@ export default function ReviewerLibraryPage() {
 
                   {/* STEP 3: FORMAT SELECTOR */}
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">3. Choose Reviewer Format</label>
+                    <label className="text-[11px] font-bold text-[var(--text-secondary)]">3. Choose Reviewer Format</label>
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
@@ -537,7 +535,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="bg-[var(--card)] w-full max-w-5xl max-h-[90vh] md:h-[85vh] rounded-[2.5rem] shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col my-auto"
+        className="bg-[var(--card)] w-full max-w-5xl max-h-[90vh] md:h-[85vh] rounded-2xl shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col my-auto"
       >
         {/* Header */}
         <div className="p-4 md:p-8 flex flex-col md:flex-row gap-4 md:gap-6 border-b border-[var(--border)] bg-gradient-to-br from-th-pink/10 to-th-secondary-bg/20 relative">
@@ -557,7 +555,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
 
           <div className="text-center md:text-left min-w-0 pr-8 md:pr-0">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-white rounded-full text-[var(--text-secondary)] shadow-sm">
+              <span className="text-[11px] font-bold px-3 py-1 bg-white rounded-full text-[var(--text-secondary)] shadow-sm">
                 {getTopicTitle(reviewer.topic_id)}
               </span>
               <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 font-medium whitespace-nowrap">
@@ -604,7 +602,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
             </div>
             
             <div className="mt-8 p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10">
-               <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-1">
+               <p className="text-[11px] font-bold text-[var(--pink)] mb-1">
                  {isFrance ? "Doc Uno's Insight 🩺" : `${aiAssistantName}'s Clinical Insight 🩺`}
                </p>
                <p className="text-xs text-[var(--text-secondary)] leading-relaxed italic">
@@ -636,8 +634,8 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                         <MarkdownText content={reviewer.content.summary} />
                       </div>
                     </div>
-                    <div className="bg-th-secondary-bg/20 p-4 md:p-6 rounded-3xl border border-[var(--border)]">
-                       <h4 className="font-bold text-xs md:text-sm mb-3 uppercase tracking-widest text-[var(--pink)]">
+                    <div className="bg-th-secondary-bg/20 p-4 md:p-6 rounded-2xl border border-[var(--border)]">
+                       <h4 className="font-bold text-xs md:text-sm mb-3 text-[var(--pink)]">
                          {isFrance ? "Doc Uno's Simple Explanation" : `${aiAssistantName}'s Clinical Breakdown`}
                        </h4><div className="text-sm md:text-base italic leading-relaxed text-[var(--text-secondary)]">
                          <MarkdownText content={reviewer.content.simplified_explanation} />
@@ -680,7 +678,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                         <Zap className="text-[var(--pink)]" size={20} />
                         Flashcards
                       </h3>
-                      <p className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">Tap to flip</p>
+                      <p className="text-[10.5px] md:text-[10px] font-bold text-[var(--text-secondary)]">Tap to flip</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-10">
                       {reviewer.content.flashcards.map((card) => (
@@ -703,7 +701,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                     </h3>
                      <div className="space-y-4 pb-10">
                         {reviewer.content.mnemonics.map((m) => (
-                          <div key={m.id} className="p-4 md:p-6 bg-white border border-[var(--border)] rounded-3xl shadow-sm relative overflow-hidden group">
+                          <div key={m.id} className="p-4 md:p-6 bg-white border border-[var(--border)] rounded-2xl shadow-sm relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                <Sparkles size={48} />
                             </div>
@@ -803,12 +801,12 @@ function FlashcardItem({ card }: { card: any }) {
        )}>
           {/* Front */}
           <div className="absolute inset-0 backface-hidden bg-white border border-[var(--border)] rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm overflow-y-auto custom-scrollbar">
-             <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-2">Question</p>
+             <p className="text-[11px] font-bold text-[var(--pink)] mb-2">Question</p>
              <p className="text-sm font-bold leading-relaxed">{card.front}</p>
           </div>
           {/* Back */}
           <div className="absolute inset-0 backface-hidden rotate-y-180 bg-[var(--pink)] text-white rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-md overflow-y-auto custom-scrollbar">
-             <p className="text-[10px] font-bold uppercase tracking-widest mb-2 opacity-80">Answer</p>
+             <p className="text-[11px] font-bold mb-2 opacity-80">Answer</p>
              <p className="text-sm font-bold leading-relaxed">{card.back}</p>
           </div>
        </div>
@@ -832,13 +830,13 @@ function SlideViewer({ slides }: { slides: any[] }) {
           <Play className="text-[var(--pink)]" size={20} weight="fill" />
           Slide Deck
         </h3>
-        <span className="text-[10px] md:text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest bg-th-secondary-bg/20 px-2 md:px-3 py-1 rounded-full border border-[var(--border)] shrink-0">
+        <span className="text-[11px] md:text-xs font-bold text-[var(--text-secondary)] bg-th-secondary-bg/20 px-2 md:px-3 py-1 rounded-full border border-[var(--border)] shrink-0">
           {currentSlideIdx + 1}/{slides.length}
         </span>
       </div>
       
       {/* Slide Container */}
-      <div className="bg-white border-2 border-[var(--border)] rounded-3xl p-4 md:p-8 shadow-md relative min-h-[250px] flex flex-col justify-between overflow-hidden">
+      <div className="bg-white border-2 border-[var(--border)] rounded-2xl p-4 md:p-8 shadow-md relative min-h-[250px] flex flex-col justify-between overflow-hidden">
         {/* Slide Title */}
         <div>
           <h4 className="text-lg md:text-2xl font-bold text-[var(--pink)] mb-4 md:mb-6 border-b border-[var(--border)] pb-3 md:pb-4">
@@ -890,8 +888,8 @@ function SlideViewer({ slides }: { slides: any[] }) {
       
       {/* Presenter Notes */}
       {currentSlide.presenter_notes && (
-        <div className="bg-th-pink/5 p-6 rounded-3xl border border-th-pink/10">
-          <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-2 flex items-center gap-1.5">
+        <div className="bg-th-pink/5 p-6 rounded-2xl border border-th-pink/10">
+          <p className="text-[11px] font-bold text-[var(--pink)] mb-2 flex items-center gap-1.5">
             {isFrance ? "Doc Uno's Presentation Script 🩺" : `${aiAssistantName}'s Presentation Script 🩺`}
           </p>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed italic">

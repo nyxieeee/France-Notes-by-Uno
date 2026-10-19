@@ -244,7 +244,7 @@ export default function QuizPage() {
             exit={{ opacity: 0 }}
             className="flex flex-col items-center justify-center py-20 text-center"
           >
-             <div className="w-24 h-24 bg-[var(--secondary-bg)] rounded-3xl flex items-center justify-center text-[var(--pink)] mb-8 shadow-fn animate-float">
+             <div className="w-24 h-24 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-8 shadow-fn animate-float">
                 <BrainCircuit size={48} className="animate-pulse-soft" />
              </div>
              <h2 className="text-2xl font-bold mb-2">{aiAssistantName} is curating your quiz... 🩺✨</h2>
@@ -284,16 +284,7 @@ export default function QuizPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <div className="flex justify-end mb-4">
-                <button 
-                  onClick={() => setShowHistory(true)}
-                  className="flex items-center gap-2 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors px-4 py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)]"
-                >
-                  <History size={18} />
-                  Quiz History ({completedQuizzes.length})
-                </button>
-              </div>
-              <QuizSetup onStart={startQuiz} />
+              <QuizSetup onStart={startQuiz} historyCount={completedQuizzes.length} onShowHistory={() => setShowHistory(true)} />
             </motion.div>
           )
         ) : isFinished ? (
@@ -320,7 +311,7 @@ export default function QuizPage() {
   )
 }
 
-function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) {
+function QuizSetup({ onStart, historyCount, onShowHistory }: { onStart: (config: QuizSetupConfig) => void; historyCount: number; onShowHistory: () => void }) {
   const { isFrance, aiAssistantName } = usePersonalization()
   const { topics, items, savedKnowledge } = useStudyBoxStore()
   const location = useLocation()
@@ -383,7 +374,16 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
 
   return (
     <div className="max-w-3xl mx-auto">
-      <PageHeader icon={BrainCircuit} title="Quiz Generator" subtitle="Board-style practice questions from your topics and notes, with detailed rationales." />
+      <PageHeader
+        icon={BrainCircuit}
+        title="Quiz Generator"
+        subtitle="Board-style practice questions from your topics and notes, with detailed rationales."
+        actions={
+          <button onClick={onShowHistory} className="btn-secondary px-4 py-2 text-sm flex items-center gap-2">
+            <History size={16} /> My Quizzes ({historyCount})
+          </button>
+        }
+      />
 
       {preSelectedItems.length > 0 && (
         <div className="mb-6 p-4 bg-th-pink/10 border border-th-pink/30 rounded-2xl flex items-center gap-3 text-[var(--pink)] animate-fade-in shadow-sm">
@@ -398,7 +398,7 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
       <div className="fn-card p-4 sm:p-8 space-y-6 sm:space-y-8">
         {/* Source Material Selection */}
         <div className="space-y-4">
-          <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1">Select Source Material</label>
+          <label className="text-sm font-bold text-[var(--text-secondary)] ml-1">Select Source Material</label>
           
           <div className="space-y-4">
             {/* By Topic */}
@@ -463,13 +463,13 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
 
         {/* Size Selection */}
         <div className="space-y-4">
-          <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1">Number of Questions</label>
+          <label className="text-sm font-bold text-[var(--text-secondary)] ml-1">Number of Questions</label>
           <CustomSizeDropdown value={config.size} onChange={(val) => setConfig({ ...config, size: val })} />
         </div>
 
         {/* Type Selection */}
         <div className="space-y-4">
-          <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1">Question Type</label>
+          <label className="text-sm font-bold text-[var(--text-secondary)] ml-1">Question Type</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {questionTypes.map(type => (
               <button
@@ -491,7 +491,7 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
 
         {/* Timer Selection */}
         <div className="space-y-4">
-          <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1">Quiz Timer Limit</label>
+          <label className="text-sm font-bold text-[var(--text-secondary)] ml-1">Quiz Timer Limit</label>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
             {[
               { id: 'untimed', label: 'Untimed', desc: 'Study at your own pace', icon: ToggleLeft, value: 0 },
@@ -527,7 +527,7 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
                   )}
                 >
                   <timer.icon size={18} className={cn(isSelected ? "animate-pulse" : "")} />
-                  <div className="font-extrabold text-xs">{timer.label}</div>
+                  <div className="font-semibold text-xs">{timer.label}</div>
                   <div className="text-[9px] opacity-80 leading-tight">{timer.desc}</div>
                 </button>
               )
@@ -672,7 +672,7 @@ function QuizEngine() {
               <ArrowLeft size={20} />
            </button>
            <div className="min-w-0">
-              <p className="text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Q{currentIndex + 1}/{questions.length}</p>
+              <p className="text-[11px] sm:text-xs font-bold text-[var(--text-secondary)]">Q{currentIndex + 1}/{questions.length}</p>
               <h3 className="font-bold text-xs sm:text-sm truncate">{activeQuiz?.title}</h3>
            </div>
         </div>
@@ -749,10 +749,10 @@ function QuizEngine() {
 
              <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4">
-                   <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
+                   <span className="text-[11px] font-bold px-3 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
                      {question.question_type?.replace('_', ' ') || 'Question'}
                    </span>
-                   {isSata && <span className="text-[10px] font-bold text-[var(--warning)] uppercase tracking-widest italic">Select all that apply</span>}
+                   {isSata && <span className="text-[11px] font-bold text-[var(--warning)] italic">Select all that apply</span>}
                 </div>
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-relaxed">{question.question}</h2>
              </div>
@@ -774,7 +774,7 @@ function QuizEngine() {
                {showRationale && (
                  <div className="mt-4 space-y-4">
                    <div className="p-6 rounded-2xl bg-th-pink/5 border border-th-pink/20 shadow-sm">
-                     <h4 className="text-xs font-bold text-[var(--pink)] uppercase tracking-wider mb-2">Model Answer / Key Points 🌸</h4>
+                     <h4 className="text-xs font-bold text-[var(--pink)] mb-2">Model Answer / Key Points 🌸</h4>
                      <p className="text-sm font-semibold text-[var(--text)] whitespace-pre-line leading-relaxed">
                        {Array.isArray(question.correct_answer) ? question.correct_answer.join('\n') : question.correct_answer}
                      </p>
@@ -822,7 +822,7 @@ function QuizEngine() {
                      disabled={showRationale}
                      onClick={() => handleChoiceClick(choice)}
                      className={cn(
-                       "flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-[2rem] border-2 text-left transition-all group",
+                       "flex items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-2xl border-2 text-left transition-all group",
                        isSelected 
                          ? "bg-[var(--pink)] border-[var(--pink)] text-white shadow-fn" 
                          : "bg-[var(--card)] border-[var(--border)] hover:border-th-pink/50",
@@ -870,7 +870,7 @@ function QuizEngine() {
                 </div>
                 
                 <div className="bg-white/50 rounded-2xl p-4 border border-[var(--border)]">
-                   <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-2">{isFrance ? "Doc Uno's Rationale" : `${aiAssistantName}'s Rationale`}</p>
+                   <p className="text-[11px] font-bold text-[var(--pink)] mb-2">{isFrance ? "Doc Uno's Rationale" : `${aiAssistantName}'s Rationale`}</p>
                    <div className="text-sm text-[var(--text-secondary)] leading-relaxed">
                       <MarkdownText content={question.rationale} />
                    </div>
@@ -904,12 +904,12 @@ function QuizEngine() {
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-[var(--card)] p-8 rounded-3xl text-center max-w-sm mx-4 border border-[var(--border)] shadow-2xl"
+            className="bg-[var(--card)] p-8 rounded-2xl text-center max-w-sm mx-4 border border-[var(--border)] shadow-2xl"
           >
             <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
               <Clock size={32} />
             </div>
-            <h3 className="text-xl font-black mb-2">{isFrance ? "Time's Up, Babe! ⏰" : "Time's Up! ⏰"}</h3>
+            <h3 className="text-xl font-semibold mb-2">{isFrance ? "Time's Up, Babe! ⏰" : "Time's Up! ⏰"}</h3>
             <p className="text-sm text-[var(--text-secondary)]">
               {isFrance 
                 ? "Hindi bale, tapos na ang oras! Awtomatikong isinusumite ni Doc Uno ang iyong mga sagot. Proud pa rin ako sa effort mo! 🌸"
@@ -990,7 +990,7 @@ function QuizResults() {
     <div className="max-w-3xl mx-auto py-10">
       <div className="fn-card overflow-hidden">
         <div className="p-10 text-center bg-gradient-to-br from-th-secondary-bg/30 to-th-pink/5 border-b border-[var(--border)]">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-[2rem] shadow-fn mb-6 text-[var(--pink)]">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-fn mb-6 text-[var(--pink)]">
              <Target size={40} />
           </div>
           <h2 className="text-3xl font-bold mb-2">Quiz Complete! ✨</h2>
@@ -1019,8 +1019,8 @@ function QuizResults() {
                    />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <span className={cn("text-4xl font-bold tracking-tight", getScoreColor(score))}>{score}%</span>
-                   <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">Score</span>
+                   <span className={cn("text-3xl font-bold tracking-tight", getScoreColor(score))}>{score}%</span>
+                   <span className="text-[11px] font-bold text-[var(--text-secondary)]">Score</span>
                 </div>
              </div>
              <p className={cn("font-heading font-bold text-lg mb-8", getScoreColor(score))}>
@@ -1032,16 +1032,16 @@ function QuizResults() {
                initial={{ scale: 0.9, opacity: 0, y: 20 }}
                animate={{ scale: 1, opacity: 1, y: 0 }}
                transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
-               className="max-w-md w-full bg-white/80 backdrop-blur-sm border-2 border-th-pink/20 p-6 rounded-[2rem] shadow-fn-md flex items-start gap-4 text-left relative overflow-hidden group"
+               className="max-w-md w-full bg-white/80 backdrop-blur-sm border-2 border-th-pink/20 p-6 rounded-2xl shadow-fn-md flex items-start gap-4 text-left relative overflow-hidden group"
              >
                {/* Cute Sticker background */}
                <div className="absolute -bottom-4 -right-4 text-6xl opacity-10 select-none pointer-events-none group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500">
                  {bfResponse.sticker}
                </div>
                
-               <div className="text-4xl select-none pt-1">{bfResponse.emoji.substring(0, 4)}</div>
+               <div className="text-3xl select-none pt-1">{bfResponse.emoji.substring(0, 4)}</div>
                <div className="space-y-1.5 relative z-10">
-                 <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest flex items-center gap-1.5">
+                 <p className="text-[11px] font-bold text-[var(--pink)] flex items-center gap-1.5">
                    <Sparkles size={12} className="animate-pulse text-[var(--pink)]" />
                    {isFrance ? "Love Letter from Doc Uno" : `${aiAssistantName}'s Clinical Appraisal`}
                  </p>
@@ -1061,7 +1061,7 @@ function QuizResults() {
                 const isCorrect = checkAnswerCorrectness(q.correct_answer, userAnswer, q.question_type)
  
                 return (
-                  <div key={q.id} className="p-6 rounded-3xl bg-[var(--bg)] border border-[var(--border)]">
+                  <div key={q.id} className="p-6 rounded-2xl bg-[var(--bg)] border border-[var(--border)]">
                      <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-bold text-[var(--text-secondary)]">Question {i+1}</span>
                         {isCorrect ? (
@@ -1076,7 +1076,7 @@ function QuizResults() {
                      </div>
                      <p className="text-sm font-bold mb-4">{q.question}</p>
                      <div className="p-4 rounded-2xl bg-white border border-[var(--border)]">
-                        <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-1">{isFrance ? "Doc Uno's Rationale 🩺" : `${aiAssistantName}'s Rationale 🩺`}</p>
+                        <p className="text-[11px] font-bold text-[var(--pink)] mb-1">{isFrance ? "Doc Uno's Rationale 🩺" : `${aiAssistantName}'s Rationale 🩺`}</p>
                         <div className="text-xs text-[var(--text-secondary)] leading-relaxed">
                            <MarkdownText content={q.rationale} />
                         </div>
@@ -1105,7 +1105,7 @@ function EmptyQuizState() {
   const { isFrance, aiAssistantName } = usePersonalization()
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-24 h-24 bg-[var(--secondary-bg)] rounded-[2.5rem] flex items-center justify-center text-[var(--pink)] mb-8 shadow-sm">
+      <div className="w-24 h-24 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-8 shadow-sm">
         <BrainCircuit size={48} />
       </div>
       <h2 className="text-2xl font-bold mb-2">No topics found yet! 🧪</h2>
@@ -1144,8 +1144,8 @@ function QuizHistory({ quizzes, onBack, onDownload, onExportAll, onDelete }: {
           >
             <ArrowLeft size={18} /> Back to Generator
           </button>
-          <h1 className="text-3xl font-bold tracking-tight">Quiz History 📜</h1>
-          <p className="text-[var(--text-secondary)] font-medium">Review your performance and download study materials. 🌸</p>
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-tight">My Quizzes</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Review your scores and rationales, or download them as study material.</p>
         </div>
         
         {quizzes.length > 0 && (
@@ -1271,7 +1271,7 @@ function CustomSizeDropdown({ value, onChange }: { value: number, onChange: (val
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 5, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full left-0 right-0 z-[70] bg-white border-2 border-[var(--border)] rounded-[2rem] shadow-fn-lg overflow-hidden py-3 max-h-64 overflow-y-auto custom-scrollbar"
+            className="absolute top-full left-0 right-0 z-[70] bg-white border-2 border-[var(--border)] rounded-2xl shadow-fn-lg overflow-hidden py-3 max-h-64 overflow-y-auto custom-scrollbar"
           >
             {options.map((opt) => (
               <button
@@ -1344,7 +1344,7 @@ function CustomTopicDropdown({ topics, value, onChange }: { topics: any[], value
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 5, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full left-0 right-0 z-[70] bg-white border-2 border-[var(--border)] rounded-[2rem] shadow-fn-lg overflow-hidden py-3 flex flex-col max-h-72"
+            className="absolute top-full left-0 right-0 z-[70] bg-white border-2 border-[var(--border)] rounded-2xl shadow-fn-lg overflow-hidden py-3 flex flex-col max-h-72"
           >
             <div className="px-4 pb-2 pt-1 border-b border-[var(--border)] mb-2">
               <input

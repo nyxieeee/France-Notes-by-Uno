@@ -57,7 +57,7 @@ export default function AuthLayout({ children, footerNote }: { children: ReactNo
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="w-full max-w-[440px] bg-[var(--card)] border border-[var(--border)] rounded-3xl shadow-fn-md px-6 py-8 sm:px-10 sm:py-10"
+          className="w-full max-w-[440px] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-md px-6 py-8 sm:px-10 sm:py-10"
         >
           {children}
         </motion.div>

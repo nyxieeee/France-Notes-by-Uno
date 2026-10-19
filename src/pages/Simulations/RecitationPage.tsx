@@ -78,7 +78,7 @@ function RecitationSetup() {
 
         {/* Topic */}
         <div className="space-y-4">
-          <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">Select Topic</label>
+          <label className="text-sm font-bold text-[var(--text-secondary)]">Select Topic</label>
           <div className="relative">
             <button
               type="button"
@@ -166,7 +166,7 @@ function RecitationSetup() {
 
         {/* Study Source Selector */}
         <div className="space-y-4">
-          <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+          <label className="text-sm font-bold text-[var(--text-secondary)]">
             Study Source <span className="normal-case font-normal text-th-text-secondary/60 ml-1">(optional — let {isFrance ? "Doc Uno" : aiAssistantName} test you on your own materials)</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -295,7 +295,7 @@ function RecitationSetup() {
 
         {/* Difficulty */}
         <div className="space-y-4">
-          <label className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">Select Difficulty</label>
+          <label className="text-sm font-bold text-[var(--text-secondary)]">Select Difficulty</label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { id: 'gentle', label: 'Gentle Mode 🌸', desc: isFrance ? 'Guided, warm, and supportive review, babe.' : 'Guided, step-by-step supportive mentoring.' },

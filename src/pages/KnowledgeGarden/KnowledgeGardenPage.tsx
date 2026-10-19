@@ -6,14 +6,8 @@ import PageHeader from '@/components/shared/PageHeader'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { cn, formatRelativeDate } from '@/lib/utils'
+import { tintFor } from '@/lib/tints'
 
-// Soft header tints cycled across reference cards
-const TINTS = [
-  'from-[#F6D9DC] to-[#FBEDEC] dark:from-[#4A2F36] dark:to-[#33252A]',
-  'from-[#F8E1D3] to-[#FCF1EA] dark:from-[#4A372C] dark:to-[#332822]',
-  'from-[#E9DDF0] to-[#F6F0F9] dark:from-[#3D3248] dark:to-[#2C2533]',
-  'from-[#DCEAE1] to-[#F0F6F2] dark:from-[#2E4036] dark:to-[#232E28]',
-]
 
 type SavedRef = { id: string; title: string; description: string; source: string; url: string; category: string; date_saved?: string }
 
@@ -86,7 +80,7 @@ export default function KnowledgeGardenPage() {
                 transition={{ delay: Math.min(i, 9) * 0.03 }}
                 className="fn-card overflow-hidden flex flex-col"
               >
-                <button onClick={() => openArticle(ref)} className={`h-24 bg-gradient-to-br ${TINTS[i % TINTS.length]} flex items-center justify-center relative`}>
+                <button onClick={() => openArticle(ref)} className={`h-24 bg-gradient-to-br ${tintFor(ref.id)} flex items-center justify-center relative`}>
                   <BookOpen size={32} weight="light" className="text-th-pink/70" />
                   <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold text-[var(--pink)] bg-th-card/85 px-2 py-0.5 rounded-full capitalize">{ref.category}</span>
                 </button>

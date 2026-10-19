@@ -83,7 +83,7 @@ export default function DesktopSidebar() {
                       <item.icon size={18} weight={isNavItemActive(item, location.pathname) ? 'fill' : 'regular'} className="shrink-0" />
                       <span className="flex-1 truncate">{item.label}</span>
                       {item.isBeta && (
-                        <span className="text-[8px] font-bold text-[var(--pink)] px-1.5 py-0.5 rounded-md uppercase tracking-wider bg-[var(--rose-soft)] border border-[var(--accent)]">
+                        <span className="text-[10px] font-bold text-[var(--pink)] px-1.5 py-0.5 rounded-md bg-[var(--rose-soft)] border border-[var(--accent)]">
                           Beta
                         </span>
                       )}

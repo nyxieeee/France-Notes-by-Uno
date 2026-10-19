@@ -296,9 +296,9 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
-            <h4 className="font-black text-base">{lab.name}</h4>
+            <h4 className="font-semibold text-base">{lab.name}</h4>
             {lab.abbreviation && (
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--secondary-bg)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full">
+              <span className="text-[11px] font-bold bg-[var(--secondary-bg)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full">
                 {lab.abbreviation}
               </span>
             )}
@@ -343,7 +343,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
                 <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingDown size={14} className="text-blue-500" />
-                    <p className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
                       {lab.lowName} (Too Low)
                     </p>
                   </div>
@@ -360,7 +360,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
                 <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp size={14} className="text-red-500" />
-                    <p className="text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-wider">
+                    <p className="text-xs font-semibold text-red-600 dark:text-red-400">
                       {lab.highName} (Too High)
                     </p>
                   </div>
@@ -484,7 +484,7 @@ export default function LabsReferencePage() {
           <button
             onClick={() => setActiveTab('saved')}
             className={cn(
-              'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all border-2 shrink-0',
+              'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all border-2 shrink-0',
               activeTab === 'saved'
                 ? 'bg-amber-500 text-white border-amber-500 shadow-md'
                 : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-amber-400'
@@ -499,7 +499,7 @@ export default function LabsReferencePage() {
               key={cat.id}
               onClick={() => setActiveTab(cat.id)}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all border-2 shrink-0',
+                'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all border-2 shrink-0',
                 activeTab === cat.id
                   ? 'text-white border-transparent shadow-md'
                   : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/30'
@@ -527,7 +527,7 @@ export default function LabsReferencePage() {
             filtered.length > 0 ? (
               filtered.map(cat => (
                 <div key={cat.id} className="space-y-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-1.5 px-1">
+                  <p className="text-[11px] font-bold text-[var(--text-secondary)] flex items-center gap-1.5 px-1">
                     <span>{cat.emoji}</span> {cat.label}
                   </p>
                   {cat.labs.map(lab => (
@@ -549,8 +549,8 @@ export default function LabsReferencePage() {
                     ⭐
                   </div>
                   <div>
-                    <h2 className="font-black text-xl">Saved & Bookmarked Labs</h2>
-                    <p className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-widest">{savedLabObjects.length} bookmarked lab values synced with Supabase</p>
+                    <h2 className="font-semibold text-xl">Saved & Bookmarked Labs</h2>
+                    <p className="text-[11px] text-[var(--text-secondary)] font-bold">{savedLabObjects.length} bookmarked lab values synced with Supabase</p>
                   </div>
                 </div>
                 {savedLabObjects.map(lab => (
@@ -575,8 +575,8 @@ export default function LabsReferencePage() {
                     {activeCategory.emoji}
                   </div>
                   <div>
-                    <h2 className="font-black text-xl">{activeCategory.label}</h2>
-                    <p className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-widest">{activeCategory.labs.length} values • tap to expand</p>
+                    <h2 className="font-semibold text-xl">{activeCategory.label}</h2>
+                    <p className="text-[11px] text-[var(--text-secondary)] font-bold">{activeCategory.labs.length} values • tap to expand</p>
                   </div>
                 </div>
                 {activeCategory.labs.map(lab => (

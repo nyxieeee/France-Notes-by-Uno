@@ -147,7 +147,7 @@ export default function PlannerPage() {
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                <div key={d} className="text-center text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] py-2">
+                <div key={d} className="text-center text-[11px] font-bold text-[var(--text-secondary)] py-2">
                   {d}
                 </div>
               ))}
@@ -226,7 +226,7 @@ export default function PlannerPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={cn(
-                            "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
+                            "text-[10.5px] font-bold px-2 py-0.5 rounded-full",
                             getReminderTypeColor(reminder.reminder_type)
                           )}>
                             {getReminderTypeLabel(reminder.reminder_type)}
@@ -268,7 +268,7 @@ export default function PlannerPage() {
               {completedReminders.length > 0 && (
                 <>
                   <div className="h-px bg-[var(--border)] my-6 w-full"></div>
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-3">Completed</h3>
+                  <h3 className="text-xs font-bold text-[var(--text-secondary)] mb-3">Completed</h3>
                   {completedReminders.map(reminder => (
                     <div key={reminder.id} className="p-3 rounded-2xl border border-[var(--border)] bg-[var(--bg)] opacity-60 hover:opacity-100 transition-opacity">
                       <div className="flex items-start justify-between gap-3">
@@ -318,7 +318,7 @@ export default function PlannerPage() {
               
               <form onSubmit={handleAddReminder} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Title / Subject</label>
+                  <label className="text-xs font-bold text-[var(--text-secondary)] mb-1.5 block ml-1">Title / Subject</label>
                   <input 
                     type="text" 
                     required
@@ -330,7 +330,7 @@ export default function PlannerPage() {
                 </div>
                 
                 <div className="relative">
-                  <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Category</label>
+                  <label className="text-xs font-bold text-[var(--text-secondary)] mb-1.5 block ml-1">Category</label>
                   <button
                     type="button"
                     onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
@@ -399,7 +399,7 @@ export default function PlannerPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Date</label>
+                    <label className="text-xs font-bold text-[var(--text-secondary)] mb-1.5 block ml-1">Date</label>
                     <input 
                       type="date" 
                       required
@@ -409,7 +409,7 @@ export default function PlannerPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Time (Optional)</label>
+                    <label className="text-xs font-bold text-[var(--text-secondary)] mb-1.5 block ml-1">Time (Optional)</label>
                     <input 
                       type="time" 
                       value={newTime}

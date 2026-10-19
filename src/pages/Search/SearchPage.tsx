@@ -48,6 +48,29 @@ function excerpt(text: string, q: string, length = 140) {
   return (start > 0 ? '…' : '') + clean.slice(start, start + length) + (start + length < clean.length ? '…' : '')
 }
 
+// One result group on the "All" tab; "See all" jumps to that group's tab
+function Section({ title, icon: SectionIcon, count, target, onSeeAll, children }: {
+  title: string
+  icon: Icon
+  count: number
+  target: Tab
+  onSeeAll: (tab: Tab) => void
+  children: React.ReactNode
+}) {
+  if (count === 0) return null
+  return (
+    <section className="fn-card p-3">
+      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+        <h3 className="text-sm font-semibold flex items-center gap-2"><SectionIcon size={16} className="text-[var(--pink)]" /> {title} <span className="text-[var(--text-secondary)] font-normal">({count})</span></h3>
+        {count > PER_GROUP_IN_ALL && (
+          <button onClick={() => onSeeAll(target)} className="text-xs font-medium text-[var(--pink)] hover:underline">See all</button>
+        )}
+      </div>
+      {children}
+    </section>
+  )
+}
+
 export default function SearchPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
@@ -182,20 +205,6 @@ export default function SearchPage() {
     )
   })
 
-  const Section = ({ title, icon: SectionIcon, count, target, children }: { title: string; icon: Icon; count: number; target: Tab; children: React.ReactNode }) => (
-    count === 0 ? null : (
-      <section className="fn-card p-3">
-        <div className="flex items-center justify-between px-3 pt-2 pb-1">
-          <h3 className="text-sm font-semibold flex items-center gap-2"><SectionIcon size={16} className="text-[var(--pink)]" /> {title} <span className="text-[var(--text-secondary)] font-normal">({count})</span></h3>
-          {count > PER_GROUP_IN_ALL && (
-            <button onClick={() => setTab(target)} className="text-xs font-medium text-[var(--pink)] hover:underline">See all</button>
-          )}
-        </div>
-        {children}
-      </section>
-    )
-  )
-
   return (
     <div className="page-container max-w-5xl">
       <PageHeader icon={MagnifyingGlass} title="Search" subtitle="Find anything in your notes, materials, reviewers and quizzes — or search trusted medical sources." />
@@ -270,10 +279,10 @@ export default function SearchPage() {
         <div className="space-y-4">
           {tab === 'all' && (
             <>
-              <Section title="Study Materials" icon={BookOpen} count={groups.materials.length} target="materials">{renderHits(groups.materials, BookOpen, PER_GROUP_IN_ALL)}</Section>
-              <Section title="Reviewers" icon={Books} count={groups.reviewers.length} target="reviewers">{renderHits(groups.reviewers, Books, PER_GROUP_IN_ALL)}</Section>
-              <Section title="Notes" icon={NotePencil} count={groups.notes.length} target="notes">{renderHits(groups.notes, NotePencil, PER_GROUP_IN_ALL)}</Section>
-              <Section title="Quiz Questions" icon={Brain} count={groups.questions.length} target="questions">{renderQuestions(PER_GROUP_IN_ALL)}</Section>
+              <Section onSeeAll={setTab} title="Study Materials" icon={BookOpen} count={groups.materials.length} target="materials">{renderHits(groups.materials, BookOpen, PER_GROUP_IN_ALL)}</Section>
+              <Section onSeeAll={setTab} title="Reviewers" icon={Books} count={groups.reviewers.length} target="reviewers">{renderHits(groups.reviewers, Books, PER_GROUP_IN_ALL)}</Section>
+              <Section onSeeAll={setTab} title="Notes" icon={NotePencil} count={groups.notes.length} target="notes">{renderHits(groups.notes, NotePencil, PER_GROUP_IN_ALL)}</Section>
+              <Section onSeeAll={setTab} title="Quiz Questions" icon={Brain} count={groups.questions.length} target="questions">{renderQuestions(PER_GROUP_IN_ALL)}</Section>
             </>
           )}
           {tab === 'materials' && <div className="fn-card p-3">{renderHits(groups.materials, BookOpen)}</div>}

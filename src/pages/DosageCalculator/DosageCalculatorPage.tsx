@@ -42,14 +42,14 @@ const ResultBadge = ({ label, value, unit, accent = false }: { label: string; va
     animate={{ opacity: 1, scale: 1, y: 0 }}
     transition={{ type: 'spring', stiffness: 400, damping: 28 }}
     className={cn(
-      'flex flex-col items-center justify-center p-5 rounded-3xl border-2',
+      'flex flex-col items-center justify-center p-5 rounded-2xl border-2',
       accent
         ? 'bg-th-pink/10 border-th-pink/40 text-[var(--pink)]'
         : 'bg-th-secondary-bg/30 border-[var(--border)] text-[var(--text)]'
     )}
   >
-    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1">{label}</p>
-    <p className={cn('text-4xl font-black tabular-nums', accent && 'text-[var(--pink)]')}>{value}</p>
+    <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-1">{label}</p>
+    <p className={cn('text-3xl font-semibold tabular-nums', accent && 'text-[var(--pink)]')}>{value}</p>
     <p className="text-xs font-semibold text-[var(--text-secondary)] mt-0.5">{unit}</p>
   </motion.div>
 )
@@ -245,7 +245,7 @@ export default function DosageCalculatorPage() {
             className="fn-card p-6 space-y-4"
           >
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-              <h3 className="font-black text-lg flex items-center gap-2">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
                 <History size={20} className="text-[var(--pink)]" /> Calculation History
               </h3>
               {history.length > 0 && (
@@ -274,7 +274,7 @@ export default function DosageCalculatorPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={cn(
-                          "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full",
+                          "text-[10.5px] font-semibold px-2 py-0.5 rounded-full",
                           rec.type === 'iv' ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300" : "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300"
                         )}>
                           {rec.type === 'iv' ? 'IV Infusion' : 'Med Dose'}
@@ -282,7 +282,7 @@ export default function DosageCalculatorPage() {
                         <span className="text-[10px] text-[var(--text-secondary)]">{new Date(rec.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                       <h4 className="font-bold text-sm truncate">{rec.title}</h4>
-                      <p className="text-xs font-black text-[var(--pink)] mt-0.5">{rec.summary}</p>
+                      <p className="text-xs font-semibold text-[var(--pink)] mt-0.5">{rec.summary}</p>
                       <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 truncate">{rec.details}</p>
                     </div>
 
@@ -301,7 +301,7 @@ export default function DosageCalculatorPage() {
         ) : (
           <>
             {/* Tab Switcher */}
-            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-[2rem] p-1.5 flex gap-1.5 mb-8">
+            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-1.5 flex gap-1.5 mb-8">
               {([
                 { id: 'iv' as Tab, label: 'IV Drip Rate', icon: Droplets },
                 { id: 'med' as Tab, label: 'Medication Dose', icon: Pill },
@@ -338,7 +338,7 @@ export default function DosageCalculatorPage() {
                         <Droplets size={20} />
                       </div>
                       <div>
-                        <h2 className="text-lg font-black">IV Drip Rate</h2>
+                        <h2 className="text-lg font-semibold">IV Drip Rate</h2>
                         <p className="text-[11px] text-[var(--text-secondary)] font-medium">Calculate drops/min and mL/hr for IV infusions</p>
                       </div>
                     </div>
@@ -346,7 +346,7 @@ export default function DosageCalculatorPage() {
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Volume to Infuse</label>
+                          <label className="text-[11px] font-bold text-[var(--text-secondary)]">Volume to Infuse</label>
                           <div className="relative">
                             <input
                               type="number"
@@ -361,14 +361,14 @@ export default function DosageCalculatorPage() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Drop Factor (gtt set)</label>
+                          <label className="text-[11px] font-bold text-[var(--text-secondary)]">Drop Factor (gtt set)</label>
                           <div className="grid grid-cols-4 gap-2">
                             {DROP_FACTORS.map(df => (
                               <button
                                 key={df}
                                 onClick={() => { setIvInputs(p => ({ ...p, dropFactor: String(df) })); setIvResult(null); setIvError(null); }}
                                 className={cn(
-                                  'py-3 rounded-2xl border-2 text-sm font-black transition-all',
+                                  'py-3 rounded-2xl border-2 text-sm font-semibold transition-all',
                                   ivInputs.dropFactor === String(df)
                                     ? 'bg-[var(--pink)] border-[var(--pink)] text-white shadow-md scale-105'
                                     : 'bg-[var(--bg)] border-[var(--border)] text-[var(--text)] hover:border-th-pink/50'
@@ -383,7 +383,7 @@ export default function DosageCalculatorPage() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Infusion Time</label>
+                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">Infusion Time</label>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="relative">
                             <input
@@ -444,7 +444,7 @@ export default function DosageCalculatorPage() {
                             <div className="flex items-center justify-between text-[var(--success)]">
                               <div className="flex items-center gap-2">
                                 <CheckCircle2 size={16} />
-                                <p className="text-xs font-bold uppercase tracking-widest">Results</p>
+                                <p className="text-xs font-bold">Results</p>
                               </div>
                               <span className="text-[10px] font-bold bg-th-success/10 text-[var(--success)] px-2 py-0.5 rounded-full">Saved to Supabase</span>
                             </div>
@@ -474,14 +474,14 @@ export default function DosageCalculatorPage() {
                         <Pill size={20} />
                       </div>
                       <div>
-                        <h2 className="text-lg font-black">Medication Dose</h2>
+                        <h2 className="text-lg font-semibold">Medication Dose</h2>
                         <p className="text-[11px] text-[var(--text-secondary)] font-medium">Calculate volume to administer using D/H × V formula</p>
                       </div>
                     </div>
 
                     <div className="space-y-6">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Ordered Dose (Desired)</label>
+                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">Ordered Dose (Desired)</label>
                         <div className="flex gap-2">
                           <input
                             type="number"
@@ -502,7 +502,7 @@ export default function DosageCalculatorPage() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Dose On Hand (Available)</label>
+                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">Dose On Hand (Available)</label>
                         <div className="flex gap-2">
                           <input
                             type="number"
@@ -523,7 +523,7 @@ export default function DosageCalculatorPage() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Volume On Hand</label>
+                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">Volume On Hand</label>
                         <div className="relative">
                           <input
                             type="number"
@@ -570,7 +570,7 @@ export default function DosageCalculatorPage() {
                             <div className="flex items-center justify-between text-[var(--success)]">
                               <div className="flex items-center gap-2">
                                 <CheckCircle2 size={16} />
-                                <p className="text-xs font-bold uppercase tracking-widest">Volume to Administer</p>
+                                <p className="text-xs font-bold">Volume to Administer</p>
                               </div>
                               <span className="text-[10px] font-bold bg-th-success/10 text-[var(--success)] px-2 py-0.5 rounded-full">Saved to Supabase</span>
                             </div>
