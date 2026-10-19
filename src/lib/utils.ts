@@ -53,15 +53,18 @@ export function getFileIcon(type: string): string {
   }
 }
 
-export function getReminderTypeColor(type: string): string {
-  switch (type) {
-    case 'exam': return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-    case 'quiz': return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-    case 'assignment': return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-    case 'retdem': return 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-    case 'duty': return 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400'
-    default: return 'bg-[var(--secondary-bg)] text-[var(--text-secondary)]'
-  }
+// Muted category colors for planner dots and chips (hex so they can be tinted with alpha)
+export const REMINDER_TYPE_COLORS: Record<string, string> = {
+  exam: '#BE5B6C',
+  quiz: '#C98552',
+  assignment: '#8A72B5',
+  retdem: '#5A9776',
+  duty: '#4D8BA0',
+  other: '#9A8A8E',
+}
+
+export function getReminderTypeHex(type: string): string {
+  return REMINDER_TYPE_COLORS[type] ?? REMINDER_TYPE_COLORS.other
 }
 
 export function getReminderTypeLabel(type: string): string {
@@ -173,6 +176,7 @@ export function checkAnswerCorrectness(
 // Emoji code points (pictographs, symbols, variation selector, joiners) — leaves ♡ (U+2661),
 // ✓ (U+2713) and ✕ (U+2715) alone since the UI uses them as plain symbols
 const EMOJI_CHARS = '\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{2660}\\u{2662}-\\u{2712}\\u{2714}\\u{2716}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\u{2300}-\\u{23FF}\\u{FE0F}\\u{200D}\\u{20E3}'
+// eslint-disable-next-line no-misleading-character-class -- ZWJ/VS16 are listed on purpose so they get stripped too
 const EMOJI_RUN = new RegExp(`[ \\t]*[${EMOJI_CHARS}]+`, 'gu')
 
 // Removes emoji from AI-written text, including any space left in front of them
