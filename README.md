@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?style=flat-square&logo=typescript)](https://typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?style=flat-square&logo=vite)](https://vitejs.dev)
-[![Groq](https://img.shields.io/badge/Groq-LLaMA%203.3-f55036?style=flat-square)](https://groq.com)
+[![Mistral](https://img.shields.io/badge/Mistral-Small-fa520f?style=flat-square)](https://mistral.ai)
 [![Supabase](https://img.shields.io/badge/Supabase-Auth-3ecf8e?style=flat-square&logo=supabase)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-pink?style=flat-square)](LICENSE)
 
@@ -49,7 +49,7 @@ Unlike generic study apps, France Notes is designed to feel *personal, comfortin
 |-------|-----------|
 | Frontend | React 19 + TypeScript |
 | Build Tool | Vite 8 |
-| AI | [Groq API](https://groq.com) — `llama-3.3-70b-versatile` |
+| AI | [Mistral](https://mistral.ai) (chat, quizzes, OCR, reviewers) + [Gemini](https://ai.google.dev) (Knowledge Garden, fun facts) |
 | Auth & DB | [Supabase](https://supabase.com) |
 | Styling | Tailwind CSS + custom design tokens |
 | State | Zustand + React Query |
@@ -63,7 +63,8 @@ Unlike generic study apps, France Notes is designed to feel *personal, comfortin
 ### Prerequisites
 
 - [Node.js](https://nodejs.org) v18+
-- A free [Groq API key](https://console.groq.com/keys)
+- A free [Mistral API key](https://console.mistral.ai/api-keys)
+- A free [Gemini API key](https://aistudio.google.com/app/apikey)
 - A [Supabase](https://supabase.com) project (for auth)
 
 ### Installation
@@ -78,7 +79,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# Fill in your Groq and Supabase credentials in .env
+# Fill in your Mistral, Gemini, ElevenLabs and Supabase credentials in .env
 ```
 
 ### Running locally

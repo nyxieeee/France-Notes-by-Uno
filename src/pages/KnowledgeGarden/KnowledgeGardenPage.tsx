@@ -14,7 +14,7 @@ import { cn, generateId } from '@/lib/utils'
 import type { KnowledgeSearchResult } from '@/types'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { Check, Heart, Loader2 } from 'lucide-react'
-import { callGeminiGroundedSearch, generateJSON } from '@/lib/groq'
+import { callGeminiGroundedSearch, generateJSON } from '@/lib/ai'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function KnowledgeGardenPage() {
@@ -84,8 +84,8 @@ export default function KnowledgeGardenPage() {
         return
       }
 
-      // Fallback: Groq JSON if Gemini grounding returns nothing
-      console.warn('[Knowledge Garden] Falling back to Groq JSON generation')
+      // Fallback: plain AI JSON if Gemini grounding returns nothing
+      console.warn('[Knowledge Garden] Falling back to AI JSON generation')
       const prompt = `
         Search query: ${query} — Page ${currentPage}
         Generate 8-10 evidence-based nursing references for ${greetingName}.

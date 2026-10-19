@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { RetDemProcedure, RecitationMode } from '@/types'
-import { generateJSON } from '@/lib/groq'
+import { generateJSON } from '@/lib/ai'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'

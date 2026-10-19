@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { StudyBoxItem, Topic, KnowledgeSearchResult } from '@/types'
 import { extractTextFromFile } from '@/lib/extractor'
-import { generateJSON, DOC_UNO_SYSTEM_PROMPT, generateCompletion } from '@/lib/groq'
+import { generateJSON, DOC_UNO_SYSTEM_PROMPT, generateCompletion } from '@/lib/ai'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'

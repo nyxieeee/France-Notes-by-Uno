@@ -29,7 +29,7 @@ import MarkdownText from '@/components/shared/MarkdownText'
 import type { RetDemProcedure } from '@/types'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { SimulationEngine } from '@/components/shared/SimulationEngine'
-import { visionExtractText } from '@/lib/groq'
+import { visionExtractText } from '@/lib/ai'
 import { extractTextFromFile } from '@/lib/extractor'
 import { usePersonalization } from '@/hooks/usePersonalization'
 

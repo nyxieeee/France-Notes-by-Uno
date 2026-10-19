@@ -5,7 +5,7 @@ import mammoth from 'mammoth'
 import workerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url'
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
 
-import { visionExtractText } from './groq'
+import { visionExtractText } from './ai'
 
 // pdf.js 5.7 calls Map#getOrInsertComputed when rendering pages, which older
 // browsers (e.g. older iOS Safari) don't have yet — polyfill it so scanned-PDF OCR works there

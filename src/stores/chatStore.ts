@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { ChatMessage } from '@/types'
-import { generateCompletion, DOC_UNO_SYSTEM_PROMPT } from '@/lib/groq'
+import { generateCompletion, DOC_UNO_SYSTEM_PROMPT } from '@/lib/ai'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useStudyBoxStore } from './studyBoxStore'
 import { useReviewerStore } from './reviewerStore'

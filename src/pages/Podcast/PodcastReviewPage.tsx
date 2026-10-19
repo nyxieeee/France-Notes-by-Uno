@@ -5,7 +5,7 @@ import {
   Search, Sparkles, Volume2, Clock, BookOpen, FileText, Bookmark, History, Trash2, BookmarkCheck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { generateCompletion } from '@/lib/groq'
+import { generateCompletion } from '@/lib/ai'
 import { synthesizeSpeechElevenLabs } from '@/lib/elevenLabsTts'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'

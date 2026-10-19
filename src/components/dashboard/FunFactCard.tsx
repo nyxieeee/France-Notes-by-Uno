@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Sparkles, RefreshCw, AlertCircle, Stethoscope, HelpCircle, Heart, Zap } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { generateJSON, DOC_UNO_SYSTEM_PROMPT } from '@/lib/groq'
+import { generateJSON, DOC_UNO_SYSTEM_PROMPT } from '@/lib/ai'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function FunFactCard() {

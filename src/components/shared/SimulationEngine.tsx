@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Mic, MicOff, Send, User, BrainCircuit, Loader2, ShieldAlert, Activity, Volume2, Headphones } from 'lucide-react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useAuthStore } from '@/stores/authStore'
-import { generateChatCompletion, generateJSON } from '@/lib/groq'
+import { generateChatCompletion, generateJSON } from '@/lib/ai'
 import { getRecitationPrompt, getRetDemPrompt, getSimulationEvaluationPrompt } from '@/lib/simulationPrompts'
 import { cn } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
@@ -117,7 +117,7 @@ function SimulationSession() {
       chatHistory.unshift({ role: 'system', content: systemPrompt })
 
       const response = await generateChatCompletion(chatHistory, 'recitation')
-      if (!response || !response.trim()) throw new Error('Empty response received from Groq.')
+      if (!response || !response.trim()) throw new Error('Empty response received from the AI.')
 
       const cleanedResponse = response
         .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -156,7 +156,7 @@ function SimulationSession() {
       }
 
       const response = await generateChatCompletion(chatHistory, 'recitation')
-      if (!response || !response.trim()) throw new Error('Empty response received from Groq.')
+      if (!response || !response.trim()) throw new Error('Empty response received from the AI.')
 
       const cleanedResponse = response
         .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -283,7 +283,7 @@ function SimulationSession() {
       chatHistory.unshift({ role: 'system', content: systemPrompt })
 
       const response = await generateChatCompletion(chatHistory, 'recitation')
-      if (!response || !response.trim()) throw new Error('Empty response received from Groq.')
+      if (!response || !response.trim()) throw new Error('Empty response received from the AI.')
 
       const cleanedResponse = response
         .replace(/\/\*[\s\S]*?\*\//g, '')

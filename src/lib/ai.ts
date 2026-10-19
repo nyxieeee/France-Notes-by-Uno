@@ -13,18 +13,16 @@ function stripThinkBlocks(text: string): string {
 }
 
 // ─── Model Registry ───────────────────────────────────────────────────────────
-export const DEFAULT_MODEL = 'openai/gpt-oss-120b'
-export const FAST_MODEL    = 'openai/gpt-oss-120b'
 const MISTRAL_MODEL        = 'open-mistral-nemo'
-const MISTRAL_QUIZ_MODEL   = 'mistral-small-latest'
-const MISTRAL_VISION_MODEL = 'mistral-small-latest'
+const MISTRAL_SMALL_MODEL  = 'mistral-small-latest'
+const MISTRAL_VISION_MODEL = MISTRAL_SMALL_MODEL
 const GEMINI_MODEL         = 'gemini-2.5-flash-lite'
 
 // ─── Feature → Provider Routing ──────────────────────────────────────────────
-//  chat        → Groq FAST_MODEL    (openai/gpt-oss-120b, instant feel for Doc Uno)
+//  chat        → Mistral Small      (Doc Uno / Nurse Florence)
 //  quiz        → Mistral Small only (no fallback — one provider, batched requests)
-//  retdem      → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
-//  recitation  → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
+//  retdem      → Mistral Small      (back and forth coaching)
+//  recitation  → Mistral Small      (back and forth coaching)
 //  vision      → Mistral Small      (image input, no fallback)
 //  studybox    → Mistral            (categorization + summary)
 //  knowledge   → Gemini             (search queries, Google Search grounding)
@@ -45,7 +43,7 @@ export type AIFeature =
   | 'ppt'
   | 'funfact'
 
-type Provider = 'groq' | 'mistral' | 'gemini'
+type Provider = 'mistral' | 'gemini'
 
 interface RouteConfig {
   provider: Provider
@@ -53,10 +51,10 @@ interface RouteConfig {
 }
 
 const FEATURE_ROUTES: Record<AIFeature, RouteConfig> = {
-  chat:       { provider: 'groq',    model: FAST_MODEL },
-  quiz:       { provider: 'mistral', model: MISTRAL_QUIZ_MODEL },
-  retdem:     { provider: 'groq',    model: FAST_MODEL },
-  recitation: { provider: 'groq',    model: FAST_MODEL },
+  chat:       { provider: 'mistral', model: MISTRAL_SMALL_MODEL },
+  quiz:       { provider: 'mistral', model: MISTRAL_SMALL_MODEL },
+  retdem:     { provider: 'mistral', model: MISTRAL_SMALL_MODEL },
+  recitation: { provider: 'mistral', model: MISTRAL_SMALL_MODEL },
   vision:     { provider: 'mistral', model: MISTRAL_VISION_MODEL },
   studybox:   { provider: 'mistral', model: MISTRAL_MODEL },
   knowledge:  { provider: 'gemini',  model: GEMINI_MODEL },
@@ -164,34 +162,6 @@ You are ${aiAssistantName}, a highly supportive, intelligent, and warm clinical 
 export const DOC_UNO_SYSTEM_PROMPT = 'DEFAULT_SYSTEM_PROMPT'
 
 // ─── Provider Callers ─────────────────────────────────────────────────────────
-
-async function callGroq(
-  messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-  model: string,
-  temperature = 0.85,
-  maxTokens = 4000,
-  jsonMode = false,
-): Promise<string> {
-  const response = await fetch(`${API_BASE}/groq`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-      max_tokens: maxTokens,
-      ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
-    }),
-  })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err.error || `Groq API error: ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  return data.choices[0]?.message?.content || ''
-}
 
 async function callMistral(
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
@@ -450,13 +420,9 @@ async function routedCall(
 ): Promise<string> {
   const route = FEATURE_ROUTES[feature]
 
-  // Construct the chain of fallback providers starting with the primary route (excluding groq as a fallback)
+  // Construct the chain of fallback providers starting with the primary route
   const providersOrdered = SINGLE_PROVIDER_FEATURES.includes(feature) ? [route] : [
     route,
-    ...(route.provider === 'groq' ? [
-      { provider: 'gemini' as Provider, model: GEMINI_MODEL },
-      { provider: 'mistral' as Provider, model: MISTRAL_MODEL }
-    ] : []),
     ...(route.provider === 'gemini' ? [{ provider: 'mistral' as Provider, model: MISTRAL_MODEL }] : []),
     ...(route.provider === 'mistral' ? [{ provider: 'gemini' as Provider, model: GEMINI_MODEL }] : []),
   ]
@@ -466,8 +432,6 @@ async function routedCall(
     try {
       console.log(`[AI Router] Attempting ${feature} on ${fallback.provider}/${fallback.model}...`)
       switch (fallback.provider) {
-        case 'groq':
-          return await callGroq(messages, fallback.model, temperature, maxTokens, jsonMode)
         case 'mistral':
           return await callMistral(messages, fallback.model, temperature, maxTokens, jsonMode)
         case 'gemini':
