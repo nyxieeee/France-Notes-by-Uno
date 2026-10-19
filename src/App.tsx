@@ -24,6 +24,8 @@ import PlannerPage from '@/pages/Planner/PlannerPage'
 import DosageCalculatorPage from '@/pages/DosageCalculator/DosageCalculatorPage'
 import PodcastReviewPage from '@/pages/Podcast/PodcastReviewPage'
 import LabsReferencePage from '@/pages/Labs/LabsReferencePage'
+import NotesPage from '@/pages/Notes/NotesPage'
+import SearchPage from '@/pages/Search/SearchPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isInitialLoading } = useAuthStore()
@@ -101,6 +103,8 @@ function App() {
             <Route path="dosage-calculator" element={<DosageCalculatorPage />} />
             <Route path="podcast-review" element={<PodcastReviewPage />} />
             <Route path="labs-reference" element={<LabsReferencePage />} />
+            <Route path="notes" element={<NotesPage />} />
+            <Route path="search" element={<SearchPage />} />
           </Route>
 
           {/* Fallback */}

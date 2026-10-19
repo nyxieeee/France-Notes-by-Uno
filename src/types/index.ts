@@ -182,3 +182,45 @@ export type KnowledgeSearchResult = {
   category: 'pharmacology' | 'pathophysiology' | 'interventions' | 'diseases' | 'guidelines'
   is_trusted: boolean
 }
+
+// Handwritten notes store strokes in page-relative units: x is 0–1 across the page
+// width, y is measured in page widths from the top, so pages scale to any screen
+export type InkPoint = [x: number, y: number, pressure: number]
+
+export type InkStroke = {
+  tool: 'pen' | 'highlighter'
+  color: string
+  size: number
+  points: InkPoint[]
+}
+
+export type HandwritingDrawing = {
+  paper: 'lined' | 'grid' | 'dotted' | 'blank'
+  pages: number
+  strokes: InkStroke[]
+}
+
+export type Note = {
+  id: string
+  user_id: string
+  title: string
+  content: string
+  kind: 'text' | 'handwriting'
+  drawing: HandwritingDrawing | null
+  topic_id: string | null
+  is_pinned: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type SimulationSession = {
+  id: string
+  user_id: string
+  mode: 'recitation' | 'retdem'
+  topic: string
+  difficulty: string
+  source_name: string | null
+  scores: { accuracy: number; safety: number; reasoning: number; confidence: number }
+  feedback: { correct: string[]; missed: string[]; safetyViolations: string[] } | null
+  created_at: string
+}

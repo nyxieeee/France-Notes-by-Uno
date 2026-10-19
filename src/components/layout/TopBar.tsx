@@ -189,7 +189,7 @@ export default function TopBar() {
           onSubmit={(e) => {
             e.preventDefault()
             if (!searchQuery.trim()) return
-            navigate('/knowledge-garden', { state: { query: searchQuery.trim() } })
+            navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
             setSearchQuery('')
           }}
           className="hidden sm:flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded-full px-4 py-2 w-full max-w-md transition-all focus-within:ring-2 focus-within:ring-[var(--pink)]/30 focus-within:border-[var(--pink)]/40"
@@ -199,7 +199,7 @@ export default function TopBar() {
             type="text" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search nursing topics, drugs, or anything..." 
+            placeholder="Search notes, materials, quizzes..." 
             className="bg-transparent border-none outline-none text-[13px] w-full placeholder:text-[var(--text-secondary)]/60"
           />
         </form>

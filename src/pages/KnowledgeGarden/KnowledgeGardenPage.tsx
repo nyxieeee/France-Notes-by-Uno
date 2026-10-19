@@ -1,329 +1,115 @@
-import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { MagnifyingGlass as Search, Leaf, ArrowSquareOut as ExternalLink, BookOpen, ShieldCheck, ArrowRight, Sparkle as Sparkles, CheckCircle as CheckCircle2, Check, Heart, CircleNotch as Loader2 } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Leaf, MagnifyingGlass, ArrowSquareOut, BookOpen, Trash, Plus, ShieldCheck } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
-import { cn, generateId } from '@/lib/utils'
-import type { KnowledgeSearchResult } from '@/types'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
-import { callGeminiGroundedSearch, generateJSON } from '@/lib/ai'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { cn, formatRelativeDate } from '@/lib/utils'
 
+// Soft header tints cycled across reference cards
+const TINTS = [
+  'from-[#F6D9DC] to-[#FBEDEC] dark:from-[#4A2F36] dark:to-[#33252A]',
+  'from-[#F8E1D3] to-[#FCF1EA] dark:from-[#4A372C] dark:to-[#332822]',
+  'from-[#E9DDF0] to-[#F6F0F9] dark:from-[#3D3248] dark:to-[#2C2533]',
+  'from-[#DCEAE1] to-[#F0F6F2] dark:from-[#2E4036] dark:to-[#232E28]',
+]
+
+type SavedRef = { id: string; title: string; description: string; source: string; url: string; category: string; date_saved?: string }
+
+// Saved references from Search → Trusted Sources. Each one also lives in the Study Box as a full article.
 export default function KnowledgeGardenPage() {
-  const [query, setQuery] = useState('')
-  const [isSearching, setIsSearching] = useState(false)
-  const [results, setResults] = useState<KnowledgeSearchResult[]>([])
-  const [page, setPage] = useState(1)
-  const [savingIds, setSavingIds] = useState<string[]>([])
-  const { savedKnowledge, saveKnowledge, removeKnowledge } = useStudyBoxStore()
-  const [savedToast, setSavedToast] = useState<{ title: string; action: 'saved' | 'removed' } | null>(null)
-  
-  const { isFrance, aiAssistantName, greetingName, knowledgeGardenName } = usePersonalization()
+  const navigate = useNavigate()
+  const { savedKnowledge, items, removeKnowledge } = useStudyBoxStore()
+  const { knowledgeGardenName, aiAssistantName } = usePersonalization()
+  const [category, setCategory] = useState('all')
 
-  // Run a search passed in from the top bar search box
-  const location = useLocation()
-  const incomingQuery = (location.state as { query?: string } | null)?.query
-  useEffect(() => {
-    if (!incomingQuery) return
-    setQuery(incomingQuery)
-    handleSearch(undefined, false, incomingQuery)
-    window.history.replaceState({}, '')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomingQuery])
+  const refs = savedKnowledge as unknown as SavedRef[]
+  const categories = Array.from(new Set(refs.map(r => r.category).filter(Boolean)))
+  const visible = refs.filter(r => category === 'all' || r.category === category)
 
-  const showToast = (title: string, action: 'saved' | 'removed') => {
-    setSavedToast({ title, action })
-    setTimeout(() => setSavedToast(null), 2800)
+  const openArticle = (ref: SavedRef) => {
+    const article = items.find(i => i.file_name.includes(ref.title))
+    if (article) navigate('/study-box', { state: { openItemId: article.id } })
+    else window.open(ref.url, '_blank', 'noreferrer')
   }
-
-  const handleToggleSave = async (result: KnowledgeSearchResult) => {
-    const alreadySaved = savedKnowledge.some(k => k.id === result.id || k.url === result.url)
-    if (alreadySaved) {
-      const savedItem = savedKnowledge.find(k => k.id === result.id || k.url === result.url)
-      if (savedItem) {
-        removeKnowledge(savedItem.id)
-        showToast(result.title, 'removed')
-      }
-    } else {
-      setSavingIds(prev => [...prev, result.id])
-      try {
-        await saveKnowledge(result)
-        showToast(result.title, 'saved')
-      } catch (err) {
-        console.error("Save knowledge failed:", err)
-      } finally {
-        setSavingIds(prev => prev.filter(id => id !== result.id))
-      }
-    }
-  }
- 
-  const handleSearch = async (e?: React.FormEvent, isLoadMore = false, overrideQuery?: string) => {
-    if (e) e.preventDefault()
-    const q = overrideQuery ?? query
-    if (!q.trim()) return
-
-    setIsSearching(true)
-    const currentPage = isLoadMore ? page + 1 : 1
-
-    const systemPrompt = `
-      You are a professional medical librarian and nursing search engine for ${isFrance ? 'France' : greetingName}, a nursing student.
-      Search and retrieve ONLY evidence-based, peer-reviewed, and clinically trusted references.
-      TRUSTED SOURCES: WHO, CDC, NIH, NCBI, PubMed, Cochrane, Mayo Clinic, Medscape, ANA, NCSBN, NurseLabs, Drugs.com, FDA, DOH Philippines, PNA.
-      NEVER include unreliable blogs, AI spam, or unverified claims.
-    `
-
-    try {
-      // Primary: Gemini with Google Search grounding — real web results with real URLs
-      const groundedResults = await callGeminiGroundedSearch(q, systemPrompt, currentPage)
-
-      if (groundedResults.length > 0) {
-        const newResults = groundedResults.map(r => ({ ...r, id: generateId() })) as KnowledgeSearchResult[]
-        if (isLoadMore) {
-          setResults(prev => [...prev, ...newResults])
-          setPage(currentPage)
-        } else {
-          setResults(newResults)
-          setPage(1)
-        }
-        return
-      }
-
-      // Fallback: plain AI JSON if Gemini grounding returns nothing
-      console.warn('[Knowledge Garden] Falling back to AI JSON generation')
-      const prompt = `
-        Search query: ${q} — Page ${currentPage}
-        Generate 8-10 evidence-based nursing references for ${greetingName}.
-        Output strictly as JSON:
-        { results: [{ title: ..., description: ..., source: ..., url: ..., search_url: ..., category: nursing, is_trusted: true }] }
-      `
-      const response = await generateJSON(prompt, systemPrompt, 'knowledge')
-      const newResults = (response.results || []).map((r: any) => ({ ...r, id: generateId() })) as KnowledgeSearchResult[]
-      if (isLoadMore) {
-        setResults(prev => [...prev, ...newResults])
-        setPage(currentPage)
-      } else {
-        setResults(newResults)
-        setPage(1)
-      }
-    } catch (error) {
-      console.error('Knowledge Garden Search Error:', error)
-      if (!isLoadMore) setResults([])
-    } finally {
-      setIsSearching(false)
-    }
-  }
-
-
 
   return (
-    <div className="page-container">
-      <PageHeader icon={Leaf} title={knowledgeGardenName} subtitle={`Trusted nursing and medical knowledge, curated by ${aiAssistantName}.`} />
-
-      <div className="max-w-2xl mx-auto mb-12">
-        <form onSubmit={handleSearch} className="relative group">
-          <div className="absolute inset-y-0 left-4 sm:left-5 flex items-center pointer-events-none text-[var(--text-secondary)] group-focus-within:text-[var(--pink)] transition-colors">
-            <Search size={18} />
-          </div>
-          <input 
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Explain hypovolemic shock..."
-            className="w-full bg-[var(--card)] border-2 border-[var(--border)] rounded-[2.5rem] py-3.5 sm:py-5 pl-11 sm:pl-14 pr-14 sm:pr-32 focus:border-[var(--pink)] focus:ring-4 focus:ring-[var(--pink)]/10 outline-none transition-all text-base sm:text-lg shadow-sm"
-          />
-          <button 
-            type="submit"
-            disabled={isSearching}
-            className="absolute right-2 sm:right-3 top-2 bottom-2 sm:top-2.5 sm:bottom-2.5 px-3 sm:px-6 bg-[var(--pink)] text-white rounded-full font-bold hover:bg-[var(--pink-hover)] transition-all flex items-center gap-2 disabled:opacity-50"
-          >
-            {isSearching ? (
-              <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            ) : (
-              <><span className="hidden sm:inline">Search</span> <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px]" /></>
-            )}
+    <div className="page-container max-w-6xl">
+      <PageHeader
+        icon={Leaf}
+        title={knowledgeGardenName}
+        subtitle={`Your saved references from trusted sources, expanded into study articles by ${aiAssistantName}.`}
+        actions={
+          <button onClick={() => navigate('/search?tab=sources')} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">
+            <Plus size={16} weight="bold" /> Find References
           </button>
-        </form>
-      </div>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto">
-        <AnimatePresence mode="wait">
-          {isSearching ? (
-            <motion.div 
-              key="searching"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-20 text-center"
-            >
-              <div className="relative mb-8">
-                <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-full animate-ping opacity-20"></div>
-                <div className="absolute inset-0 flex items-center justify-center text-[var(--pink)]">
-                  <Sparkles size={40} className="animate-pulse-soft" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">{aiAssistantName} is tending the garden... {isFrance ? '🌷' : '🌱'}</h3>
-              <p className="text-[var(--text-secondary)]">Curating trusted nursing references for you.</p>
-            </motion.div>
-          ) : results.length > 0 ? (
-            results.map((result, i) => (
-              <motion.div
-                key={result.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="fn-card p-6 group hover:border-[var(--pink)] transition-all"
+      {refs.length === 0 ? (
+        <div className="fn-card p-10 text-center max-w-xl mx-auto">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center mb-4">
+            <Leaf size={30} weight="duotone" />
+          </div>
+          <p className="font-heading font-semibold">Your garden is empty</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            Search trusted sources like WHO, CDC and PubMed, then tap “Save to Garden” to keep a reference here.
+          </p>
+          <button onClick={() => navigate('/search?tab=sources')} className="btn-primary px-5 py-2.5 text-sm mt-5 inline-flex items-center gap-2">
+            <MagnifyingGlass size={16} /> Search trusted sources
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex gap-1.5 flex-wrap mb-5">
+            {['all', ...categories].map(c => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                className={cn(
+                  'px-3.5 py-1.5 rounded-full text-[13px] font-medium border capitalize transition-colors',
+                  category === c ? 'bg-[var(--pink)] border-[var(--pink)] text-white' : 'border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]'
+                )}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
-                        {result.category}
-                      </span>
-                      {result.is_trusted && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--success)] uppercase tracking-widest">
-                          <ShieldCheck size={12} /> Trusted Source
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="text-xl font-bold mb-1 group-hover:text-[var(--pink)] transition-colors">
-                      {result.title}
-                    </h3>
-                    <a 
-                      href={result.url} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="text-xs text-[var(--pink)] hover:underline truncate max-w-lg block mb-4 font-semibold"
-                    >
-                      Read on {result.source || 'source website'} ↗
-                    </a>
-                    <p className="text-[var(--text-secondary)] leading-relaxed mb-6">
-                      {result.description}
-                    </p>
-                    <div className="flex flex-nowrap items-center gap-1.5 sm:gap-3 overflow-x-auto">
-                      <a 
-                        href={result.url} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="btn-primary px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 shadow-fn whitespace-nowrap"
-                      >
-                        <ExternalLink size={12} />
-                        <span>Read Article</span>
-                      </a>
-                      {(result as any).search_url && (
-                        <a 
-                          href={`https://www.google.com/search?q=${encodeURIComponent(query)}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          title={`Search for "${query}" on Google`}
-                          className="btn-secondary px-2 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 whitespace-nowrap"
-                        >
-                          <Search size={12} />
-                          <span className="hidden sm:inline">Find on Google</span>
-                        </a>
-                      )}
-                      <button 
-                        onClick={() => handleToggleSave(result)}
-                        disabled={savingIds.includes(result.id)}
-                        className={cn(
-                          "btn-secondary px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2 transition-all whitespace-nowrap",
-                          savedKnowledge.some(k => k.id === result.id || k.url === result.url) && "bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/30"
-                        )}
-                      >
-                        {savingIds.includes(result.id) ? (
-                          <><Loader2 size={10} className="animate-spin" /> <span>Saving</span></>
-                        ) : savedKnowledge.some(k => k.id === result.id || k.url === result.url) ? (
-                          <><Check size={10} /> <span>Saved</span></>
-                        ) : (
-                          <><Heart size={10} /> <span>Save</span></>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] opacity-30 group-hover:opacity-100 transition-opacity">
-                    <BookOpen size={24} />
+                {c === 'all' ? `All (${refs.length})` : c}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visible.map((ref, i) => (
+              <motion.article
+                key={ref.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i, 9) * 0.03 }}
+                className="fn-card overflow-hidden flex flex-col"
+              >
+                <button onClick={() => openArticle(ref)} className={`h-24 bg-gradient-to-br ${TINTS[i % TINTS.length]} flex items-center justify-center relative`}>
+                  <BookOpen size={32} weight="light" className="text-[var(--pink)]/70" />
+                  <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold text-[var(--pink)] bg-[var(--card)]/85 px-2 py-0.5 rounded-full capitalize">{ref.category}</span>
+                </button>
+                <div className="p-4 flex-1 flex flex-col">
+                  <button onClick={() => openArticle(ref)} className="text-left">
+                    <h3 className="font-heading font-semibold text-[14.5px] line-clamp-2 hover:text-[var(--pink)]">{ref.title}</h3>
+                  </button>
+                  <p className="text-[11.5px] text-[var(--text-secondary)] mt-1 flex items-center gap-1">
+                    <ShieldCheck size={12} className="text-[var(--success)]" /> {ref.source}
+                    {ref.date_saved && <> · {formatRelativeDate(ref.date_saved)}</>}
+                  </p>
+                  <p className="text-[12.5px] text-[var(--text-secondary)] mt-2 line-clamp-3 flex-1">{ref.description}</p>
+                  <div className="flex items-center gap-1 mt-3 -mb-1">
+                    <button onClick={() => openArticle(ref)} className="text-xs font-medium text-[var(--pink)] hover:underline mr-auto">Study article</button>
+                    <a href={ref.url} target="_blank" rel="noreferrer" className="btn-icon p-1.5" title="Open source" aria-label="Open source website"><ArrowSquareOut size={16} /></a>
+                    <button onClick={() => { if (confirm('Remove this reference from your garden?')) removeKnowledge(ref.id) }} className="btn-icon p-1.5 hover:text-[var(--error)]" title="Remove" aria-label="Remove reference"><Trash size={16} /></button>
                   </div>
                 </div>
-              </motion.div>
-            ))
-          ) : query && !isSearching ? (
-             <div className="text-center py-20 fn-card border-dashed">
-                <p className="text-lg font-bold mb-2">No references found 🥀</p>
-                <p className="text-[var(--text-secondary)]">Try searching for broader nursing concepts or diseases.</p>
-             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { title: 'Global Trusted Sources', desc: 'WHO, CDC, NIH, PubMed, Mayo Clinic, Cleveland Clinic', icon: ShieldCheck },
-                { title: 'Nursing & Local (PH)', desc: 'ANA, NCSBN, NurseLabs, DOH Philippines, PNA, PRC', icon: BookOpen },
-              ].map((box, i) => (
-                <div key={i} className="fn-card p-6 bg-[var(--secondary-bg)]/20 border-dashed">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[var(--pink)] mb-4 shadow-sm">
-                    <box.icon size={20} />
-                  </div>
-                  <h4 className="font-bold mb-2 text-sm">{box.title}</h4>
-                  <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed uppercase tracking-widest font-bold">{box.desc}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </AnimatePresence>
-
-        {results.length > 0 && !isSearching && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-center mt-12 pb-12"
-          >
-            <button 
-              onClick={() => handleSearch(undefined, true)}
-              className="btn-secondary px-10 py-4 rounded-full flex items-center gap-3 group hover:border-[var(--pink)] transition-all"
-            >
-              <Sparkles size={18} className="text-[var(--pink)] group-hover:scale-125 transition-transform" />
-              <span className="font-bold">Load More References</span>
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Save / Remove Toast */}
-      <AnimatePresence>
-        {savedToast && (
-          <motion.div
-            key="save-toast"
-            initial={{ opacity: 0, y: 8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-            className={cn(
-              "fixed bottom-40 md:bottom-6 left-0 right-0 mx-auto z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-fn-md border backdrop-blur-md max-w-sm w-[calc(100vw-2rem)]",
-              savedToast.action === 'saved'
-                ? "bg-[var(--success)]/10 border-[var(--success)]/30 text-[var(--success)]"
-                : "bg-[var(--secondary-bg)] border-[var(--border)] text-[var(--text-secondary)]"
-            )}
-          >
-            <div className={cn(
-              "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-              savedToast.action === 'saved' ? "bg-[var(--success)]/20" : "bg-[var(--border)]"
-            )}>
-              {savedToast.action === 'saved' ? (
-                <CheckCircle2 size={16} />
-              ) : (
-                <Heart size={16} />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm">
-                {savedToast.action === 'saved'
-                  ? isFrance ? 'Reference saved to your garden, babe! 🌷' : 'Reference saved to your garden! 🌱'
-                  : 'Reference removed from your garden.'
-                }
-              </p>
-              <p className="text-[11px] opacity-70 truncate mt-0.5">{savedToast.title}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </motion.article>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

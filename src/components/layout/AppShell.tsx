@@ -11,6 +11,7 @@ import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
 import { useQuizStore } from '@/stores/quizStore'
 import { useChatStore } from '@/stores/chatStore'
+import { useNotesStore } from '@/stores/notesStore'
 
 export default function AppShell() {
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function AppShell() {
     useReminderStore.getState().fetchReminders()
     useQuizStore.getState().fetchQuizzes()
     useChatStore.getState().fetchMessages()
+    useNotesStore.getState().fetchNotes()
   }, [])
 
   return (
