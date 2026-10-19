@@ -17,11 +17,12 @@ export const DEFAULT_MODEL = 'openai/gpt-oss-120b'
 export const FAST_MODEL    = 'openai/gpt-oss-120b'
 export const VISION_MODEL  = 'qwen/qwen3.6-27b'
 const MISTRAL_MODEL        = 'open-mistral-nemo'
+const MISTRAL_QUIZ_MODEL   = 'mistral-small-latest'
 const GEMINI_MODEL         = 'gemini-2.5-flash-lite'
 
 // ─── Feature → Provider Routing ──────────────────────────────────────────────
 //  chat        → Groq FAST_MODEL    (openai/gpt-oss-120b, instant feel for Doc Uno)
-//  quiz        → Mistral only       (no fallback — one provider, batched requests)
+//  quiz        → Mistral Small only (no fallback — one provider, batched requests)
 //  retdem      → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
 //  recitation  → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
 //  vision      → Groq VISION_MODEL  (qwen/qwen3.6-27b)
@@ -53,7 +54,7 @@ interface RouteConfig {
 
 const FEATURE_ROUTES: Record<AIFeature, RouteConfig> = {
   chat:       { provider: 'groq',    model: FAST_MODEL },
-  quiz:       { provider: 'mistral', model: MISTRAL_MODEL },
+  quiz:       { provider: 'mistral', model: MISTRAL_QUIZ_MODEL },
   retdem:     { provider: 'groq',    model: FAST_MODEL },
   recitation: { provider: 'groq',    model: FAST_MODEL },
   vision:     { provider: 'groq',    model: VISION_MODEL },

@@ -40,7 +40,7 @@ import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function QuizPage() {
   const { isFrance, greetingName, aiAssistantName, appName } = usePersonalization()
-  const { activeQuiz, isGenerating, isFinished, quizzes, startQuiz, resetQuiz, deleteQuiz } = useQuizStore()
+  const { activeQuiz, isGenerating, generationProgress, isFinished, quizzes, startQuiz, resetQuiz, deleteQuiz } = useQuizStore()
   const { topics } = useStudyBoxStore()
   const [showHistory, setShowHistory] = useState(false)
 
@@ -283,12 +283,15 @@ export default function QuizPage() {
              </p>
              <div className="mt-8 w-64 h-2 bg-[var(--secondary-bg)] rounded-full overflow-hidden">
                 <motion.div 
-                  initial={{ x: '-100%' }}
-                  animate={{ x: '100%' }}
-                  transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                  className="h-full w-1/2 bg-[var(--pink)] rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(4, (generationProgress.done / Math.max(1, generationProgress.total)) * 100)}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  className="h-full bg-[var(--pink)] rounded-full"
                 ></motion.div>
              </div>
+             <p className="mt-3 text-sm font-bold text-[var(--pink)]">
+               {generationProgress.done} of {generationProgress.total} questions ready
+             </p>
           </motion.div>
         ) : !activeQuiz ? (
           showHistory ? (
