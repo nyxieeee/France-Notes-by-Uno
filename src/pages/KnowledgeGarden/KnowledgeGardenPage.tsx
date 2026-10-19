@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MagnifyingGlass as Search, Leaf, ArrowSquareOut as ExternalLink, BookOpen, ShieldCheck, ArrowRight, Sparkle as Sparkles, CheckCircle as CheckCircle2, Check, Heart, CircleNotch as Loader2 } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { cn, generateId } from '@/lib/utils'
 import type { KnowledgeSearchResult } from '@/types'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
@@ -116,19 +117,7 @@ export default function KnowledgeGardenPage() {
 
   return (
     <div className="page-container">
-      <div className="flex flex-col items-center text-center max-w-3xl mx-auto mb-12">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-16 h-16 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-[2rem] flex items-center justify-center mb-6 shadow-sm"
-        >
-          <Leaf size={32} />
-        </motion.div>
-        <h1 className="text-4xl font-bold mb-4 font-heading">{knowledgeGardenName} 🌷</h1>
-        <p className="text-[var(--text-secondary)] text-lg">
-          A calm and intelligent space for trusted nursing and medical knowledge. Curated by {aiAssistantName}.
-        </p>
-      </div>
+      <PageHeader icon={Leaf} title={knowledgeGardenName} subtitle={`Trusted nursing and medical knowledge, curated by ${aiAssistantName}.`} />
 
       <div className="max-w-2xl mx-auto mb-12">
         <form onSubmit={handleSearch} className="relative group">

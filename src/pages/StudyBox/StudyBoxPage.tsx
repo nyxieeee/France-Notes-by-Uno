@@ -4,7 +4,8 @@ import { useReviewerStore } from '@/stores/reviewerStore'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { jsPDF } from 'jspdf'
 import type { StudyBoxItem, Topic } from '@/types'
-import { UploadSimple as Upload, FileText, MagnifyingGlass as Search, Funnel as Filter, Trash as Trash2, Heart, DotsThreeVertical as MoreVertical, Camera, Image as ImageIcon, Sparkle as Sparkles, CheckCircle as CheckCircle2, Brain as BrainCircuit, ArrowRight, BookOpen, CircleNotch as Loader2, DownloadSimple as Download, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink, Globe, X } from '@phosphor-icons/react'
+import { UploadSimple as Upload, FileText, MagnifyingGlass as Search, Funnel as Filter, Trash as Trash2, Heart, DotsThreeVertical as MoreVertical, Camera, Image as ImageIcon, Sparkle as Sparkles, CheckCircle as CheckCircle2, Brain as BrainCircuit, ArrowRight, BookOpen, CircleNotch as Loader2, DownloadSimple as Download, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink, Globe, X, Archive as ArchiveIcon } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getFileIcon, formatRelativeDate, cn } from '@/lib/utils'
 import CameraModal from '@/components/shared/CameraModal'
@@ -130,15 +131,14 @@ export default function StudyBoxPage() {
 
   return (
     <div className="page-container">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">{studyBoxName} ✨</h1>
-          <p className="text-[var(--text-secondary)] font-medium">Upload, organize, and transform your nursing notes into smart reviewers! {isFrance ? '🩺🌸' : '🩺✨'}</p>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2">
+      <PageHeader
+        icon={ArchiveIcon}
+        title={studyBoxName}
+        subtitle={isFrance ? 'Upload, organize, and turn your notes into smart reviewers, babe! 🌸' : 'Upload, organize, and turn your nursing notes into smart reviewers.'}
+        actions={<>
           <button 
             onClick={() => setIsCaseModalOpen(true)}
-            className="btn-primary flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn p-2.5 sm:px-4 sm:py-2"
+            className="btn-primary flex items-center justify-center gap-1.5 sm:gap-2 p-2.5 sm:px-4 sm:py-2"
             disabled={isUploading || isProcessing}
             title="Generate Case Study"
           >
@@ -170,9 +170,8 @@ export default function StudyBoxPage() {
             className="hidden"
             multiple
           />
-        </div>
-
-      </div>
+        </>}
+      />
 
       {/* Upload State / Processing */}
       <AnimatePresence>

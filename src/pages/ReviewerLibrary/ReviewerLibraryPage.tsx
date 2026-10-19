@@ -4,6 +4,7 @@ import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useNavigate } from 'react-router-dom'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { Books as Library, MagnifyingGlass as Search, Heart, Play, CaretRight as ChevronRight, CaretUp as ChevronUp, Sparkle as Sparkles, BookOpen, Lightning as Zap, ArrowCounterClockwise as RotateCcw, X, FileText, Clock, DownloadSimple as Download, Printer, ShareNetwork as Share2, Trash as Trash2 } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
@@ -73,16 +74,11 @@ export default function ReviewerLibraryPage() {
 
   return (
     <div className="page-container">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">{isFrance ? "France's Reviewer Library 🩺✨" : "Reviewer Library 🩺✨"}</h1>
-          <p className="text-[var(--text-secondary)] font-medium">
-            {isFrance 
-              ? "Deep dive into your personalized study guides and AI insights, babe! 🌸" 
-              : "Deep dive into your professional study guides and AI insights! 🩺"
-            }
-          </p>
-        </div>
+      <PageHeader
+        icon={Library}
+        title={isFrance ? "France's Reviewer Library" : 'Reviewer Library'}
+        subtitle={isFrance ? 'Your personalized study guides and AI insights, babe! 🌸' : 'Your study guides, flashcards and AI insights.'}
+        actions={
         <button
           onClick={() => {
             if (topics.length > 0 && !selectedTopicId) {
@@ -90,12 +86,13 @@ export default function ReviewerLibraryPage() {
             }
             setIsGenerateModalOpen(true)
           }}
-          className="btn-primary px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 self-stretch sm:self-auto shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 text-xs sm:text-sm"
+          className="btn-primary px-5 py-2.5 flex items-center justify-center gap-2 text-sm"
         >
           <Sparkles size={16} />
           <span>Generate Reviewer</span>
         </button>
-      </div>
+        }
+      />
 
       {/* Search and Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

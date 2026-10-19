@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Sparkle as Sparkles, ArrowsClockwise as RefreshCw, WarningCircle as AlertCircle, Stethoscope, Question as HelpCircle, Heart, Lightning as Zap } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
 import { generateJSON, DOC_UNO_SYSTEM_PROMPT } from '@/lib/ai'
 import { usePersonalization } from '@/hooks/usePersonalization'
 

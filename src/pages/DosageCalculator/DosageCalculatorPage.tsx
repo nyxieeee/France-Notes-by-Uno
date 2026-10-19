@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Calculator, Drop as Droplets, Pill, ArrowCounterClockwise as RotateCcw, WarningCircle as AlertCircle, CheckCircle as CheckCircle2, ClockCounterClockwise as History, Trash as Trash2 } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useAuthStore } from '@/stores/authStore'
@@ -215,28 +216,15 @@ export default function DosageCalculatorPage() {
 
   return (
     <div className="page-container">
-      {/* Header */}
-      <div className="flex flex-col items-center text-center max-w-2xl mx-auto mb-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-16 h-16 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-[2rem] flex items-center justify-center mb-4 shadow-sm"
-        >
-          <Calculator size={32} />
-        </motion.div>
-        <h1 className="text-4xl font-black mb-2 font-heading">Dosage Calculator 💊</h1>
-        <p className="text-[var(--text-secondary)] text-sm max-w-lg">
-          {isFrance
-            ? 'Safe and accurate medication dosing, babe! Always double-check your computations. 🩺'
-            : `Accurate clinical dose calculations powered by ${aiAssistantName}. Always verify before administering. 🩺`}
-        </p>
-
-        {/* History Toggle */}
-        <div className="mt-4 flex gap-2">
+      <PageHeader
+        icon={Calculator}
+        title="Dosage Calculator"
+        subtitle={isFrance ? 'Safe and accurate medication dosing, babe! Always double-check your computations.' : `Accurate dose calculations powered by ${aiAssistantName}. Always verify before administering.`}
+        actions={
           <button
             onClick={() => setShowHistory(p => !p)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black transition-all border",
+              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border",
               showHistory
                 ? "bg-[var(--pink)] text-white border-[var(--pink)] shadow-md"
                 : "bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/50"
@@ -245,8 +233,8 @@ export default function DosageCalculatorPage() {
             <History size={15} />
             Calculation History ({history.length})
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-xl mx-auto">
         {/* HISTORY DRAWER */}

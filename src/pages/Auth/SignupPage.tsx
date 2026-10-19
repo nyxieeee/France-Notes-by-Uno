@@ -4,8 +4,9 @@ import { Envelope, Lock, User, ArrowRight, ArrowLeft, GraduationCap, BookOpen, C
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
 import AuthLayout from '@/components/auth/AuthLayout'
+import { passwordMeetsRules } from '@/lib/passwordRules'
 import {
-  AuthField, PasswordField, PasswordRules, passwordMeetsRules,
+  AuthField, PasswordField, PasswordRules,
   GoogleButton, OrDivider, AuthError, AuthStatus, Spinner,
 } from '@/components/auth/AuthFields'
 

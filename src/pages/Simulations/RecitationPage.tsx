@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Microphone as Mic, FileText, BookOpen, Globe, CheckCircle as CheckCircle2, X, CaretUp as ChevronUp } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { useSimulationStore, DifficultyMode } from '@/stores/simulationStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { cn } from '@/lib/utils'
@@ -67,17 +68,11 @@ function RecitationSetup() {
 
   return (
     <div className="page-container max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
-          <Mic className="text-[var(--pink)]" /> {isFrance ? "France's Recitation Practice" : "Recitation Mode"}
-        </h1>
-        <p className="text-[var(--text-secondary)] font-medium">
-          {isFrance 
-            ? "Prepare for clinicals by defending your knowledge out loud, babe! 🌸" 
-            : "Prepare for clinicals by defending your knowledge out loud. 🩺"
-          }
-        </p>
-      </div>
+      <PageHeader
+        icon={Mic}
+        title={isFrance ? "France's Recitation Practice" : 'Recitation Mode'}
+        subtitle={isFrance ? 'Prepare for clinicals by defending your knowledge out loud, babe! 🌸' : 'Prepare for clinicals by defending your knowledge out loud.'}
+      />
 
       <div className="fn-card p-8 space-y-8">
 

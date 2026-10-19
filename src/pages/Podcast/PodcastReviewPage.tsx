@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Microphone as Mic2, Play, Pause, ArrowCounterClockwise as RotateCcw, CaretDown as ChevronDown, CircleNotch as Loader2, MagnifyingGlass as Search, Sparkle as Sparkles, SpeakerHigh as Volume2, Clock, BookOpen, FileText, BookmarkSimple as Bookmark, ClockCounterClockwise as History, Trash as Trash2, BookmarkSimple as BookmarkCheck } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/ai'
 import { synthesizeSpeechElevenLabs } from '@/lib/elevenLabsTts'
@@ -465,28 +466,15 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
 
   return (
     <div className="page-container">
-      {/* Header */}
-      <div className="flex flex-col items-center text-center max-w-2xl mx-auto mb-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-16 h-16 bg-gradient-to-br from-[var(--pink)] to-[#FF7FA3] text-white rounded-[2rem] flex items-center justify-center mb-4 shadow-lg"
-        >
-          <Mic2 size={30} />
-        </motion.div>
-        <h1 className="text-4xl font-black mb-2 font-heading">Nursepod 🎙️</h1>
-        <p className="text-[var(--text-secondary)] text-sm max-w-lg">
-          {isFrance
-            ? 'Listen to Doc Uno & Nurse Florence break down nursing topics powered by Google Neural AI voices! 🌷'
-            : 'Doc Uno & Nurse Florence bring your nursing topics to life with Google Cloud Neural AI voices! 🩺'}
-        </p>
-
-        {/* History Toggle Button */}
-        <div className="mt-4 flex gap-2">
+      <PageHeader
+        icon={Mic2}
+        title="Nursepod"
+        subtitle={isFrance ? 'Listen to Doc Uno & Nurse Florence break down your nursing topics, babe! 🌷' : 'Doc Uno & Nurse Florence bring your nursing topics to life as a podcast.'}
+        actions={
           <button
             onClick={() => setShowHistoryView(p => !p)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black transition-all border",
+              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border",
               showHistoryView
                 ? "bg-[var(--pink)] text-white border-[var(--pink)] shadow-md"
                 : "bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/50"
@@ -495,8 +483,8 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
             <History size={15} />
             Podcast History ({savedEpisodes.length})
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-2xl mx-auto space-y-6">
         {/* HISTORY VIEW */}

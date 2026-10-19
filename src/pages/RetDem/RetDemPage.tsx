@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { Stethoscope, CaretRight as ChevronRight, Clock, CheckSquare, ArrowLeft, Play, Heart, MagnifyingGlass as Search, BookOpen, Info, ListChecks, Sparkle as Sparkles, UploadSimple as Upload, X, FileText, Image, CircleNotch as Loader2, CheckCircle as CheckCircle2, Trash as Trash2, ClockCounterClockwise as History } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -112,15 +113,11 @@ export default function RetDemPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold tracking-tight mb-2">{retdemName}</h1>
-              <p className="text-[var(--text-secondary)] font-medium">
-                {isFrance 
-                  ? 'Master your nursing procedures with step-by-step guides and rationales, babe! 🩺🌸'
-                  : 'Master your nursing procedures with step-by-step guides and rationales. 🩺✨'
-                }
-              </p>
-            </div>
+            <PageHeader
+              icon={Stethoscope}
+              title={retdemName}
+              subtitle={isFrance ? 'Master your nursing procedures with step-by-step guides and rationales, babe! 🌸' : 'Master your nursing procedures with step-by-step guides and rationales.'}
+            />
 
             <div className="mb-6 flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">

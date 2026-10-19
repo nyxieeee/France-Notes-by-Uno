@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flask as FlaskConical, MagnifyingGlass as Search, CaretDown as ChevronDown, TrendUp as TrendingUp, TrendDown as TrendingDown, Warning as AlertTriangle, Star, Copy, Check } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
@@ -461,20 +462,7 @@ export default function LabsReferencePage() {
 
   return (
     <div className="page-container">
-      {/* Header */}
-      <div className="flex flex-col items-center text-center max-w-2xl mx-auto mb-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-16 h-16 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-[2rem] flex items-center justify-center mb-4 shadow-sm"
-        >
-          <FlaskConical size={32} />
-        </motion.div>
-        <h1 className="text-4xl font-black mb-2 font-heading">Reference Lab Charts 🧪</h1>
-        <p className="text-[var(--text-secondary)] text-sm max-w-lg">
-          Quick-reference normal ranges with low/high clinical implications. Star your essential labs to sync with your account!
-        </p>
-      </div>
+      <PageHeader icon={FlaskConical} title="Reference Lab Charts" subtitle="Normal ranges with low/high clinical implications. Star the labs you use most to keep them handy." />
 
       {/* Search */}
       <div className="max-w-xl mx-auto mb-6">

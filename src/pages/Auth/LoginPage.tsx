@@ -8,20 +8,18 @@ import { AuthField, PasswordField, GoogleButton, OrDivider, AuthError, Spinner }
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  // OAuth failures come back as ?error_description=... on the redirect
+  const [error, setError] = useState<string | null>(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    const urlError = searchParams.get('error_description') || searchParams.get('error')
+    return urlError ? urlError.replace(/\+/g, ' ') : null
+  })
   const { login, loginWithGoogle, isLoading, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
 
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/home')
-    }
-
-    // Check for OAuth errors in the URL
-    const searchParams = new URLSearchParams(window.location.search)
-    const urlError = searchParams.get('error_description') || searchParams.get('error')
-    if (urlError) {
-      setError(urlError.replace(/\+/g, ' '))
     }
   }, [isAuthenticated, navigate])
 

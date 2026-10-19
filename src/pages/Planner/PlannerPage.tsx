@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useReminderStore } from '@/stores/reminderStore'
 import { Reminder } from '@/types'
 import { Calendar as CalendarIcon, Plus, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Clock, Trash as Trash2, CheckCircle as CheckCircle2, Sparkle as Sparkles, BookOpen, CaretUp as ChevronUp } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate, getReminderTypeColor, getReminderTypeLabel } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -103,19 +104,11 @@ export default function PlannerPage() {
 
   return (
     <div className="page-container max-w-6xl mx-auto">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
-            <CalendarIcon className="text-[var(--pink)]" size={32} />
-            Study Planner
-          </h1>
-          <p className="text-[var(--text-secondary)] font-medium">
-            {isFrance 
-              ? 'Organize your schedule, set deadlines, and let Doc Uno remind you! 🩺🌸' 
-              : `Manage your deadlines and let ${aiAssistantName} keep you on track. 🩺✨`
-            }
-          </p>
-        </div>
+      <PageHeader
+        icon={CalendarIcon}
+        title="Planner"
+        subtitle={isFrance ? 'Organize your schedule, set deadlines, and let Doc Uno remind you! 🌸' : `Manage your deadlines and let ${aiAssistantName} keep you on track.`}
+        actions={
         <button 
           onClick={() => {
             const today = new Date()
@@ -128,7 +121,8 @@ export default function PlannerPage() {
         >
           <Plus size={18} /> Add Reminder
         </button>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         

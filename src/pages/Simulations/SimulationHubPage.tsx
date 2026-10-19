@@ -1,4 +1,5 @@
 import { Microphone as Mic, Stethoscope, CaretRight as ChevronRight } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -9,12 +10,7 @@ export default function SimulationHubPage() {
 
   return (
     <div className="page-container max-w-4xl mx-auto">
-      <div className="mb-10 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Clinical Simulations 🩺</h1>
-        <p className="text-[var(--text-secondary)] font-medium max-w-2xl mx-auto">
-          Active performance-based training. Defend your reasoning, master procedures, and build confidence under pressure.
-        </p>
-      </div>
+      <PageHeader icon={Stethoscope} title="Clinical Simulations" subtitle="Defend your reasoning, master procedures, and build confidence under pressure." />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recitation Mode Card */}

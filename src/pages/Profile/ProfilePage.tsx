@@ -9,6 +9,7 @@ import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
 import { User, Gear as Settings, SignOut as LogOut, Moon, Sun, Medal as Award, Calendar, GraduationCap, CaretRight as ChevronRight, CaretDown as ChevronDown, Shield, Bell, Palette, Camera, X, FloppyDisk as Save, Heart, Lock } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatDate } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -148,10 +149,7 @@ export default function ProfilePage() {
 
   return (
     <div className="page-container max-w-4xl overflow-x-hidden">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Your Profile {isFrance ? '🌸' : '✨'}</h1>
-        <p className="text-[var(--text-secondary)] font-medium">Manage your nursing journey and study preferences. {isFrance ? '✨' : '🩺'}</p>
-      </div>
+      <PageHeader icon={User} title="Profile & Settings" subtitle="Manage your account, appearance and study preferences." />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Card */}

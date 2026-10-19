@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuizStore } from '@/stores/quizStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { Brain as BrainCircuit, Target, Clock, ArrowRight, ArrowLeft, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Question as HelpCircle, Sparkle as Sparkles, Lightning as Zap, ArrowCounterClockwise as RotateCcw, Layout, Check, Plus, CaretDown as ChevronDown, FileText, Stethoscope, ListNumbers as ListOrdered, ToggleLeft, MagnifyingGlass as Search, PencilSimple as Edit3, BookOpen, ClockCounterClockwise as History, DownloadSimple as Download, Trash as Trash2, CloudArrowDown as DownloadCloud, FileArrowDown as FileDown } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { jsPDF } from 'jspdf'
@@ -382,10 +383,7 @@ function QuizSetup({ onStart }: { onStart: (config: QuizSetupConfig) => void }) 
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Interactive Quiz Generator 🧪✨</h1>
-        <p className="text-[var(--text-secondary)] font-medium">Test your knowledge and master nursing concepts with AI-powered practice! 🌸</p>
-      </div>
+      <PageHeader icon={BrainCircuit} title="Quiz Generator" subtitle="Board-style practice questions from your topics and notes, with detailed rationales." />
 
       {preSelectedItems.length > 0 && (
         <div className="mb-6 p-4 bg-[var(--pink)]/10 border border-[var(--pink)]/30 rounded-2xl flex items-center gap-3 text-[var(--pink)] animate-fade-in shadow-sm">

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Lock, ArrowRight, CheckCircle } from '@phosphor-icons/react'
 import { useAuthStore } from '@/stores/authStore'
 import AuthLayout from '@/components/auth/AuthLayout'
-import { PasswordField, PasswordRules, passwordMeetsRules, AuthError, AuthStatus, Spinner } from '@/components/auth/AuthFields'
+import { passwordMeetsRules } from '@/lib/passwordRules'
+import { PasswordField, PasswordRules, AuthError, AuthStatus, Spinner } from '@/components/auth/AuthFields'
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
