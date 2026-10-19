@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Calculator, Drop as Droplets, Pill, ArrowCounterClockwise as RotateCcw, WarningCircle as AlertCircle, CheckCircle as CheckCircle2, ClockCounterClockwise as History, Trash as Trash2 } from '@phosphor-icons/react'
+import { Calculator, Drop as Droplets, Pill, ArrowCounterClockwise as RotateCcw, WarningCircle as AlertCircle, CheckCircle as CheckCircle2, ClockCounterClockwise as History, Trash as Trash2, ShieldCheck, Function as FunctionIcon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -38,21 +38,72 @@ const DOSE_UNITS = ['mg', 'mcg', 'g', 'mEq', 'units', 'mL']
 
 const ResultBadge = ({ label, value, unit, accent = false }: { label: string; value: string; unit: string; accent?: boolean }) => (
   <motion.div
-    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+    initial={{ opacity: 0, scale: 0.95, y: 8 }}
     animate={{ opacity: 1, scale: 1, y: 0 }}
     transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-    className={cn(
-      'flex flex-col items-center justify-center p-5 rounded-2xl border-2',
-      accent
-        ? 'bg-th-pink/10 border-th-pink/40 text-[var(--pink)]'
-        : 'bg-th-secondary-bg/30 border-[var(--border)] text-[var(--text)]'
-    )}
+    className={cn('p-4 rounded-xl', accent ? 'bg-[var(--pink)] text-white' : 'bg-[var(--card)] border border-[var(--border)]')}
   >
-    <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-1">{label}</p>
-    <p className={cn('text-3xl font-semibold tabular-nums', accent && 'text-[var(--pink)]')}>{value}</p>
-    <p className="text-xs font-semibold text-[var(--text-secondary)] mt-0.5">{unit}</p>
+    <p className={cn('text-[12px] font-medium', accent ? 'text-white/80' : 'text-[var(--text-secondary)]')}>{label}</p>
+    <p className="font-heading text-2xl sm:text-3xl font-semibold tabular-nums leading-tight mt-0.5">
+      {value} <span className={cn('text-sm font-medium whitespace-nowrap', accent ? 'text-white/80' : 'text-[var(--text-secondary)]')}>{unit}</span>
+    </p>
   </motion.div>
 )
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-1.5">
+        <span className="text-[13px] font-medium">{label}</span>
+        {hint && <span className="text-[11.5px] text-[var(--text-secondary)]">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function UnitInput({ value, onChange, placeholder, unit, max }: { value: string; onChange: (v: string) => void; placeholder: string; unit: string; max?: string }) {
+  return (
+    <div className="relative">
+      <input
+        type="number"
+        inputMode="decimal"
+        min="0"
+        max={max}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="fn-input rounded-xl bg-[var(--card)] py-2.5 pr-14 text-[15px] font-medium tabular-nums"
+      />
+      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] text-[var(--text-secondary)] pointer-events-none">{unit}</span>
+    </div>
+  )
+}
+
+function FormulaNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-start gap-2 text-[12px] text-[var(--text-secondary)] leading-relaxed">
+      <FunctionIcon size={14} className="shrink-0 mt-0.5 text-[var(--pink)]" /> <span>{children}</span>
+    </p>
+  )
+}
+
+function ErrorNote({ message }: { message: string | null }) {
+  return (
+    <AnimatePresence>
+      {message && (
+        <motion.p
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          className="flex items-center gap-2 px-3.5 py-2.5 bg-th-error/10 rounded-xl text-[13px] font-medium text-[var(--error)]"
+        >
+          <AlertCircle size={16} className="shrink-0" /> {message}
+        </motion.p>
+      )}
+    </AnimatePresence>
+  )
+}
 
 export default function DosageCalculatorPage() {
   const [activeTab, setActiveTab] = useState<Tab>('iv')
@@ -61,7 +112,6 @@ export default function DosageCalculatorPage() {
 
   // History State
   const [history, setHistory] = useState<DosageHistoryRecord[]>([])
-  const [showHistory, setShowHistory] = useState(false)
 
   // IV State
   const [ivInputs, setIvInputs] = useState<IVInputs>({ volume: '', hours: '', minutes: '', dropFactor: '20' })
@@ -214,394 +264,199 @@ export default function DosageCalculatorPage() {
     })
   }
 
+  const resetIV = () => { setIvInputs({ volume: '', hours: '', minutes: '', dropFactor: '20' }); setIvResult(null); setIvError(null) }
+  const resetMed = () => { setMedInputs({ orderedDose: '', orderedUnit: 'mg', doseOnHand: '', handUnit: 'mg', volumeOnHand: '' }); setMedResult(null); setMedError(null) }
+  const setIv = (patch: Partial<IVInputs>) => { setIvInputs(p => ({ ...p, ...patch })); setIvResult(null); setIvError(null) }
+  const setMed = (patch: Partial<MedInputs>, clear = true) => { setMedInputs(p => ({ ...p, ...patch })); if (clear) { setMedResult(null); setMedError(null) } }
+
   return (
-    <div className="page-container">
+    <div className="page-container max-w-6xl">
       <PageHeader
         icon={Calculator}
         title="Dosage Calculator"
-        subtitle={isFrance ? 'Safe and accurate medication dosing, babe! Always double-check your computations.' : `Accurate dose calculations powered by ${aiAssistantName}. Always verify before administering.`}
-        actions={
-          <button
-            onClick={() => setShowHistory(p => !p)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border",
-              showHistory
-                ? "bg-[var(--pink)] text-white border-[var(--pink)] shadow-md"
-                : "bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/50"
-            )}
-          >
-            <History size={15} />
-            Calculation History ({history.length})
-          </button>
-        }
+        subtitle={isFrance ? 'Safe and accurate dosing, babe. Always double-check your computations.' : `Accurate dose calculations with ${aiAssistantName}. Always verify before administering.`}
       />
 
-      <div className="max-w-xl mx-auto">
-        {/* HISTORY DRAWER */}
-        {showHistory ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fn-card p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <History size={20} className="text-[var(--pink)]" /> Calculation History
-              </h3>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-5 items-start">
+        {/* Calculator */}
+        <section className="fn-card overflow-hidden min-w-0">
+          <div className="grid grid-cols-2 border-b border-[var(--border)]">
+            {([
+              { id: 'iv' as Tab, label: 'IV drip rate', short: 'IV drip rate', sub: 'gtts/min and mL/hr', icon: Droplets },
+              { id: 'med' as Tab, label: 'Medication dose', short: 'Med dose', sub: 'Desired ÷ have × volume', icon: Pill },
+            ]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'relative flex items-center gap-3 px-4 sm:px-6 py-4 text-left transition-colors',
+                  activeTab === tab.id ? 'bg-[var(--rose-soft)]' : 'hover:bg-[var(--rose-soft)]'
+                )}
+              >
+                <span className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0', activeTab === tab.id ? 'bg-[var(--pink)] text-white' : 'bg-th-pink/10 text-[var(--pink)]')}>
+                  <tab.icon size={18} weight={activeTab === tab.id ? 'fill' : 'regular'} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-semibold truncate"><span className="sm:hidden">{tab.short}</span><span className="hidden sm:inline">{tab.label}</span></span>
+                  <span className="hidden sm:block text-[11.5px] text-[var(--text-secondary)] truncate">{tab.sub}</span>
+                </span>
+                {activeTab === tab.id && <motion.span layoutId="dosage-tab" className="absolute left-0 right-0 bottom-0 h-0.5 bg-[var(--pink)]" />}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-5 sm:p-6">
+            <AnimatePresence mode="wait">
+              {activeTab === 'iv' ? (
+                <motion.div key="iv" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.18 }} className="space-y-5">
+                  <Field label="Volume to infuse">
+                    <UnitInput value={ivInputs.volume} onChange={v => setIv({ volume: v })} placeholder="e.g. 500" unit="mL" />
+                  </Field>
+
+                  <Field label="Infusion time">
+                    <div className="grid grid-cols-2 gap-3">
+                      <UnitInput value={ivInputs.hours} onChange={v => setIv({ hours: v })} placeholder="0" unit="hours" />
+                      <UnitInput value={ivInputs.minutes} onChange={v => setIv({ minutes: v })} placeholder="0" unit="mins" max="59" />
+                    </div>
+                  </Field>
+
+                  <Field label="Drop factor" hint="gtts/mL on the tubing package">
+                    <div className="grid grid-cols-4 gap-2">
+                      {DROP_FACTORS.map(df => (
+                        <button
+                          key={df}
+                          onClick={() => setIv({ dropFactor: String(df) })}
+                          className={cn(
+                            'py-2.5 rounded-xl border text-[15px] font-semibold tabular-nums transition-colors',
+                            ivInputs.dropFactor === String(df) ? 'bg-[var(--rose-soft)] border-[var(--pink)] text-[var(--pink)]' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]'
+                          )}
+                        >
+                          {df}
+                          <span className="block text-[10.5px] font-normal text-[var(--text-secondary)]">{df === 60 ? 'micro' : 'macro'}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+
+                  <ErrorNote message={ivError} />
+
+                  <div className="flex gap-2.5">
+                    <button onClick={resetIV} className="btn-secondary px-4 py-2.5 text-sm flex items-center gap-1.5"><RotateCcw size={15} /> Reset</button>
+                    <button onClick={calculateIV} className="btn-primary flex-1 py-2.5 text-sm flex items-center justify-center gap-2"><Calculator size={16} /> Calculate</button>
+                  </div>
+
+                  <AnimatePresence>
+                    {ivResult && (
+                      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="rounded-2xl bg-[var(--rose-soft)] p-4 space-y-3">
+                        <p className="text-[12.5px] font-medium text-[var(--success)] flex items-center gap-1.5"><CheckCircle2 size={15} weight="fill" /> Result saved to your history</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <ResultBadge label="Flow rate" value={String(ivResult.gttsMin)} unit="gtts/min" accent />
+                          <ResultBadge label="Hourly rate" value={String(ivResult.mlHr)} unit="mL/hr" />
+                        </div>
+                        <FormulaNote>Flow rate (gtts/min) = volume (mL) × drop factor (gtts/mL) ÷ time (min)</FormulaNote>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ) : (
+                <motion.div key="med" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.18 }} className="space-y-5">
+                  {([
+                    { label: 'Ordered dose', hint: 'Desired', valueKey: 'orderedDose', unitKey: 'orderedUnit', placeholder: 'e.g. 500' },
+                    { label: 'Dose on hand', hint: 'Available', valueKey: 'doseOnHand', unitKey: 'handUnit', placeholder: 'e.g. 250' },
+                  ] as const).map(f => (
+                    <Field key={f.valueKey} label={f.label} hint={f.hint}>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          value={medInputs[f.valueKey]}
+                          onChange={e => setMed({ [f.valueKey]: e.target.value })}
+                          placeholder={f.placeholder}
+                          className="fn-input rounded-xl bg-[var(--card)] py-2.5 flex-1 min-w-0 text-[15px] font-medium tabular-nums"
+                        />
+                        <select
+                          value={medInputs[f.unitKey]}
+                          onChange={e => setMed({ [f.unitKey]: e.target.value }, false)}
+                          className="fn-input rounded-xl bg-[var(--card)] py-2.5 w-24 text-sm font-medium"
+                          aria-label={`${f.label} unit`}
+                        >
+                          {DOSE_UNITS.map(u => <option key={u}>{u}</option>)}
+                        </select>
+                      </div>
+                    </Field>
+                  ))}
+
+                  <Field label="Volume on hand" hint="The dose on hand comes in">
+                    <UnitInput value={medInputs.volumeOnHand} onChange={v => setMed({ volumeOnHand: v })} placeholder="e.g. 5" unit="mL" />
+                  </Field>
+
+                  <ErrorNote message={medError} />
+
+                  <div className="flex gap-2.5">
+                    <button onClick={resetMed} className="btn-secondary px-4 py-2.5 text-sm flex items-center gap-1.5"><RotateCcw size={15} /> Reset</button>
+                    <button onClick={calculateMed} className="btn-primary flex-1 py-2.5 text-sm flex items-center justify-center gap-2"><Calculator size={16} /> Calculate</button>
+                  </div>
+
+                  <AnimatePresence>
+                    {medResult !== null && (
+                      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="rounded-2xl bg-[var(--rose-soft)] p-4 space-y-3">
+                        <p className="text-[12.5px] font-medium text-[var(--success)] flex items-center gap-1.5"><CheckCircle2 size={15} weight="fill" /> Result saved to your history</p>
+                        <ResultBadge label="Volume to give" value={String(medResult)} unit="mL" accent />
+                        <FormulaNote>Volume to give = (ordered dose ÷ dose on hand) × volume on hand</FormulaNote>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </section>
+
+        <div className="space-y-5 min-w-0">
+          {/* History */}
+          <section className="fn-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-heading font-semibold text-[15px] flex items-center gap-2"><History size={17} className="text-[var(--pink)]" /> Recent calculations</h2>
               {history.length > 0 && (
-                <button
-                  onClick={clearAllHistory}
-                  className="text-xs font-bold text-[var(--error)] hover:underline"
-                >
-                  Clear All
-                </button>
+                <button onClick={clearAllHistory} className="text-[12px] font-medium text-[var(--text-secondary)] hover:text-[var(--error)]">Clear all</button>
               )}
             </div>
 
             {history.length === 0 ? (
-              <div className="text-center py-10 text-[var(--text-secondary)]">
-                <Calculator size={36} className="mx-auto mb-2 opacity-30" />
-                <p className="font-bold text-sm">No calculations saved yet</p>
-                <p className="text-xs opacity-70 mt-1">Calculations auto-save to Supabase for quick clinical reference!</p>
-              </div>
+              <p className="text-[13px] text-[var(--text-secondary)] py-2">Your calculations are saved here automatically.</p>
             ) : (
-              <div className="space-y-3 max-h-[420px] overflow-y-auto custom-scrollbar p-1">
+              <div className="space-y-1 -mx-2 max-h-[440px] overflow-y-auto custom-scrollbar">
                 {history.map(rec => (
-                  <div
-                    key={rec.id}
-                    className="p-4 rounded-2xl border bg-[var(--bg)] border-[var(--border)] flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={cn(
-                          "text-[10.5px] font-semibold px-2 py-0.5 rounded-full",
-                          rec.type === 'iv' ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300" : "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300"
-                        )}>
-                          {rec.type === 'iv' ? 'IV Infusion' : 'Med Dose'}
-                        </span>
-                        <span className="text-[10px] text-[var(--text-secondary)]">{new Date(rec.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                      <h4 className="font-bold text-sm truncate">{rec.title}</h4>
-                      <p className="text-xs font-semibold text-[var(--pink)] mt-0.5">{rec.summary}</p>
-                      <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 truncate">{rec.details}</p>
+                  <div key={rec.id} className="group flex items-start gap-3 px-2 py-2.5 rounded-xl hover:bg-[var(--rose-soft)] transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-th-pink/10 text-[var(--pink)] flex items-center justify-center shrink-0 mt-0.5">
+                      {rec.type === 'iv' ? <Droplets size={16} /> : <Pill size={16} />}
                     </div>
-
-                    <button
-                      onClick={() => deleteRecord(rec.id)}
-                      className="p-2 text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors shrink-0"
-                      title="Delete record"
-                    >
-                      <Trash2 size={16} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13.5px] font-semibold text-[var(--pink)] tabular-nums">{rec.summary}</p>
+                      <p className="text-[12px] text-[var(--text)] truncate">{rec.title}</p>
+                      <p className="text-[11px] text-[var(--text-secondary)] truncate">
+                        {new Date(rec.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, {new Date(rec.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {rec.details}
+                      </p>
+                    </div>
+                    <button onClick={() => deleteRecord(rec.id)} className="btn-icon p-1.5 hover:text-[var(--error)] sm:opacity-0 group-hover:opacity-100" aria-label="Delete calculation">
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-          </motion.div>
-        ) : (
-          <>
-            {/* Tab Switcher */}
-            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-1.5 flex gap-1.5 mb-8">
-              {([
-                { id: 'iv' as Tab, label: 'IV Drip Rate', icon: Droplets },
-                { id: 'med' as Tab, label: 'Medication Dose', icon: Pill },
-              ]).map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.5rem] text-sm font-bold transition-all duration-200',
-                    activeTab === tab.id
-                      ? 'bg-[var(--pink)] text-white shadow-md'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-th-secondary-bg/50'
-                  )}
-                >
-                  <tab.icon size={16} />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+          </section>
 
-            {/* Calculator Panel */}
-            <div className="fn-card p-6 md:p-8">
-              <AnimatePresence mode="wait">
-                {activeTab === 'iv' ? (
-                  <motion.div
-                    key="iv"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 10 }}
-                    transition={{ duration: 0.18 }}
-                  >
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-2xl bg-th-pink/10 flex items-center justify-center text-[var(--pink)]">
-                        <Droplets size={20} />
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-semibold">IV Drip Rate</h2>
-                        <p className="text-[11px] text-[var(--text-secondary)] font-medium">Calculate drops/min and mL/hr for IV infusions</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-[var(--text-secondary)]">Volume to Infuse</label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min="0"
-                              value={ivInputs.volume}
-                              onChange={e => { setIvInputs(p => ({ ...p, volume: e.target.value })); setIvResult(null); setIvError(null); }}
-                              placeholder="e.g. 500"
-                              className="fn-input pr-12 text-lg font-bold"
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-secondary)]">mL</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-[var(--text-secondary)]">Drop Factor (gtt set)</label>
-                          <div className="grid grid-cols-4 gap-2">
-                            {DROP_FACTORS.map(df => (
-                              <button
-                                key={df}
-                                onClick={() => { setIvInputs(p => ({ ...p, dropFactor: String(df) })); setIvResult(null); setIvError(null); }}
-                                className={cn(
-                                  'py-3 rounded-2xl border-2 text-sm font-semibold transition-all',
-                                  ivInputs.dropFactor === String(df)
-                                    ? 'bg-[var(--pink)] border-[var(--pink)] text-white shadow-md scale-105'
-                                    : 'bg-[var(--bg)] border-[var(--border)] text-[var(--text)] hover:border-th-pink/50'
-                                )}
-                              >
-                                {df}
-                                <span className="block text-[8px] font-bold opacity-70">gtts/mL</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">Infusion Time</label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min="0"
-                              value={ivInputs.hours}
-                              onChange={e => { setIvInputs(p => ({ ...p, hours: e.target.value })); setIvResult(null); setIvError(null); }}
-                              placeholder="0"
-                              className="fn-input pr-14 text-lg font-bold"
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-secondary)]">hours</span>
-                          </div>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min="0"
-                              max="59"
-                              value={ivInputs.minutes}
-                              onChange={e => { setIvInputs(p => ({ ...p, minutes: e.target.value })); setIvResult(null); setIvError(null); }}
-                              placeholder="0"
-                              className="fn-input pr-14 text-lg font-bold"
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-secondary)]">mins</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <AnimatePresence>
-                        {ivError && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            className="flex items-center gap-2 p-3 bg-th-error/10 border border-th-error/30 rounded-2xl text-sm font-semibold text-[var(--error)]"
-                          >
-                            <AlertCircle size={16} /> {ivError}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      <div className="flex gap-3">
-                        <button onClick={() => { setIvInputs({ volume: '', hours: '', minutes: '', dropFactor: '20' }); setIvResult(null); setIvError(null); }} className="btn-ghost flex items-center gap-2 px-4">
-                          <RotateCcw size={15} /> Reset
-                        </button>
-                        <button onClick={calculateIV} className="btn-primary flex-1 flex items-center justify-center gap-2">
-                          <Calculator size={16} /> Calculate & Save
-                        </button>
-                      </div>
-
-                      <AnimatePresence>
-                        {ivResult && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            className="space-y-4"
-                          >
-                            <div className="flex items-center justify-between text-[var(--success)]">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 size={16} />
-                                <p className="text-xs font-bold">Results</p>
-                              </div>
-                              <span className="text-[10px] font-bold bg-th-success/10 text-[var(--success)] px-2 py-0.5 rounded-full">Saved to Supabase</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <ResultBadge label="Flow Rate" value={String(ivResult.gttsMin)} unit="gtts / min" accent />
-                              <ResultBadge label="Hourly Rate" value={String(ivResult.mlHr)} unit="mL / hr" />
-                            </div>
-                            <div className="p-4 bg-th-secondary-bg/20 rounded-2xl border border-[var(--border)] text-xs text-[var(--text-secondary)] leading-relaxed">
-                              <span className="font-bold text-[var(--text)]">Formula used: </span>
-                              Flow Rate (gtts/min) = Volume (mL) × Drop Factor (gtts/mL) ÷ Time (min)
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="med"
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ duration: 0.18 }}
-                  >
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-2xl bg-th-pink/10 flex items-center justify-center text-[var(--pink)]">
-                        <Pill size={20} />
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-semibold">Medication Dose</h2>
-                        <p className="text-[11px] text-[var(--text-secondary)] font-medium">Calculate volume to administer using D/H × V formula</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">Ordered Dose (Desired)</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            value={medInputs.orderedDose}
-                            onChange={e => { setMedInputs(p => ({ ...p, orderedDose: e.target.value })); setMedResult(null); setMedError(null); }}
-                            placeholder="e.g. 500"
-                            className="fn-input flex-1 text-lg font-bold"
-                          />
-                          <select
-                            value={medInputs.orderedUnit}
-                            onChange={e => setMedInputs(p => ({ ...p, orderedUnit: e.target.value }))}
-                            className="fn-input w-24 font-bold"
-                          >
-                            {DOSE_UNITS.map(u => <option key={u}>{u}</option>)}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">Dose On Hand (Available)</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            value={medInputs.doseOnHand}
-                            onChange={e => { setMedInputs(p => ({ ...p, doseOnHand: e.target.value })); setMedResult(null); setMedError(null); }}
-                            placeholder="e.g. 250"
-                            className="fn-input flex-1 text-lg font-bold"
-                          />
-                          <select
-                            value={medInputs.handUnit}
-                            onChange={e => setMedInputs(p => ({ ...p, handUnit: e.target.value }))}
-                            className="fn-input w-24 font-bold"
-                          >
-                            {DOSE_UNITS.map(u => <option key={u}>{u}</option>)}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-[var(--text-secondary)]">Volume On Hand</label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            min="0"
-                            value={medInputs.volumeOnHand}
-                            onChange={e => { setMedInputs(p => ({ ...p, volumeOnHand: e.target.value })); setMedResult(null); setMedError(null); }}
-                            placeholder="e.g. 5"
-                            className="fn-input pr-12 text-lg font-bold"
-                          />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-secondary)]">mL</span>
-                        </div>
-                      </div>
-
-                      <AnimatePresence>
-                        {medError && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            className="flex items-center gap-2 p-3 bg-th-error/10 border border-th-error/30 rounded-2xl text-sm font-semibold text-[var(--error)]"
-                          >
-                            <AlertCircle size={16} /> {medError}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      <div className="flex gap-3">
-                        <button onClick={() => { setMedInputs({ orderedDose: '', orderedUnit: 'mg', doseOnHand: '', handUnit: 'mg', volumeOnHand: '' }); setMedResult(null); setMedError(null); }} className="btn-ghost flex items-center gap-2 px-4">
-                          <RotateCcw size={15} /> Reset
-                        </button>
-                        <button onClick={calculateMed} className="btn-primary flex-1 flex items-center justify-center gap-2">
-                          <Calculator size={16} /> Calculate & Save
-                        </button>
-                      </div>
-
-                      <AnimatePresence>
-                        {medResult !== null && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            className="space-y-4"
-                          >
-                            <div className="flex items-center justify-between text-[var(--success)]">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 size={16} />
-                                <p className="text-xs font-bold">Volume to Administer</p>
-                              </div>
-                              <span className="text-[10px] font-bold bg-th-success/10 text-[var(--success)] px-2 py-0.5 rounded-full">Saved to Supabase</span>
-                            </div>
-                            <ResultBadge label="Give" value={String(medResult)} unit="mL" accent />
-                            <div className="p-4 bg-th-secondary-bg/20 rounded-2xl border border-[var(--border)] text-xs text-[var(--text-secondary)] leading-relaxed">
-                              <span className="font-bold text-[var(--text)]">Formula used: </span>
-                              Volume to Give = (Ordered Dose ÷ Dose on Hand) × Volume on Hand
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-6 p-4 bg-th-warning/10 border border-th-warning/30 rounded-2xl flex items-start gap-3"
-            >
-              <AlertCircle size={16} className="text-[var(--warning)] mt-0.5 shrink-0" style={{ color: '#F59E0B' }} />
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                <span className="font-bold text-[var(--text)]">Clinical Safety Reminder: </span>
-                Always verify dosage calculations with a second nurse or pharmacist before administering any medication. This tool is for educational and reference purposes only.
-              </p>
-            </motion.div>
-          </>
-        )}
+          {/* Safety */}
+          <section className="fn-card p-5 flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center shrink-0"><ShieldCheck size={18} weight="duotone" /></div>
+            <p className="text-[12.5px] text-[var(--text-secondary)] leading-relaxed">
+              <span className="font-semibold text-[var(--text)] block mb-0.5">Double-check before giving</span>
+              Verify every calculation with a second nurse or pharmacist before administering. This tool is for learning and reference.
+            </p>
+          </section>
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Flask as FlaskConical, MagnifyingGlass as Search, CaretDown as ChevronDown, TrendUp as TrendingUp, TrendDown as TrendingDown, Warning as AlertTriangle, Star, Copy, Check } from '@phosphor-icons/react'
+import { Flask as FlaskConical, MagnifyingGlass as Search, CaretDown as ChevronDown, ArrowDown, ArrowUp, Lightbulb, Star, Copy, Check, Lightning, Drop, Wind, Bandaids, X } from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
@@ -21,7 +22,7 @@ interface LabValue {
 interface LabCategory {
   id: string
   label: string
-  emoji: string
+  icon: Icon
   color: string
   labs: LabValue[]
 }
@@ -30,8 +31,8 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'electrolytes',
     label: 'Electrolytes',
-    emoji: '',
-    color: '#F7A8B8',
+    icon: Lightning,
+    color: '#C98552',
     labs: [
       {
         name: 'Sodium', abbreviation: 'Na⁺', normalRange: '135 – 145', unit: 'mEq/L',
@@ -86,8 +87,8 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'hematology',
     label: 'Hematology',
-    emoji: '',
-    color: '#FFB3C1',
+    icon: Drop,
+    color: '#BE5B6C',
     labs: [
       {
         name: 'Hemoglobin', abbreviation: 'Hgb', normalRange: 'M: 13.5–17.5 / F: 12–15.5', unit: 'g/dL',
@@ -126,8 +127,8 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'chemistry',
     label: 'Chemistry',
-    emoji: '',
-    color: '#A8D8B9',
+    icon: FlaskConical,
+    color: '#5A9776',
     labs: [
       {
         name: 'Blood Glucose (Fasting)', normalRange: '70 – 99', unit: 'mg/dL',
@@ -174,8 +175,8 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'abg',
     label: 'Arterial Blood Gas',
-    emoji: '',
-    color: '#B3E5FC',
+    icon: Wind,
+    color: '#4D8BA0',
     labs: [
       {
         name: 'pH', normalRange: '7.35 – 7.45', unit: '',
@@ -222,8 +223,8 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'coag',
     label: 'Coagulation',
-    emoji: '',
-    color: '#FFD59E',
+    icon: Bandaids,
+    color: '#8A72B5',
     labs: [
       {
         name: 'PT (Prothrombin Time)', abbreviation: 'PT', normalRange: '11 – 13', unit: 'seconds',
@@ -261,6 +262,9 @@ const LAB_DATA: LabCategory[] = [
   },
 ]
 
+const LOW_HEX = '#4D8BA0'
+const HIGH_HEX = '#BE5B6C'
+
 function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boolean; onToggleSave: (labName: string) => void }) {
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -274,58 +278,48 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
   }
 
   return (
-    <motion.div
-      layout
-      className={cn(
-        'fn-card border-2 transition-all cursor-pointer overflow-hidden',
-        expanded ? 'border-th-pink/40' : 'hover:border-th-pink/20'
-      )}
-      onClick={() => setExpanded(p => !p)}
-    >
-      <div className="p-4 flex items-center gap-3">
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggleSave(lab.name) }}
-          className={cn(
-            "p-1.5 rounded-xl transition-all shrink-0",
-            isSaved ? "text-amber-500 bg-amber-50 dark:bg-amber-900/30" : "text-[var(--text-secondary)] hover:text-amber-500"
-          )}
-          title={isSaved ? "Unbookmark Lab" : "Bookmark Lab"}
-        >
-          <Star size={18} weight={isSaved ? "fill" : "regular"} />
-        </button>
-
+    <div className={cn('fn-card overflow-hidden transition-colors', expanded && 'border-th-pink/40')}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onClick={() => setExpanded(p => !p)}
+        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setExpanded(p => !p))}
+        className="p-4 flex items-center gap-3 cursor-pointer hover:bg-[var(--rose-soft)]"
+      >
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-0.5">
-            <h4 className="font-semibold text-base">{lab.name}</h4>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <h3 className="font-heading font-semibold text-[15px]">{lab.name}</h3>
             {lab.abbreviation && (
-              <span className="text-[11px] font-bold bg-[var(--secondary-bg)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full">
-                {lab.abbreviation}
-              </span>
+              <span className="text-[11px] font-medium bg-th-pink/10 text-[var(--pink)] px-2 py-0.5 rounded-full">{lab.abbreviation}</span>
             )}
           </div>
-          <p className="text-xs text-[var(--text-secondary)] font-medium">
-            Normal: <span className="font-bold text-[var(--text)]">{lab.normalRange} {lab.unit}</span>
+          <p className="text-[12.5px] text-[var(--text-secondary)] mt-0.5">
+            Normal <span className="font-semibold text-[var(--text)] tabular-nums">{lab.normalRange}</span>{lab.unit && <> {lab.unit}</>}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="hidden md:flex items-center gap-1.5 shrink-0">
+          <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full" style={{ color: LOW_HEX, background: `${LOW_HEX}1a` }}>
+            <ArrowDown size={11} weight="bold" /> {lab.lowName}
+          </span>
+          <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full" style={{ color: HIGH_HEX, background: `${HIGH_HEX}1a` }}>
+            <ArrowUp size={11} weight="bold" /> {lab.highName}
+          </span>
+        </div>
+
+        <div className="flex items-center shrink-0">
           <button
-            onClick={copyLabSummary}
-            className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-th-pink/10 rounded-xl transition-all"
-            title="Copy Lab Reference"
+            onClick={e => { e.stopPropagation(); onToggleSave(lab.name) }}
+            className={cn('btn-icon p-2', isSaved ? 'text-[var(--pink)]' : '')}
+            aria-label={isSaved ? `Remove ${lab.name} from saved` : `Save ${lab.name}`}
           >
-            {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+            <Star size={17} weight={isSaved ? 'fill' : 'regular'} />
           </button>
-          <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full">
-            <TrendingDown size={10} /> {lab.lowName}
-          </span>
-          <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full">
-            <TrendingUp size={10} /> {lab.highName}
-          </span>
-          <ChevronDown
-            size={18}
-            className={cn('text-[var(--text-secondary)] transition-transform duration-300 shrink-0', expanded && 'rotate-180')}
-          />
+          <button onClick={copyLabSummary} className="btn-icon p-2" aria-label={`Copy ${lab.name} reference`}>
+            {copied ? <Check size={16} className="text-[var(--success)]" /> : <Copy size={16} />}
+          </button>
+          <ChevronDown size={16} className={cn('text-[var(--text-secondary)] transition-transform duration-300 ml-1', expanded && 'rotate-180')} />
         </div>
       </div>
 
@@ -338,48 +332,39 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-5 space-y-4 border-t border-[var(--border)] pt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingDown size={14} className="text-blue-500" />
-                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                      {lab.lowName} (Too Low)
-                    </p>
+            <div className="px-4 pb-4 pt-4 space-y-3 border-t border-[var(--border)]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {([
+                  { label: lab.lowName, sub: 'Too low', items: lab.lowComplications, hex: LOW_HEX, Arrow: ArrowDown },
+                  { label: lab.highName, sub: 'Too high', items: lab.highComplications, hex: HIGH_HEX, Arrow: ArrowUp },
+                ]).map(side => (
+                  <div key={side.sub} className="p-3.5 rounded-xl border" style={{ background: `${side.hex}0f`, borderColor: `${side.hex}33` }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: side.hex }}>
+                        <side.Arrow size={12} weight="bold" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-semibold leading-tight" style={{ color: side.hex }}>{side.label}</p>
+                        <p className="text-[11px] text-[var(--text-secondary)]">{side.sub}</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-1">
+                      {side.items.map((c, i) => (
+                        <li key={i} className="text-[12.5px] text-[var(--text)] flex gap-2 leading-snug">
+                          <span className="w-1 h-1 rounded-full mt-[7px] shrink-0" style={{ background: side.hex }} />
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="space-y-1">
-                    {lab.lowComplications.map((c, i) => (
-                      <li key={i} className="text-xs text-blue-700 dark:text-blue-300 flex gap-1.5">
-                        <span className="text-blue-400 mt-0.5 shrink-0">•</span>
-                        {c}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp size={14} className="text-red-500" />
-                    <p className="text-xs font-semibold text-red-600 dark:text-red-400">
-                      {lab.highName} (Too High)
-                    </p>
-                  </div>
-                  <ul className="space-y-1">
-                    {lab.highComplications.map((c, i) => (
-                      <li key={i} className="text-xs text-red-700 dark:text-red-300 flex gap-1.5">
-                        <span className="text-red-400 mt-0.5 shrink-0">•</span>
-                        {c}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                ))}
               </div>
 
               {lab.clinicalPearl && (
-                <div className="flex gap-2.5 p-3 bg-th-pink/8 border border-th-pink/20 rounded-2xl">
-                  <AlertTriangle size={14} className="text-[var(--pink)] shrink-0 mt-0.5" />
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <span className="font-bold text-[var(--pink)]">Clinical Pearl: </span>
+                <div className="flex gap-2.5 p-3.5 bg-[var(--rose-soft)] rounded-xl">
+                  <Lightbulb size={16} weight="fill" className="text-[var(--pink)] shrink-0 mt-0.5" />
+                  <p className="text-[12.5px] text-[var(--text)] leading-relaxed">
+                    <span className="font-semibold text-[var(--pink)]">Clinical pearl. </span>
                     {lab.clinicalPearl}
                   </p>
                 </div>
@@ -388,7 +373,21 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
+  )
+}
+
+function CategoryHeading({ icon: CatIcon, color, title, subtitle }: { icon: Icon; color: string; title: string; subtitle: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-3 px-1">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}1f`, color }}>
+        <CatIcon size={20} weight="duotone" />
+      </div>
+      <div>
+        <h2 className="font-heading font-semibold text-lg leading-tight">{title}</h2>
+        <p className="text-[12px] text-[var(--text-secondary)]">{subtitle}</p>
+      </div>
+    </div>
   )
 }
 
@@ -459,134 +458,123 @@ export default function LabsReferencePage() {
   })).filter(cat => !search.trim() || cat.labs.length > 0)
 
   const activeCategory = filtered.find(c => c.id === activeTab) || filtered[0]
+  const searching = !!search.trim()
+
+  const navItems: { id: string; label: string; icon: Icon; color: string; count: number }[] = [
+    { id: 'saved', label: 'Saved', icon: Star, color: '#B76E79', count: savedLabs.length },
+    ...LAB_DATA.map(c => ({ id: c.id, label: c.label, icon: c.icon, color: c.color, count: c.labs.length })),
+  ]
 
   return (
-    <div className="page-container">
-      <PageHeader icon={FlaskConical} title="Reference Lab Charts" subtitle="Normal ranges with low/high clinical implications. Star the labs you use most to keep them handy." />
+    <div className="page-container max-w-6xl">
+      <PageHeader icon={FlaskConical} title="Reference Lab Charts" subtitle="Normal ranges with what too low and too high look like. Star the labs you use most." />
 
-      {/* Search */}
-      <div className="max-w-xl mx-auto mb-6">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
-          <input
-            type="text"
-            value={search}
-            onChange={e => { setSearch(e.target.value) }}
-            placeholder="Search labs (e.g. sodium, potassium, pH...)"
-            className="fn-input pl-11"
-          />
-        </div>
-      </div>
-
-      {/* Category Tabs */}
-      {!search.trim() && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar justify-start sm:justify-center">
-          <button
-            onClick={() => setActiveTab('saved')}
-            className={cn(
-              'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all border-2 shrink-0',
-              activeTab === 'saved'
-                ? 'bg-amber-500 text-white border-amber-500 shadow-md'
-                : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-amber-400'
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-5 items-start">
+        {/* Sidebar: search + categories */}
+        <aside className="space-y-3 lg:sticky lg:top-4 min-w-0">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={16} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setSearch(e.target.value) }}
+              placeholder="Search labs"
+              className="fn-input rounded-xl bg-[var(--card)] pl-10 pr-9 py-2.5 text-sm"
+            />
+            {searching && (
+              <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 btn-icon p-1" aria-label="Clear search"><X size={14} /></button>
             )}
+          </div>
+
+          <nav className={cn('flex lg:flex-col gap-1.5 lg:gap-0.5 overflow-x-auto no-scrollbar lg:fn-card lg:p-2 -mx-4 px-4 lg:mx-0', searching && 'opacity-50 pointer-events-none')}>
+            {navItems.map(item => {
+              const active = !searching && activeTab === item.id
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    'flex items-center gap-2.5 shrink-0 rounded-full lg:rounded-xl px-3.5 lg:px-3 py-2 text-[13px] font-medium whitespace-nowrap transition-colors border lg:border-0',
+                    active ? 'bg-[var(--rose-soft)] text-[var(--text)] border-[var(--pink)]' : 'text-[var(--text-secondary)] border-[var(--border)] bg-[var(--card)] lg:bg-transparent hover:bg-[var(--rose-soft)]'
+                  )}
+                >
+                  <span className="w-7 h-7 rounded-lg hidden lg:flex items-center justify-center shrink-0" style={{ background: `${item.color}1f`, color: item.color }}>
+                    <item.icon size={15} weight={active ? 'fill' : 'regular'} />
+                  </span>
+                  <item.icon size={14} className="lg:hidden" style={{ color: item.color }} weight={active ? 'fill' : 'regular'} />
+                  <span className="lg:flex-1 text-left">{item.label}</span>
+                  <span className="text-[11px] text-[var(--text-secondary)] tabular-nums">{item.count}</span>
+                </button>
+              )
+            })}
+          </nav>
+        </aside>
+
+        {/* Lab Cards */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={search || activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            className="min-w-0"
           >
-            <Star size={14} weight={activeTab === 'saved' ? "fill" : "regular"} className="text-amber-300" />
-            <span>Saved Labs ({savedLabs.length})</span>
-          </button>
-
-          {LAB_DATA.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveTab(cat.id)}
-              className={cn(
-                'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all border-2 shrink-0',
-                activeTab === cat.id
-                  ? 'text-white border-transparent shadow-md'
-                  : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/30'
-              )}
-              style={activeTab === cat.id ? { backgroundColor: cat.color, borderColor: cat.color } : {}}
-            >
-              <span>{cat.emoji}</span>
-              <span>{cat.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Lab Cards */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={search || activeTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.2 }}
-          className="space-y-3 max-w-4xl mx-auto"
-        >
-          {search.trim() ? (
-            filtered.length > 0 ? (
-              filtered.map(cat => (
-                <div key={cat.id} className="space-y-3">
-                  <p className="text-[11px] font-bold text-[var(--text-secondary)] flex items-center gap-1.5 px-1">
-                    <span>{cat.emoji}</span> {cat.label}
-                  </p>
-                  {cat.labs.map(lab => (
-                    <LabCard key={lab.name} lab={lab} isSaved={savedLabs.includes(lab.name)} onToggleSave={toggleSaveLab} />
+            {searching ? (
+              filtered.length > 0 ? (
+                <div className="space-y-6">
+                  {filtered.map(cat => (
+                    <section key={cat.id}>
+                      <CategoryHeading icon={cat.icon} color={cat.color} title={cat.label} subtitle={`${cat.labs.length} match${cat.labs.length === 1 ? '' : 'es'}`} />
+                      <div className="space-y-2.5">
+                        {cat.labs.map(lab => (
+                          <LabCard key={lab.name} lab={lab} isSaved={savedLabs.includes(lab.name)} onToggleSave={toggleSaveLab} />
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
-              ))
+              ) : (
+                <EmptyLabs icon={Search} title="No labs found" text={`Nothing matches "${search.trim()}". Try a name like sodium, INR or pH.`} />
+              )
+            ) : activeTab === 'saved' ? (
+              savedLabObjects.length > 0 ? (
+                <section>
+                  <CategoryHeading icon={Star} color="#B76E79" title="Saved labs" subtitle={`${savedLabObjects.length} saved to your account`} />
+                  <div className="space-y-2.5">
+                    {savedLabObjects.map(lab => (
+                      <LabCard key={lab.name} lab={lab} isSaved={true} onToggleSave={toggleSaveLab} />
+                    ))}
+                  </div>
+                </section>
+              ) : (
+                <EmptyLabs icon={Star} title="No saved labs yet" text="Tap the star on any lab value to keep it here." />
+              )
             ) : (
-              <div className="text-center py-20 fn-card border-dashed">
-                <p className="text-lg font-bold mb-2">No labs found</p>
-                <p className="text-[var(--text-secondary)] text-sm">Try searching with a different term.</p>
-              </div>
-            )
-          ) : activeTab === 'saved' ? (
-            savedLabObjects.length > 0 ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center text-lg font-bold">
+              activeCategory ? (
+                <section>
+                  <CategoryHeading icon={activeCategory.icon} color={activeCategory.color} title={activeCategory.label} subtitle={`${activeCategory.labs.length} values · tap one to expand`} />
+                  <div className="space-y-2.5">
+                    {activeCategory.labs.map(lab => (
+                      <LabCard key={lab.name} lab={lab} isSaved={savedLabs.includes(lab.name)} onToggleSave={toggleSaveLab} />
+                    ))}
+                  </div>
+                </section>
+              ) : null
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
 
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-xl">Saved & Bookmarked Labs</h2>
-                    <p className="text-[11px] text-[var(--text-secondary)] font-bold">{savedLabObjects.length} bookmarked lab values synced with Supabase</p>
-                  </div>
-                </div>
-                {savedLabObjects.map(lab => (
-                  <LabCard key={lab.name} lab={lab} isSaved={true} onToggleSave={toggleSaveLab} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16 fn-card border-dashed">
-                <Star size={36} className="mx-auto mb-2 text-amber-400 opacity-40" />
-                <p className="text-lg font-bold mb-1">No bookmarked labs yet</p>
-                <p className="text-[var(--text-secondary)] text-xs">Tap the star icon on any lab value to save it to your Supabase account!</p>
-              </div>
-            )
-          ) : (
-            activeCategory ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg font-bold"
-                    style={{ backgroundColor: activeCategory.color + '33' }}
-                  >
-                    {activeCategory.emoji}
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-xl">{activeCategory.label}</h2>
-                    <p className="text-[11px] text-[var(--text-secondary)] font-bold">{activeCategory.labs.length} values • tap to expand</p>
-                  </div>
-                </div>
-                {activeCategory.labs.map(lab => (
-                  <LabCard key={lab.name} lab={lab} isSaved={savedLabs.includes(lab.name)} onToggleSave={toggleSaveLab} />
-                ))}
-              </div>
-            ) : null
-          )}
-        </motion.div>
-      </AnimatePresence>
+function EmptyLabs({ icon: EmptyIcon, title, text }: { icon: Icon; title: string; text: string }) {
+  return (
+    <div className="fn-card p-10 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center mx-auto mb-3"><EmptyIcon size={26} weight="duotone" /></div>
+      <p className="font-medium">{title}</p>
+      <p className="text-sm text-[var(--text-secondary)] mt-1">{text}</p>
     </div>
   )
 }
