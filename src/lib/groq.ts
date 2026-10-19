@@ -21,7 +21,7 @@ const GEMINI_MODEL         = 'gemini-2.5-flash-lite'
 
 // ─── Feature → Provider Routing ──────────────────────────────────────────────
 //  chat        → Groq FAST_MODEL    (openai/gpt-oss-120b, instant feel for Doc Uno)
-//  quiz        → Groq DEFAULT_MODEL (clinical accuracy matters) [openai/gpt-oss-120b]
+//  quiz        → Mistral only       (no fallback — one provider, batched requests)
 //  retdem      → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
 //  recitation  → Groq FAST_MODEL    (openai/gpt-oss-120b, fast back and forth)
 //  vision      → Groq VISION_MODEL  (qwen/qwen3.6-27b)
@@ -53,7 +53,7 @@ interface RouteConfig {
 
 const FEATURE_ROUTES: Record<AIFeature, RouteConfig> = {
   chat:       { provider: 'groq',    model: FAST_MODEL },
-  quiz:       { provider: 'groq',    model: DEFAULT_MODEL },
+  quiz:       { provider: 'mistral', model: MISTRAL_MODEL },
   retdem:     { provider: 'groq',    model: FAST_MODEL },
   recitation: { provider: 'groq',    model: FAST_MODEL },
   vision:     { provider: 'groq',    model: VISION_MODEL },
@@ -437,6 +437,9 @@ export async function callGeminiGroundedSearch(
 
 // ─── Core Router ──────────────────────────────────────────────────────────────
 
+// Features that stick to their primary provider and never fall back
+const SINGLE_PROVIDER_FEATURES: AIFeature[] = ['quiz']
+
 async function routedCall(
   feature: AIFeature,
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
@@ -447,7 +450,7 @@ async function routedCall(
   const route = FEATURE_ROUTES[feature]
 
   // Construct the chain of fallback providers starting with the primary route (excluding groq as a fallback)
-  const providersOrdered = [
+  const providersOrdered = SINGLE_PROVIDER_FEATURES.includes(feature) ? [route] : [
     route,
     ...(route.provider === 'groq' ? [
       { provider: 'gemini' as Provider, model: GEMINI_MODEL },

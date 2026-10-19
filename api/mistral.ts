@@ -2,6 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const MISTRAL_API_KEY = process.env.VITE_MISTRAL_API_KEY
 
+// Quiz batches take longer than Vercel's 10s default on some plans
+export const config = { maxDuration: 60 }
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
