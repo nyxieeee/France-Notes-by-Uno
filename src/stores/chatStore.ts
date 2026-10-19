@@ -304,7 +304,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       return cleanedResponse
     } catch (error) {
       console.error('Chat Error:', error)
-      return `Oh no! 🌸 I'm having a little trouble connecting right now. Can we try again in a moment, ${greetingName}? 🩺✨`
+      return `Oh no! I'm having a little trouble connecting right now. Can we try again in a moment, ${greetingName}?`
     }
   }
 }))

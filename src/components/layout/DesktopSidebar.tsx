@@ -7,28 +7,28 @@ import { usePersonalization } from '@/hooks/usePersonalization'
 import { useNavigation, isNavItemActive } from './navigation'
 
 const docUnoMessages = [
-  "You've got this, future nurse! I'm always here to support you! I love you! 🩺💖",
-  "Hey babe, take a break if you need to! Let's drink some water! 💧🌸",
-  "Reviewing hard, babe? You're doing so great, I'm so proud of you! ✨",
-  "One step at a time! You are so close to your goal, future nurse! I love you! 🩺🌸",
-  "Stay hydrated, babe! Drink some water for me, please! I love you! 💧✨",
-  "Don't stress too much, babe. I'm always cheering for you! 💕",
-  "Hey, take a quick stretch! Let's study again after, babe! I love you! 📖✨",
-  "You can do this! Doc Uno is always here for you! I love you, babe! ✨",
-  "Every page you read brings you closer to your board exam goal! 🩺",
-  "Water break time, babe! Health first, future nurse! I love you! 🌸"
+  "You've got this, future nurse! I'm always here to support you! I love you!",
+  "Hey babe, take a break if you need to! Let's drink some water!",
+  "Reviewing hard, babe? You're doing so great, I'm so proud of you!",
+  "One step at a time! You are so close to your goal, future nurse! I love you!",
+  "Stay hydrated, babe! Drink some water for me, please! I love you!",
+  "Don't stress too much, babe. I'm always cheering for you!",
+  "Hey, take a quick stretch! Let's study again after, babe! I love you!",
+  "You can do this! Doc Uno is always here for you! I love you, babe!",
+  "Every page you read brings you closer to your board exam goal!",
+  "Water break time, babe! Health first, future nurse! I love you!"
 ]
 
 const nurseFlorenceMessages = [
-  "You've got this, future nurse! Keep up the excellent work! 🩺✨",
-  "Take a short break if you need to. Rest is part of effective studying! 💧📝",
-  "Reviewing hard today? Your diligence will pay off in clinical practice! ✨",
-  "One step at a time. Every page you read brings you closer to your RN goal! 🩺👩‍⚕️",
-  "Stay hydrated and take a quick stretch. Health first! 💧✨",
-  "Don't stress too much. You are fully capable of mastering this! 🧠✨",
-  "Clinical tip: focus on client safety and prioritization. You can do this! 🩹🩺",
-  "Every practice question you answer builds your confidence for the board exams! 📝",
-  "I am always here to support your nursing journey. Let's study! 🌟"
+  "You've got this, future nurse! Keep up the excellent work!",
+  "Take a short break if you need to. Rest is part of effective studying!",
+  "Reviewing hard today? Your diligence will pay off in clinical practice!",
+  "One step at a time. Every page you read brings you closer to your RN goal!",
+  "Stay hydrated and take a quick stretch. Health first!",
+  "Don't stress too much. You are fully capable of mastering this!",
+  "Clinical tip: focus on client safety and prioritization. You can do this!",
+  "Every practice question you answer builds your confidence for the board exams!",
+  "I am always here to support your nursing journey. Let's study!"
 ]
 
 export default function DesktopSidebar() {

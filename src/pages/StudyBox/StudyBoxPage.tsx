@@ -2,29 +2,47 @@ import { useState, useRef, useEffect } from 'react'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { jsPDF } from 'jspdf'
 import type { StudyBoxItem, Topic } from '@/types'
-import { UploadSimple as Upload, FileText, MagnifyingGlass as Search, Funnel as Filter, Trash as Trash2, Heart, DotsThreeVertical as MoreVertical, Camera, Image as ImageIcon, Sparkle as Sparkles, CheckCircle as CheckCircle2, Brain as BrainCircuit, ArrowRight, BookOpen, CircleNotch as Loader2, DownloadSimple as Download, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink, Globe, X, Archive as ArchiveIcon } from '@phosphor-icons/react'
+import {
+  UploadSimple as Upload, FileText, MagnifyingGlass as Search, Funnel as Filter, Trash as Trash2, Heart, Camera,
+  Image as ImageIcon, Sparkle as Sparkles, Brain as BrainCircuit, BookOpen,
+  CircleNotch as Loader2, DownloadSimple as Download, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink,
+  Globe, X, Archive as ArchiveIcon, Folder, CaretRight, Printer, PresentationChart, Books, Check,
+} from '@phosphor-icons/react'
+import type { IconProps } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getFileIcon, formatRelativeDate, cn } from '@/lib/utils'
+import { formatRelativeDate, cn } from '@/lib/utils'
 import CameraModal from '@/components/shared/CameraModal'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { generateCompletion } from '@/lib/ai'
 import { extractTextFromFile } from '@/lib/extractor'
-import { useAuthStore } from '@/stores/authStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { tintFor } from '@/lib/tints'
 
+const SORT_OPTIONS = [['newest', 'Newest first'], ['oldest', 'Oldest first'], ['az', 'Name A–Z']] as const
+const TYPE_OPTIONS = [['all', 'All types'], ['pdf', 'PDF'], ['docx', 'Word'], ['pptx', 'PowerPoint'], ['image', 'Images'], ['txt', 'Text']] as const
+
+const displayName = (item: StudyBoxItem) =>
+  item.file_name.replace(/^\[(Reference|Case Study|Pathophysiology)\] /, '').replace(/\.txt$/, '')
+
+// Icon for a material: photo, saved web reference, slides, or document
+function ItemTypeIcon({ item, ...props }: { item: StudyBoxItem } & IconProps) {
+  if (item.file_type === 'image') return <ImageIcon {...props} />
+  if (item.file_name.startsWith('[Reference]')) return <Globe {...props} />
+  if (item.file_type === 'pptx') return <PresentationChart {...props} />
+  return <FileText {...props} />
+}
+
 export default function StudyBoxPage() {
-  const { 
-    items, 
-    topics, 
-    isUploading, 
+  const {
+    items,
+    topics,
+    isUploading,
     isProcessing,
-    addItem, 
+    addItem,
     removeItem,
-    toggleFavorite, 
+    toggleFavorite,
     getFilteredItems,
     searchQuery,
     setSearchQuery,
@@ -35,7 +53,7 @@ export default function StudyBoxPage() {
     clearSelection,
     addGeneratedItem
   } = useStudyBoxStore()
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const filteredItems = getFilteredItems()
 
@@ -78,8 +96,6 @@ export default function StudyBoxPage() {
   const { generatePresentation, generateReviewer, isGeneratingReviewer, isGeneratingPresentation } = useReviewerStore()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuthStore()
-  const firstName = user?.full_name?.split(' ')[0] || 'Your'
 
   // Auto-open item if navigated here from dashboard with openItemId state
   useEffect(() => {
@@ -128,378 +144,261 @@ export default function StudyBoxPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-
+  const topicTitle = (id: string | null) => topics.find(t => t.id === id)?.title || 'General'
+  const activeTopic = topics.find(t => t.id === selectedTopic) || null
+  // Topic folders only show on the top-level view, not while searching or inside a topic
+  const showFolders = !selectedTopic && !searchQuery.trim() && items.length > 0
+  const topicFolders = topics
+    .map(t => ({ topic: t, count: items.filter(i => i.topic_id === t.id).length }))
+    .filter(f => f.count > 0)
+    .sort((a, b) => b.count - a.count)
+  const busy = isUploading || isProcessing
 
   return (
-    <div className="page-container">
+    <div className="page-container max-w-7xl">
       <PageHeader
         icon={ArchiveIcon}
         title={studyBoxName}
-        subtitle={isFrance ? 'Upload, organize, and turn your notes into smart reviewers, babe! 🌸' : 'Upload, organize, and turn your nursing notes into smart reviewers.'}
+        subtitle={isFrance ? 'Upload, organize, and turn your notes into smart reviewers, babe!' : 'Upload, organize, and turn your nursing notes into smart reviewers.'}
         actions={<>
-          <button 
-            onClick={() => setIsCaseModalOpen(true)}
-            className="btn-primary flex items-center justify-center gap-1.5 sm:gap-2 p-2.5 sm:px-4 sm:py-2"
-            disabled={isUploading || isProcessing}
-            title="Generate Case Study"
-          >
-            <Sparkles size={18} className="shrink-0" />
-            <span className="hidden sm:inline text-sm font-semibold">Generate Case Study</span>
+          <button onClick={() => setIsCaseModalOpen(true)} disabled={busy} className="btn-secondary px-4 py-2.5 text-sm flex items-center gap-2" title="Generate a case study or pathophysiology guide">
+            <Sparkles size={16} /> <span className="hidden sm:inline">Case Study</span>
           </button>
-          <button 
-            onClick={() => setIsCameraOpen(true)}
-            className="btn-secondary flex items-center justify-center gap-1.5 sm:gap-2 p-2.5 sm:px-4 sm:py-2"
-            disabled={isUploading || isProcessing}
-            title="Take Photo"
-          >
-            <Camera size={18} className="shrink-0" />
-            <span className="hidden sm:inline text-sm font-semibold">Take Photo</span>
+          <button onClick={() => setIsCameraOpen(true)} disabled={busy} className="btn-secondary px-4 py-2.5 text-sm flex items-center gap-2" title="Take a photo of your notes">
+            <Camera size={16} /> <span className="hidden sm:inline">Photo</span>
           </button>
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="btn-secondary flex items-center justify-center gap-1.5 sm:gap-2 p-2.5 sm:px-4 sm:py-2"
-            disabled={isUploading || isProcessing}
-            title="Upload Files"
-          >
-            <Upload size={18} className="shrink-0" />
-            <span className="hidden sm:inline text-sm font-semibold">Upload Files</span>
+          <button onClick={() => fileInputRef.current?.click()} disabled={busy} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">
+            <Upload size={16} weight="bold" /> Upload
           </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            className="hidden"
-            multiple
-          />
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" multiple />
         </>}
       />
 
-      {/* Upload State / Processing */}
+      {/* Upload / processing progress */}
       <AnimatePresence>
-        {(isUploading || isProcessing) && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-8 overflow-hidden"
-          >
-            <div className="fn-card p-4 sm:p-6 bg-gradient-to-r from-th-secondary-bg/50 to-th-pink/10 border-dashed border-2 border-[var(--pink)] flex items-center gap-4 sm:gap-6">
-               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl shadow-fn flex items-center justify-center text-[var(--pink)] shrink-0">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-th-pink/30 border-t-[var(--pink)] rounded-full animate-spin"></div>
-               </div>
-               <div className="flex-1 min-w-0">
-                 <h3 className="font-bold text-base sm:text-lg mb-1">
-                   {isUploading ? 'Uploading your study materials...' : `${aiAssistantName} is analyzing your notes... 🩺✨`}
-                 </h3>
-                 <p className="text-sm text-[var(--text-secondary)]">
-                   {isUploading ? (isFrance ? 'Almost there, babe! 🌸' : 'Almost there! 🩺') : 'Extracting text and identifying key nursing concepts... This will only take a moment!'}
-                 </p>
-               </div>
+        {busy && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-5 overflow-hidden">
+            <div className="fn-card p-4 flex items-center gap-4 bg-[var(--rose-soft)]">
+              <div className="w-11 h-11 rounded-xl bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-[var(--pink)] shrink-0">
+                <Loader2 size={20} className="animate-spin" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{isUploading ? 'Uploading your study materials…' : `${aiAssistantName} is reading your notes…`}</p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {isUploading ? (isFrance ? 'Almost there, babe!' : 'Almost there!') : 'Extracting text and sorting it into the right topic.'}
+                </p>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Filters & Search */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="md:col-span-3 flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-th-text-secondary/50" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search your library..." 
-              className="fn-input pl-11"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2 sm:pb-0">
-             <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl flex p-0.5 sm:p-1 whitespace-nowrap min-w-max">
-                <button 
-                  onClick={() => setSelectedTopic(null)}
-                  className={cn(
-                    "px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all",
-                    selectedTopic === null ? "bg-[var(--pink)] text-white shadow-fn" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"
-                  )}
-                >
-                  All
-                </button>
-                {topics.filter(topic => items.some(item => item.topic_id === topic.id)).map(topic => (
-                  <button 
-                    key={topic.id}
-                    onClick={() => setSelectedTopic(topic.id)}
-                    className={cn(
-                      "px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all",
-                      selectedTopic === topic.id ? "bg-[var(--pink)] text-white shadow-fn" : "text-[var(--text-secondary)] hover:bg-[var(--bg)]"
-                    )}
-                  >
-                    {topic.title}
-                  </button>
-                ))}
-             </div>
-          </div>
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="flex-1 flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-full px-4 py-2.5 focus-within:ring-2 focus-within:ring-th-pink/25">
+          <Search size={17} className="text-[var(--text-secondary)] shrink-0" />
+          <input
+            type="text"
+            placeholder={activeTopic ? `Search in ${activeTopic.title}…` : 'Search your materials…'}
+            className="bg-transparent outline-none text-sm w-full placeholder:text-th-text-secondary/70"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="text-[var(--text-secondary)] hover:text-[var(--pink)]"><X size={15} /></button>}
         </div>
-        <div className="flex items-center justify-end">
-          <div className="relative" ref={filterRef}>
-            <button
-              onClick={() => setIsFilterOpen(prev => !prev)}
-              className={cn(
-                "btn-secondary w-full md:w-auto flex items-center justify-center gap-2 relative",
-                activeFilterCount > 0 && "border-[var(--pink)] text-[var(--pink)]"
-              )}
-            >
-              <Filter size={18} />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--pink)] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
 
-            <AnimatePresence>
-              {isFilterOpen && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -6 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -6 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                  className="absolute right-0 mt-2 w-56 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-md p-3 z-50 origin-top-right"
-                >
-                  {/* Sort */}
-                  <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-1.5 px-1">Sort by</p>
-                  <div className="flex flex-col gap-0.5 mb-3">
-                    {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['az', 'Name A–Z']] as const).map(([val, label]) => (
-                      <button
-                        key={val}
-                        onClick={() => setSortBy(val)}
-                        className={cn(
-                          'text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all',
-                          sortBy === val ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]'
-                        )}
-                      >{label}</button>
-                    ))}
-                  </div>
+        <div className="relative" ref={filterRef}>
+          <button
+            onClick={() => setIsFilterOpen(prev => !prev)}
+            className={cn('btn-secondary w-full sm:w-auto px-5 py-2.5 text-sm flex items-center justify-center gap-2', activeFilterCount > 0 && 'border-[var(--pink)]')}
+          >
+            <Filter size={16} /> Filters
+            {activeFilterCount > 0 && <span className="min-w-[18px] h-[18px] px-1 bg-[var(--pink)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">{activeFilterCount}</span>}
+          </button>
 
-                  {/* Show */}
-                  <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-1.5 px-1">Show</p>
-                  <div className="flex flex-col gap-0.5 mb-3">
-                    <button
-                      onClick={() => setShowFavorites(false)}
-                      className={cn('text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all', !showFavorites ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]')}
-                    >All files</button>
-                    <button
-                      onClick={() => setShowFavorites(true)}
-                      className={cn('text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all', showFavorites ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]')}
-                    >Favorites only ❤️</button>
-                  </div>
-
-                  {/* Type */}
-                  <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-1.5 px-1">File type</p>
-                  <div className="flex flex-col gap-0.5 mb-3">
-                    {([['all', 'All types'], ['pdf', 'PDF'], ['docx', 'Word (DOCX)'], ['pptx', 'PowerPoint'], ['image', 'Images'], ['txt', 'Text']] as const).map(([val, label]) => (
-                      <button
-                        key={val}
-                        onClick={() => setFileTypeFilter(val)}
-                        className={cn(
-                          'text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all',
-                          fileTypeFilter === val ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]'
-                        )}
-                      >{label}</button>
-                    ))}
-                  </div>
-
-                  {/* Reset */}
-                  {activeFilterCount > 0 && (
-                    <button
-                      onClick={() => { setSortBy('newest'); setShowFavorites(false); setFileTypeFilter('all') }}
-                      className="w-full mt-1 py-1.5 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors rounded-xl hover:bg-[var(--secondary-bg)]"
-                    >
-                      Reset filters
-                    </button>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <AnimatePresence>
+            {isFilterOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: -4 }}
+                transition={{ duration: 0.12 }}
+                className="absolute right-0 mt-2 w-60 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-lg p-3 z-50 origin-top-right space-y-3"
+              >
+                <FilterGroup label="Sort by" options={SORT_OPTIONS} value={sortBy} onChange={v => setSortBy(v as typeof sortBy)} />
+                <FilterGroup label="Show" options={[['all', 'All files'], ['fav', 'Favorites only']] as const} value={showFavorites ? 'fav' : 'all'} onChange={v => setShowFavorites(v === 'fav')} />
+                <FilterGroup label="File type" options={TYPE_OPTIONS} value={fileTypeFilter} onChange={setFileTypeFilter} />
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => { setSortBy('newest'); setShowFavorites(false); setFileTypeFilter('all') }}
+                    className="w-full py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--pink)] rounded-xl hover:bg-[var(--rose-soft)]"
+                  >
+                    Reset filters
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {/* Document Grid */}
-      {displayedItems.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {displayedItems.map((item) => (
-            <motion.div 
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              key={item.id} 
-              className={cn(
-                "fn-card group relative overflow-hidden transition-all duration-300 cursor-pointer",
-                selectedItemIds.includes(item.id) && "ring-2 ring-[var(--pink)] border-[var(--pink)]"
-              )}
-              onClick={() => setSelectedItem(item)}
-            >
-              <div 
-                className="aspect-[16/10] bg-[var(--bg)] flex items-center justify-center relative overflow-hidden"
-              >
-                {item.preview_image ? (
-                  <img 
-                    src={item.preview_image} 
-                    alt={item.file_name} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                  />
-                ) : (
-                  <div className={`w-full h-full flex items-center justify-center relative bg-gradient-to-br ${tintFor(item.id)}`}>
-                    {(() => {
-                      const TypeIcon = item.file_type === 'image' ? ImageIcon : item.file_name.startsWith('[Reference]') ? Globe : FileText
-                      return <TypeIcon size={38} weight="light" className="text-th-pink/70 group-hover:scale-110 transition-transform duration-300" />
-                    })()}
-                    <span className="absolute left-3 bottom-3 right-3 truncate text-[10.5px] font-semibold px-2 py-0.5 rounded-full text-[var(--pink)] bg-th-card/85 w-max max-w-[calc(100%-1.5rem)]">
-                      {topics.find(t => t.id === item.topic_id)?.title || 'General'}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Selection Indicator Checkbox */}
-                <div 
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleItemSelection(item.id)
-                  }}
-                  className={cn(
-                    "absolute top-3 left-3 w-7 h-7 sm:w-6 sm:h-6 rounded-full border-2 transition-all flex items-center justify-center z-20 cursor-pointer",
-                    selectedItemIds.includes(item.id) 
-                      ? "bg-[var(--pink)] border-[var(--pink)] text-white shadow-md" 
-                      : "bg-white/50 border-white opacity-0 group-hover:opacity-100"
-                  )}
-                >
-                  {selectedItemIds.includes(item.id) && <CheckCircle2 size={16} />}
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-1 relative">
-                  <h4 className="font-bold text-sm truncate pr-6 group-hover:text-[var(--pink)] transition-colors">
-                    {item.file_name.startsWith('[Reference]')
-                      ? item.file_name.replace('[Reference] ', '').replace('.txt', '')
-                      : item.file_name}
-                  </h4>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleFavorite(item.id)
-                    }}
-                    className={cn(
-                      "absolute top-0 right-0 p-2 sm:p-1.5 rounded-full bg-white/80 backdrop-blur-sm transition-all shadow-sm z-10",
-                      item.is_favorite ? "text-[var(--pink)] opacity-100" : "text-[var(--text-secondary)] opacity-0 group-hover:opacity-100"
-                    )}
-                    title={item.is_favorite ? "Remove from favorites" : "Add to favorites"}
-                  >
-                    <Heart size={12} weight={item.is_favorite ? "fill" : "regular"} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-[11px] font-bold text-[var(--text-secondary)]">{formatRelativeDate(item.created_at)}</span>
-                  <div className="flex gap-0.5 z-10">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeItem(item.id)
-                      }} 
-                      className="p-1.5 hover:text-[var(--error)] transition-colors rounded-lg hover:bg-th-error/10"
-                      title="Delete"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                      }}
-                      className="p-1.5 hover:text-[var(--pink)] transition-colors rounded-lg hover:bg-th-pink/10"
-                      title="More"
-                    >
-                      <MoreVertical size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-24 h-24 bg-[var(--secondary-bg)] rounded-full flex items-center justify-center text-[var(--pink)] mb-6 animate-float">
-            <Archive size={48} />
-          </div>
-          <h3 className="text-xl font-bold mb-2 tracking-tight">Your Study Box is empty 🌸</h3>
-          <p className="text-[var(--text-secondary)] max-w-xs mb-8">
-            Upload your lecture notes, handouts, or screenshots to start your nursing review!
-          </p>
-          <button 
-             onClick={() => fileInputRef.current?.click()}
-             className="btn-primary"
-          >
-            Upload your first note
-          </button>
+      {/* Breadcrumb when inside a topic */}
+      {activeTopic && (
+        <div className="flex items-center gap-1.5 text-sm mb-4">
+          <button onClick={() => setSelectedTopic(null)} className="text-[var(--text-secondary)] hover:text-[var(--pink)]">All topics</button>
+          <CaretRight size={13} className="text-[var(--text-secondary)]" />
+          <span className="font-semibold text-[var(--text)]">{activeTopic.title}</span>
+          <span className="text-[var(--text-secondary)]">· {displayedItems.length} material{displayedItems.length === 1 ? '' : 's'}</span>
         </div>
       )}
 
+      {/* Topic folders */}
+      {showFolders && topicFolders.length > 0 && (
+        <section className="mb-7">
+          <h2 className="text-[15px] font-heading font-semibold mb-3 flex items-center gap-2"><Folder size={16} className="text-[var(--pink)]" /> Topics</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {topicFolders.map(({ topic, count }) => (
+              <button
+                key={topic.id}
+                onClick={() => setSelectedTopic(topic.id)}
+                className="fn-card overflow-hidden text-left group hover:border-[var(--accent)]"
+              >
+                <div className={`h-16 bg-gradient-to-br ${tintFor(topic.id)} flex items-center justify-center`}>
+                  <Folder size={26} weight="duotone" className="text-th-pink/70 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="px-3 py-2.5">
+                  <p className="text-[13px] font-semibold line-clamp-1">{topic.title}</p>
+                  <p className="text-[11px] text-[var(--text-secondary)]">{count} material{count === 1 ? '' : 's'}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
+      {/* Materials */}
+      {displayedItems.length > 0 ? (
+        <section>
+          {showFolders && (
+            <h2 className="text-[15px] font-heading font-semibold mb-3 flex items-center gap-2"><BookOpen size={16} className="text-[var(--pink)]" /> All materials</h2>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            {displayedItems.map((item) => {
+              const selected = selectedItemIds.includes(item.id)
+              return (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={item.id}
+                  className={cn('fn-card group relative overflow-hidden cursor-pointer hover:border-[var(--accent)]', selected && 'ring-2 ring-[var(--pink)] border-[var(--pink)]')}
+                  onClick={() => setSelectedItem(item)}
+                >
+                  <div className="aspect-[16/10] relative overflow-hidden">
+                    {item.preview_image ? (
+                      <img src={item.preview_image} alt={item.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${tintFor(item.id)}`}>
+                        <ItemTypeIcon item={item} size={34} weight="light" className="text-th-pink/70 group-hover:scale-110 transition-transform duration-300" />
+                      </div>
+                    )}
 
-      {/* Floating AI Source Selection Bar */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleItemSelection(item.id) }}
+                      aria-label={selected ? 'Deselect' : 'Select for quiz or reviewer'}
+                      className={cn(
+                        'absolute top-2.5 left-2.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all',
+                        selected ? 'bg-[var(--pink)] border-[var(--pink)] text-white' : 'bg-th-card/80 border-[var(--card)] text-transparent sm:opacity-0 group-hover:opacity-100'
+                      )}
+                    >
+                      <Check size={13} weight="bold" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(item.id) }}
+                      aria-label={item.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                      className={cn(
+                        'absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-th-card/85 flex items-center justify-center transition-all',
+                        item.is_favorite ? 'text-[var(--pink)]' : 'text-[var(--text-secondary)] sm:opacity-0 group-hover:opacity-100'
+                      )}
+                    >
+                      <Heart size={14} weight={item.is_favorite ? 'fill' : 'regular'} />
+                    </button>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-[13px] font-semibold line-clamp-1 group-hover:text-[var(--pink)] transition-colors">{displayName(item)}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-[11px] text-[var(--text-secondary)] truncate">
+                        {!activeTopic && <>{topicTitle(item.topic_id)} · </>}{formatRelativeDate(item.created_at)}
+                      </p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (confirm(`Delete “${displayName(item)}”?`)) removeItem(item.id) }}
+                        className="p-1 -mr-1 rounded-lg text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-th-error/10 sm:opacity-0 group-hover:opacity-100 transition-all"
+                        aria-label="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        </section>
+      ) : (
+        <div className="fn-card flex flex-col items-center justify-center py-16 px-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center mb-4">
+            <ArchiveIcon size={30} weight="duotone" />
+          </div>
+          {items.length === 0 ? (
+            <>
+              <h3 className="font-heading font-semibold">Your {studyBoxName} is empty {isFrance ? '' : ''}</h3>
+              <p className="text-sm text-[var(--text-secondary)] max-w-sm mt-1 mb-5">Upload lecture notes, handouts, PDFs or photos of your notes to start reviewing.</p>
+              <button onClick={() => fileInputRef.current?.click()} className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2"><Upload size={16} /> Upload your first note</button>
+            </>
+          ) : (
+            <>
+              <h3 className="font-heading font-semibold">Nothing matches</h3>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">Try a different search, topic or filter.</p>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Selection bar — turn selected materials into a quiz, reviewer or slides */}
       <AnimatePresence>
         {selectedItemIds.length > 0 && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }}
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-2xl"
+            exit={{ y: 80, opacity: 0 }}
+            className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-2xl"
           >
-            <div className="bg-[var(--card)] border-2 border-[var(--pink)] rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4 backdrop-blur-xl bg-opacity-90">
-              <div className="flex items-center gap-4 pl-2">
-                <div className="w-10 h-10 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full flex items-center justify-center font-bold">
-                  {selectedItemIds.length}
-                </div>
-                <div>
-                  <p className="text-sm font-bold">Sources selected</p>
-                  <button 
-                    onClick={clearSelection}
-                    className="text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors"
-                  >
-                    Clear Selection
-                  </button>
-                </div>
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-full shadow-fn-lg pl-3 pr-2 py-2 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[var(--pink)] text-white flex items-center justify-center text-sm font-semibold shrink-0">{selectedItemIds.length}</div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold leading-tight">selected</p>
+                <button onClick={clearSelection} className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--pink)]">Clear</button>
               </div>
-
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <button 
-                  onClick={() => {
-                    navigate('/quiz', { state: { selectedItemIds } })
-                    clearSelection()
-                  }}
-                  className="btn-secondary px-2 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2"
-                >
-                  <BrainCircuit size={14} />
-                  Quiz
-                </button>
-                <button 
-                  onClick={handleGeneratePresentation}
-                  disabled={isGeneratingReviewer || isGeneratingPresentation}
-                  className="btn-secondary px-2 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2"
-                >
-                  <FileText size={14} />
-                  {isGeneratingPresentation ? 'Generating...' : 'PPTX'}
-                </button>
-                <button 
-                  onClick={handleGenerateReviewer}
-                  disabled={isGeneratingReviewer || isGeneratingPresentation}
-                  className="btn-primary px-3 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2"
-                >
-                  <Sparkles size={14} />
-                  {isGeneratingReviewer ? 'Generating...' : 'AI'}
-                  <ArrowRight size={12} />
-                </button>
-              </div>
+              <button
+                onClick={() => { navigate('/quiz', { state: { selectedItemIds } }); clearSelection() }}
+                className="btn-secondary px-3 sm:px-4 py-2 text-xs flex items-center gap-1.5"
+              >
+                <BrainCircuit size={14} /> Quiz
+              </button>
+              <button
+                onClick={handleGeneratePresentation}
+                disabled={isGeneratingReviewer || isGeneratingPresentation}
+                className="btn-secondary px-3 sm:px-4 py-2 text-xs flex items-center gap-1.5"
+              >
+                <PresentationChart size={14} /> {isGeneratingPresentation ? 'Making…' : 'Slides'}
+              </button>
+              <button
+                onClick={handleGenerateReviewer}
+                disabled={isGeneratingReviewer || isGeneratingPresentation}
+                className="btn-primary px-3 sm:px-4 py-2 text-xs flex items-center gap-1.5"
+              >
+                <Sparkles size={14} /> {isGeneratingReviewer ? 'Making…' : 'Reviewer'}
+              </button>
             </div>
           </motion.div>
         )}
@@ -507,16 +406,13 @@ export default function StudyBoxPage() {
 
       <AnimatePresence>
         {isCameraOpen && (
-          <CameraModal 
-            onCapture={handleCapture}
-            onClose={() => setIsCameraOpen(false)}
-          />
+          <CameraModal onCapture={handleCapture} onClose={() => setIsCameraOpen(false)} />
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isCaseModalOpen && (
-          <CaseStudyModal 
+          <CaseStudyModal
             onClose={() => setIsCaseModalOpen(false)}
             addGeneratedItem={addGeneratedItem}
             greetingName={greetingName}
@@ -527,9 +423,9 @@ export default function StudyBoxPage() {
 
       <AnimatePresence>
         {selectedItem && (
-          <StudyBoxDetailModal 
-            item={selectedItem} 
-            onClose={() => setSelectedItem(null)} 
+          <StudyBoxDetailModal
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
             topics={topics}
             removeItem={removeItem}
             navigate={navigate}
@@ -539,83 +435,37 @@ export default function StudyBoxPage() {
     </div>
   )
 }
-function formatDocumentText(text: string): React.ReactNode {
-  if (!text) return ''
-  
-  let formatted = text
-  
-  // 1. Clean up consecutive spaces
-  formatted = formatted.replace(/[ \t]+/g, ' ')
-  
-  // 2. Put number lists on new paragraphs
-  // e.g., " 1. ", " 2. ", " 10. "
-  formatted = formatted.replace(/\s+(\d+\.)\s+/g, '\n\n$1 ')
-  
-  // 3. Put standard bullet points (•, ▪, *, -) on new lines
-  // Ensure they are separated cleanly
-  formatted = formatted.replace(/\s*[•▪]\s*/g, '\n• ')
-  
-  // 4. Put sub-bullets like " o " or " - " on new indented lines
-  // Let's match " o " where it represents a bullet (followed by text)
-  formatted = formatted.replace(/\s+o\s+([A-Za-z])/g, '\n  ◦ $1')
-  
-  // 5. If we have headings or lists like "Etiology / Risk Factors" or "Physiologic Causes" or "Lifestyle Factors"
-  // let's put them on new lines to break the wall of text
-  const keySections = [
-    'Anatomy & Physiology Relevance',
-    'Lower Esophageal Sphincter \\(LES\\)',
-    'Lower Esophageal Sphincter',
-    'Stomach',
-    'Etiology / Risk Factors',
-    'Physiologic Causes',
-    'Lifestyle Factors',
-    'Medical Conditions',
-    'Pathophysiology \\(Step-by-Step\\)',
-    'Pathophysiology',
-    'Clinical Manifestations',
-    'Diagnostic Assessments',
-    'Medical Management',
-    'Nursing Interventions',
-    'Normal:',
-    'GERD:'
-  ]
-  
-  keySections.forEach(section => {
-    // Replace section name with a newlined version if it exists
-    const regex = new RegExp(`\\s*(${section})\\s*`, 'g')
-    formatted = formatted.replace(regex, '\n\n$1\n')
-  })
 
-  // 6. Clean up multiple newlines
-  formatted = formatted.replace(/\n{3,}/g, '\n\n')
-  
-  const trimmed = formatted.trim()
-  
-  // Regex to extract and link URLs
-  const urlRegex = /(https?:\/\/[^\s]+)/g
-  const parts = trimmed.split(urlRegex)
-  
-  return parts.map((part, index) => {
-    if (part.match(urlRegex)) {
-      return (
-        <a 
-          key={index} 
-          href={part} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="text-[var(--pink)] hover:underline break-all font-semibold inline"
-        >
-          {part}
-        </a>
-      )
-    }
-    return part
-  })
+function FilterGroup({ label, options, value, onChange }: {
+  label: string
+  options: readonly (readonly [string, string])[]
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 px-1">{label}</p>
+      <div className="flex flex-wrap gap-1">
+        {options.map(([val, text]) => (
+          <button
+            key={val}
+            onClick={() => onChange(val)}
+            className={cn(
+              'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+              value === val ? 'bg-[var(--pink)] border-[var(--pink)] text-white' : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]'
+            )}
+          >
+            {text}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
-function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: { 
-  item: StudyBoxItem, 
-  onClose: () => void, 
+function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
+  item: StudyBoxItem,
+  onClose: () => void,
   topics: Topic[],
   removeItem: (id: string) => void,
   navigate: any
@@ -692,11 +542,6 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
       }
       document.head.appendChild(script)
     }
-  }
-
-  const getTopicColor = (topicId: string | null) => {
-    if (!topicId) return '#6b7280'
-    return topics.find(t => t.id === topicId)?.color || '#6b7280'
   }
 
   const getTopicTitle = (topicId: string | null) => {
@@ -869,7 +714,6 @@ body {
   const handleDownloadFullPDF = () => {
     const content = buildPrintContent()
     const assistantName = isFrance ? 'Doc Uno' : aiAssistantName
-    const windowWidth = window.innerWidth
 
     const containerId = 'pdf-capture-container'
     let container = document.getElementById(containerId) as HTMLElement
@@ -922,18 +766,18 @@ body {
           Do not output a simple or brief summary. Ensure it provides extensive information suitable for both clinical practice and high-stakes board exams like the PNLE.
           
           CUTE AESTHETIC & PERSONALITY RULE:
-          - Use highly decorative, cute, and friendly emojis (e.g., 🌸, 🩺, 🧸, 🩹, ✨, 🎀, 🌷, 🦦) inside your markdown headings and scattered naturally throughout the content to make it visually adorable for France!
+          - Do not use emojis anywhere in the output.
           - Speak to her in a sweet, supportive Taglish boyfriend tone. Call her "babe", cheer her on, and make the review feel like a cozy, romantic, and extremely smart study date!
           
           CRITICAL FORMATTING RULE:
           - Do NOT use markdown tables (e.g. | BP | Stage | etc.) under any circumstances. If you need to make comparisons or show lists of stages/diagnostics, present them as clean bullet points, bold key-value lines, or indented lists. Raw tables are hard to read, so they must be avoided.
           
           Use markdown formatting and structure it with:
-          1. **🧬 Clinical Pathophysiology & Concepts Overview**: Exhaustive, deep-dive description of the disease/topic process, mechanisms, anatomical changes, etiology, and why they occur.
-          2. **📋 High-Yield Clinical Assessment & Laboratory Findings**: Complete breakdown of physical assessments (early vs late signs, priority assessments), diagnostics, and critical lab values she must look out for.
-          3. **💊 Pharmacological & Medical Management**: Critical medications, drug classes, therapeutic actions, adverse effects, and nursing interventions during drug administration.
-          4. **🩺 Exhaustive Nursing Care Priorities & Scientific Rationales**: Detailed step-by-step nursing interventions (assess, do, teach) with clinical rationales.
-          5. **🎯 Doc Uno's PNLE Board Appraisal & Study Pearls**: Specific board-exam style clinical focus scenarios, SATA concepts, and test-taking tips, written in a loving boyfriend tone (call her "babe", cheer her on!).
+          1. **Clinical Pathophysiology & Concepts Overview**: Exhaustive, deep-dive description of the disease/topic process, mechanisms, anatomical changes, etiology, and why they occur.
+          2. **High-Yield Clinical Assessment & Laboratory Findings**: Complete breakdown of physical assessments (early vs late signs, priority assessments), diagnostics, and critical lab values she must look out for.
+          3. **Pharmacological & Medical Management**: Critical medications, drug classes, therapeutic actions, adverse effects, and nursing interventions during drug administration.
+          4. **Exhaustive Nursing Care Priorities & Scientific Rationales**: Detailed step-by-step nursing interventions (assess, do, teach) with clinical rationales.
+          5. **Doc Uno's PNLE Board Appraisal & Study Pearls**: Specific board-exam style clinical focus scenarios, SATA concepts, and test-taking tips, written in a loving boyfriend tone (call her "babe", cheer her on!).
           
           Text to summarize:
           "${currentItem.extracted_text.substring(0, 6000)}"
@@ -945,7 +789,7 @@ body {
           Do not output a simple or brief summary. Ensure it provides extensive, board-ready clinical reviews.
           
           PROFESSIONAL ENCOURAGING RULE:
-          - Use clear, professional clinical emojis (🩺, 👩‍⚕️, 🧠, 📝, ✨, 💊) inside markdown headings and bullet points.
+          - Do not use emojis anywhere in the output.
           - Address the student as ${greetingName}. Keep the tone extremely professional, warm, highly intelligent, and focused on helping them excel on the board exams.
           - Absolutely NO romantic references or boyfriend endearments.
           
@@ -953,11 +797,11 @@ body {
           - Do NOT use markdown tables (e.g. | BP | Stage | etc.) under any circumstances. If you need to make comparisons or show lists of stages/diagnostics, present them as clean bullet points, bold key-value lines, or indented lists. Raw tables are hard to read, so they must be avoided.
           
           Use markdown formatting and structure it with:
-          1. **🧬 Clinical Pathophysiology & Concepts Overview**: Exhaustive, deep-dive description of the disease/topic process, mechanisms, anatomical changes, etiology, and why they occur.
-          2. **📋 High-Yield Clinical Assessment & Laboratory Findings**: Complete breakdown of physical assessments (early vs late signs, priority assessments), diagnostics, and critical lab values.
-          3. **💊 Pharmacological & Medical Management**: Critical medications, drug classes, therapeutic actions, adverse effects, and nursing interventions during drug administration.
-          4. **🩺 Exhaustive Nursing Care Priorities & Scientific Rationales**: Detailed step-by-step nursing interventions (assess, do, teach) with clinical rationales.
-          5. **🎯 Board Appraisal & Study Pearls**: Specific board-exam style clinical focus scenarios, SATA concepts, and test-taking tips.
+          1. **Clinical Pathophysiology & Concepts Overview**: Exhaustive, deep-dive description of the disease/topic process, mechanisms, anatomical changes, etiology, and why they occur.
+          2. **High-Yield Clinical Assessment & Laboratory Findings**: Complete breakdown of physical assessments (early vs late signs, priority assessments), diagnostics, and critical lab values.
+          3. **Pharmacological & Medical Management**: Critical medications, drug classes, therapeutic actions, adverse effects, and nursing interventions during drug administration.
+          4. **Exhaustive Nursing Care Priorities & Scientific Rationales**: Detailed step-by-step nursing interventions (assess, do, teach) with clinical rationales.
+          5. **Board Appraisal & Study Pearls**: Specific board-exam style clinical focus scenarios, SATA concepts, and test-taking tips.
           
           Text to summarize:
           "${currentItem.extracted_text.substring(0, 6000)}"
@@ -990,360 +834,189 @@ body {
     }
   }, [currentItem.id])
 
+  const [tab, setTab] = useState<'document' | 'guide'>('guide')
+  const isReference = currentItem.file_name.startsWith('[Reference]')
+  const wordCount = currentItem.extracted_text ? currentItem.extracted_text.split(/\s+/).length : 0
+  const assistantLabel = isFrance ? 'Doc Uno' : aiAssistantName
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-[var(--card)] w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-[var(--border)] overflow-hidden flex flex-col my-auto"
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        className="bg-[var(--card)] w-full max-w-4xl h-[92vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-2xl shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 md:p-6 flex gap-3 md:gap-4 border-b border-[var(--border)] bg-gradient-to-br from-th-pink/10 to-th-secondary-bg/20 relative items-center">
-          <button 
-            onClick={onClose}
-            className="absolute top-4 md:top-6 right-4 md:right-6 p-2 rounded-full hover:bg-[var(--bg)] text-[var(--text-secondary)] transition-colors"
-            title="Close"
-          >
-            <X size={18} className="sm:hidden" />
-            <span className="hidden sm:inline text-xs font-bold">Close</span>
-          </button>
-
-          <div 
-            className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-white shadow-sm shrink-0 text-xl md:text-2xl"
-            style={{ backgroundColor: getTopicColor(currentItem.topic_id) }}
-          >
-            {getFileIcon(currentItem.file_type)}
+        <div className="px-5 pt-5 pb-3 flex items-start gap-3.5 border-b border-[var(--border)]">
+          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${tintFor(currentItem.id)} border border-[var(--border)] text-[var(--pink)] flex items-center justify-center shrink-0`}>
+            <ItemTypeIcon item={currentItem} size={22} weight="duotone" />
           </div>
-
-          <div className="min-w-0 pr-10 md:pr-12">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-[11px] font-bold px-2.5 py-0.5 bg-white rounded-md text-[var(--text-secondary)] shadow-sm border border-[var(--border)]">
-                {getTopicTitle(currentItem.topic_id)}
-              </span>
-              <span className="text-[10px] text-[var(--text-secondary)] font-medium whitespace-nowrap">
-                Uploaded {formatRelativeDate(currentItem.created_at)}
-              </span>
-            </div>
-            <h2 className="text-sm md:text-base font-bold tracking-tight truncate">
-              {currentItem.file_name.startsWith('[Reference]')
-                ? currentItem.file_name.replace('[Reference] ', '').replace('.txt', '')
-                : currentItem.file_name}
-            </h2>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading font-semibold text-[16px] leading-snug line-clamp-2">{displayName(currentItem)}</h2>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              {getTopicTitle(currentItem.topic_id)} · {formatRelativeDate(currentItem.created_at)} · {wordCount.toLocaleString()} words
+            </p>
           </div>
+          <button onClick={onClose} className="btn-icon p-2 -mr-1" aria-label="Close"><X size={18} /></button>
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col gap-8 bg-th-secondary-bg/10">
-          
-          {/* Main Paper Document Container */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm p-4 sm:p-6 md:p-10 flex flex-col gap-6 relative select-text shrink-0">
-            {/* Soft decorative badge on the paper */}
-            <div className="absolute top-4 right-6 text-[11px] font-bold text-th-text-secondary/30">
-              Original Document
-            </div>
+        {/* Tabs */}
+        <div className="px-5 pt-3 flex gap-1.5">
+          {([['guide', `${assistantLabel}'s Study Guide`, Sparkles], ['document', isReference ? 'Reference Article' : 'Original Document', BookOpen]] as const).map(([id, label, TabIcon]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={cn(
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[13px] font-medium border transition-colors',
+                tab === id ? 'bg-[var(--pink)] border-[var(--pink)] text-white' : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]'
+              )}
+            >
+              <TabIcon size={14} /> {label}
+            </button>
+          ))}
+        </div>
 
-            {/* Embedded image preview if it is an image */}
-            {currentItem.preview_image && (
-              <div className="w-full max-h-96 rounded-2xl overflow-hidden border border-[var(--border)] shadow-sm shrink-0 mb-4 bg-black/[0.02]">
-                <img src={currentItem.preview_image} alt={currentItem.file_name} className="w-full h-full object-contain" />
-              </div>
-            )}
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
+          {tab === 'document' ? (
+            <div className="space-y-4 select-text">
+              {currentItem.preview_image && (
+                <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--bg)]">
+                  <img src={currentItem.preview_image} alt={currentItem.file_name} className="w-full max-h-96 object-contain" />
+                </div>
+              )}
 
-            {/* Document Text Content */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
-                <BookOpen size={16} className="text-[var(--pink)]" />
-                <span className="text-xs font-bold">Document Reader</span>
-              </div>
-
-              {/* Source Link for Reference items */}
-              {currentItem.file_name.startsWith('[Reference]') && (() => {
+              {isReference && (() => {
                 const text = currentItem.extracted_text || ''
-                const sourceMatch = text.match(/^SOURCE:\s*(.+)/m)
-                const urlMatch = text.match(/^URL:\s*(.+)/m)
-                const sourceUrl = urlMatch?.[1]?.trim()
-                const sourceName = sourceMatch?.[1]?.trim()
+                const sourceName = text.match(/^SOURCE:\s*(.+)/m)?.[1]?.trim()
+                const sourceUrl = text.match(/^URL:\s*(.+)/m)?.[1]?.trim()
                 if (!sourceUrl && !sourceName) return null
                 return (
-                  <div className="flex items-center gap-2 p-2 bg-th-secondary-bg/20 border border-[var(--border)] rounded-xl mb-4">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <Globe size={12} className="text-[var(--pink)] shrink-0" />
-                      {sourceUrl ? (
-                        <a 
-                          href={sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[11px] font-semibold text-[var(--pink)] hover:underline truncate"
-                        >
-                          {sourceName || sourceUrl}
-                        </a>
-                      ) : (
-                        <span className="text-[11px] font-semibold text-[var(--text-secondary)] truncate">
-                          {sourceName}
-                        </span>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--rose-soft)] border border-[var(--border)]">
+                    <Globe size={14} className="text-[var(--pink)] shrink-0" />
+                    <span className="text-xs font-medium truncate flex-1">{sourceName || sourceUrl}</span>
                     {sourceUrl && (
-                      <a 
-                        href={sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn-secondary px-2 py-1 text-[9px] font-bold rounded-lg flex items-center gap-1 shrink-0 whitespace-nowrap"
-                      >
-                        <ExternalLink size={9} />
-                        Source
+                      <a href={sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-[var(--pink)] hover:underline flex items-center gap-1 shrink-0">
+                        Open source <ExternalLink size={12} />
                       </a>
                     )}
                   </div>
                 )
               })()}
 
-              <div className="text-sm md:text-base text-[var(--text)] leading-relaxed font-sans select-text">
-                <MarkdownText content={
-                  currentItem.file_name.startsWith('[Reference]')
-                    ? (currentItem.extracted_text || '').replace(/^SOURCE:.*\nURL:.*\n?\n?/, '').trim()
-                    : currentItem.extracted_text
-                } />
-              </div>
-            </div>
-
-            {/* Paper Footer / Page details */}
-            <div className="border-t border-th-border/60 pt-4 mt-6 flex justify-between items-center text-[11px] text-th-text-secondary/50 font-bold">
-              <span>Type: {currentItem.file_type}</span>
-              <span>{currentItem.extracted_text.split(/\s+/).length} Words</span>
-            </div>
-          </div>
-
-          {/* Elegant Page Break & AI Separator */}
-          <div className="my-2 relative flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t-2 border-dashed border-[var(--border)]"></div>
-            </div>
-            <div className="relative z-10 bg-[var(--card)] px-6 py-2 rounded-full border border-[var(--border)] shadow-sm">
-              <span className="text-xs font-bold text-[var(--text)] flex items-center gap-2">
-                <Sparkles size={14} className="text-[var(--pink)] animate-pulse" /> 
-                {isFrance ? "Doc Uno's Study Space" : `${aiAssistantName}'s Study Space`}
-              </span>
-            </div>
-          </div>
-
-          {/* AI Summary Section */}
-          <div id="doc-unos-love-notes-card" className="bg-gradient-to-tr from-[var(--pink)]/[0.02] to-[var(--pink)]/[0.08] border-2 border-th-pink/20 rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col gap-5 relative overflow-hidden shrink-0">
-            {/* Love theme decor elements */}
-            <div 
-              className="absolute top-0 right-0 p-6 pointer-events-none"
-              style={{ color: 'var(--pink)', opacity: 0.08 }}
-            >
-              <Sparkles size={120} />
-            </div>
-
-            <div className="flex items-center justify-between relative z-10 flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[var(--card)] shadow-sm flex items-center justify-center text-[var(--pink)]">
-                  <Sparkles size={20} className="animate-pulse" />
-                </div>
-                <div>
-                  <span className="text-[11px] font-bold text-[var(--pink)] block">
-                    {isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Notes`}
-                  </span>
-                  <h3 className="font-bold text-base text-[var(--text)]">Clinical Summary & Study Guide {isFrance ? '🩺💖' : '🩺✨'}</h3>
-                </div>
+              <div className="text-[14.5px] text-[var(--text)] leading-relaxed">
+                <MarkdownText content={isReference ? (currentItem.extracted_text || '').replace(/^SOURCE:.*\nURL:.*\n?\n?/, '').trim() : currentItem.extracted_text} />
               </div>
 
-              {currentItem.summary && (
-                <div className="flex gap-1.5 sm:gap-2 shrink-0">
-                  <button 
-                    onClick={handleGenerateSummary}
-                    disabled={isGeneratingSummary}
-                    className="btn-secondary py-1.5 sm:py-2 px-2 sm:px-4 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl border-th-pink/30 hover:bg-th-pink/10 text-[var(--pink)] font-bold transition-all shadow-sm"
-                    title={isGeneratingSummary ? 'Regenerating...' : 'Regenerate Summary'}
-                  >
-                    <RefreshCw size={12} className={isGeneratingSummary ? "animate-spin" : ""} />
-                    {isGeneratingSummary ? '...' : 'Regenerate'}
-                  </button>
-                  <button 
-                    onClick={handleDownloadSummary}
-                    className="btn-secondary download-notes-btn py-1.5 sm:py-2 px-2 sm:px-4 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl border-th-pink/30 hover:bg-th-pink/10 text-[var(--pink)] font-bold transition-all shadow-sm"
-                    title={`Download ${isFrance ? "Doc Uno's Study Guide" : 'Study Guide'} as a PDF!`}
-                  >
-                    <Download size={12} />
-                    Download
-                  </button>
+              {currentItem.tags && currentItem.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {currentItem.tags.map((tag, idx) => (
+                    <span key={idx} className="text-[11px] font-medium bg-[var(--rose-soft)] text-[var(--pink)] px-2.5 py-0.5 rounded-full border border-[var(--border)]">#{tag}</span>
+                  ))}
                 </div>
               )}
             </div>
-
-            <div className="relative z-10 select-text">
-              {isGeneratingSummary ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center gap-4 animate-in fade-in zoom-in duration-300">
-                  <div className="relative w-20 h-20 shrink-0 mb-2">
-                    <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-th-pink/30 shadow-md animate-float">
-                      <img src={isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'} alt={aiAssistantName} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-white rounded-full shadow-sm flex items-center justify-center text-[var(--pink)] border border-th-pink/10 animate-spin" style={{ animationDuration: '3s' }}>
-                      <Loader2 size={14} />
-                    </div>
-                  </div>
+          ) : (
+            <div id="doc-unos-love-notes-card" className="select-text">
+              <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                <div className="flex items-center gap-2.5">
+                  <img src={isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'} alt={aiAssistantName} className="w-9 h-9 rounded-full object-cover border border-[var(--border)]" />
                   <div>
-                    <p className="font-bold text-sm text-[var(--text)]">
-                      {isFrance ? 'Uno is studying your notes hard, babe... 🩺📚' : `${aiAssistantName} is studying your notes... 🩺📚`}
-                    </p>
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      {isFrance ? 'Writing you a cute custom summary and clinical exam pearls! 💕' : 'Analyzing key nursing concepts and PNLE board exam highlights... 🩺'}
-                    </p>
+                    <p className="text-sm font-semibold leading-tight">Clinical Summary & Study Guide</p>
+                    <p className="text-[11px] text-[var(--text-secondary)]">{isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Notes`}</p>
                   </div>
-                  <div className="w-48 h-1 bg-[var(--border)] rounded-full overflow-hidden mt-2">
-                    <motion.div 
-                      initial={{ x: '-100%' }}
-                      animate={{ x: '100%' }}
-                      transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
-                      className="h-full w-1/2 bg-[var(--pink)] rounded-full"
-                    ></motion.div>
+                </div>
+                {currentItem.summary && !isGeneratingSummary && (
+                  <div className="flex gap-1.5 download-notes-btn">
+                    <button onClick={handleGenerateSummary} className="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5">
+                      <RefreshCw size={13} /> Regenerate
+                    </button>
+                    <button onClick={handleDownloadSummary} className="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5">
+                      <Download size={13} /> Save PDF
+                    </button>
                   </div>
+                )}
+              </div>
+
+              {isGeneratingSummary ? (
+                <div className="flex flex-col items-center justify-center py-14 text-center gap-3">
+                  <img src={isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'} alt={aiAssistantName} className="w-16 h-16 rounded-2xl object-cover border border-[var(--border)] animate-float" />
+                  <p className="text-sm font-semibold">{isFrance ? 'Uno is studying your notes, babe…' : `${aiAssistantName} is studying your notes…`}</p>
+                  <p className="text-xs text-[var(--text-secondary)] max-w-xs">Writing a study guide with key concepts, nursing priorities and board-exam pearls.</p>
+                  <Loader2 size={18} className="animate-spin text-[var(--pink)]" />
                 </div>
               ) : currentItem.summary ? (
-                <div className="prose prose-pink max-w-none text-sm leading-relaxed text-[var(--text-secondary)] flex flex-col gap-6">
-                  <div>
-                    <MarkdownText content={currentItem.summary} />
-                  </div>
-                  
-                  {/* Custom Boyfriend Signature Section */}
-                  <div className="mt-6 pt-6 border-t border-th-pink/20 text-center flex flex-col items-center justify-center gap-1 shrink-0">
-                    <span className="text-xs font-bold text-[var(--pink)] flex items-center gap-1.5">
-                      Made with 💖 by {isFrance ? 'Doc Uno for France' : `${aiAssistantName}`}
-                    </span>
-                    <span className="text-[11px] font-bold text-th-text-secondary/50">
-                      {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </span>
-                  </div>
+                <div className="text-[14px] leading-relaxed text-[var(--text)]">
+                  <MarkdownText content={currentItem.summary} />
+                  <p className="mt-6 pt-4 border-t border-[var(--border)] text-center text-xs font-medium text-[var(--pink)]">
+                    Made with by {isFrance ? 'Doc Uno for France' : aiAssistantName}
+                  </p>
                 </div>
               ) : summaryError ? (
-                <div className="flex flex-col items-center justify-center py-6 text-center gap-3">
-                  <p className="text-xs font-bold text-[var(--error)]">{summaryError}</p>
-                  <button onClick={handleGenerateSummary} className="btn-secondary py-1.5 sm:py-2 px-3 sm:px-4 text-xs flex items-center gap-1.5">
-                    <Loader2 size={12} /> Retry Summarizing
-                  </button>
+                <div className="flex flex-col items-center py-10 text-center gap-3">
+                  <p className="text-sm text-[var(--error)]">{summaryError}</p>
+                  <button onClick={handleGenerateSummary} className="btn-secondary px-4 py-2 text-xs flex items-center gap-1.5"><RefreshCw size={13} /> Try again</button>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
-                  <p className="text-xs text-[var(--text-secondary)] font-medium max-w-md">
-                    {isFrance 
-                      ? 'No summary generated yet. Let Doc Uno read this document and extract key board exam concepts and nursing priorities for you, babe! 🌸'
-                      : `No summary generated yet. Let ${aiAssistantName} read this document and extract clinical concepts and board exam priorities for you! 🩺`
-                    }
+                <div className="flex flex-col items-center py-12 text-center gap-4">
+                  <p className="text-sm text-[var(--text-secondary)] max-w-md">
+                    {isFrance
+                      ? 'No study guide yet. Let Doc Uno read this and pull out the board-exam concepts for you, babe!'
+                      : `No study guide yet. Let ${aiAssistantName} read this and pull out the key concepts and board-exam priorities.`}
                   </p>
-                  <button onClick={handleGenerateSummary} className="btn-primary py-2.5 sm:py-3 px-4 sm:px-6 text-xs flex items-center gap-1.5 sm:gap-2 shadow-fn">
-                    <Sparkles size={14} /> Write AI Summary
-                  </button>
+                  <button onClick={handleGenerateSummary} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"><Sparkles size={15} /> Write study guide</button>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Tags list */}
-          {currentItem.tags && currentItem.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 items-center">
-              <span className="text-[10px] font-bold text-[var(--text-secondary)] mr-1">Tags:</span>
-              {currentItem.tags.map((tag, idx) => (
-                <span key={idx} className="text-[10px] font-bold bg-th-pink/10 text-[var(--pink)] px-3 py-1 rounded-full border border-th-pink/10">
-                  #{tag}
-                </span>
-              ))}
             </div>
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-5 border-t border-[var(--border)] bg-th-bg/50 flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <button onClick={handleDelete} className="text-xs font-bold text-[var(--error)] hover:bg-th-error/10 px-4 py-2.5 rounded-xl transition-colors">
-            Delete Note
+        {/* Actions */}
+        <div className="px-5 py-3.5 border-t border-[var(--border)] flex items-center gap-2 overflow-x-auto">
+          <button onClick={() => { if (confirm('Delete this material?')) handleDelete() }} className="btn-icon p-2 hover:text-[var(--error)] shrink-0" title="Delete" aria-label="Delete">
+            <Trash2 size={18} />
           </button>
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 justify-end w-full sm:w-auto">
-            <button onClick={onClose} className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs rounded-xl">
-              Close
-            </button>
-            <button 
-              onClick={handlePrint}
-              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl"
-              title="Print this document"
-            >
-              <FileText size={12} /> 
-              <span>Print</span>
-            </button>
-            <button 
-              onClick={handleDownloadFullPDF}
-              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl"
-              title="Download as PDF"
-            >
-              <Download size={12} /> 
-              <span>PDF</span>
-            </button>
-            <button 
-              onClick={handleModalGeneratePresentation}
-              disabled={isGeneratingReviewer || isGeneratingPresentation}
-              className="btn-secondary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl"
-              title="Generate PPTX"
-            >
-              <FileText size={12} /> 
-              <span>{isGeneratingPresentation ? '...' : 'PPTX'}</span>
-            </button>
-            <button 
-              onClick={handleModalGenerateReviewer}
-              disabled={isGeneratingReviewer || isGeneratingPresentation}
-              className="btn-primary px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 rounded-xl shadow-sm"
-              title="Make Reviewer"
-            >
-              <Sparkles size={12} /> 
-              <span>{isGeneratingReviewer ? '...' : 'Reviewer'}</span>
-            </button>
-            <button onClick={handleStartQuiz} title="Start Quiz" className="btn-primary bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 border-none text-white px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 shadow-sm rounded-xl">
-              <BrainCircuit size={12} /> 
-              <span>Quiz</span>
-            </button>
-          </div>
+          <button onClick={handlePrint} className="btn-icon p-2 shrink-0" title="Print" aria-label="Print"><Printer size={18} /></button>
+          <button onClick={handleDownloadFullPDF} className="btn-icon p-2 shrink-0" title="Download as PDF" aria-label="Download as PDF"><Download size={18} /></button>
+          <div className="flex-1" />
+          <button
+            onClick={handleModalGeneratePresentation}
+            disabled={isGeneratingReviewer || isGeneratingPresentation}
+            className="btn-secondary px-4 py-2 text-xs flex items-center gap-1.5 shrink-0"
+          >
+            <PresentationChart size={14} /> {isGeneratingPresentation ? 'Making…' : 'Slides'}
+          </button>
+          <button
+            onClick={handleModalGenerateReviewer}
+            disabled={isGeneratingReviewer || isGeneratingPresentation}
+            className="btn-secondary px-4 py-2 text-xs flex items-center gap-1.5 shrink-0"
+          >
+            <Books size={14} /> {isGeneratingReviewer ? 'Making…' : 'Reviewer'}
+          </button>
+          <button onClick={handleStartQuiz} className="btn-primary px-4 py-2 text-xs flex items-center gap-1.5 shrink-0">
+            <BrainCircuit size={14} /> Quiz me
+          </button>
         </div>
       </motion.div>
     </motion.div>
   )
 }
 
-
-function Archive(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="20" height="5" x="2" y="3" rx="1" />
-      <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-      <path d="M10 12h4" />
-    </svg>
-  )
-}
-
-function CaseStudyModal({ 
-  onClose, 
-  addGeneratedItem, 
-  greetingName, 
-  aiAssistantName 
-}: { 
-  onClose: () => void, 
+function CaseStudyModal({
+  onClose,
+  addGeneratedItem,
+  greetingName,
+  aiAssistantName
+}: {
+  onClose: () => void,
   addGeneratedItem: (title: string, content: string, type: 'case-study' | 'pathophysiology') => Promise<void>,
   greetingName: string,
   aiAssistantName: string
@@ -1484,7 +1157,6 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
     if (e.target) e.target.value = ''
 
     for (const file of files) {
-      const id = Date.now().toString() + file.name
       setReferenceFiles(prev => [...prev, { name: file.name, text: null, loading: true }])
       try {
         const text = await extractTextFromFile(file)
@@ -1500,179 +1172,120 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <motion.div 
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-[var(--card)] w-full max-w-2xl rounded-2xl p-4 sm:p-6 md:p-8 border border-[var(--border)] shadow-2xl relative my-4 md:my-8 max-h-[90vh] overflow-y-auto"
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" onClick={() => !isGenerating && onClose()}>
+      <motion.div
+        initial={{ y: 24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 24, opacity: 0 }}
+        onClick={e => e.stopPropagation()}
+        className="bg-[var(--card)] w-full max-w-xl rounded-t-3xl sm:rounded-2xl border border-[var(--border)] shadow-fn-lg max-h-[92vh] overflow-y-auto custom-scrollbar"
       >
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text)] text-2xl font-bold w-10 h-10 flex items-center justify-center rounded-full hover:bg-th-border/20 transition-all"
-        >
-          &times;
-        </button>
-
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-th-pink/15 rounded-2xl flex items-center justify-center text-[var(--pink)] shadow-sm">
-            <Sparkles size={24} />
+        <div className="px-6 pt-6 pb-4 flex items-start gap-3 border-b border-[var(--border)]">
+          <div className="w-11 h-11 rounded-xl bg-[var(--rose-soft)] border border-[var(--border)] text-[var(--pink)] flex items-center justify-center shrink-0">
+            <Sparkles size={22} weight="duotone" />
           </div>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">AI Clinical Generator 🩺✨</h2>
-            <p className="text-xs text-[var(--text-secondary)]">Create a detailed case study or detailed pathophysiology guide.</p>
+          <div className="flex-1">
+            <h2 className="font-heading font-semibold text-[17px]">AI Clinical Generator</h2>
+            <p className="text-xs text-[var(--text-secondary)]">A detailed case study or pathophysiology guide, saved to your Study Box.</p>
           </div>
+          <button onClick={onClose} disabled={isGenerating} className="btn-icon p-2 -mr-1" aria-label="Close"><X size={18} /></button>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 text-red-600 rounded-2xl text-xs border border-red-500/20 font-medium">
-            ⚠️ {error}
-          </div>
-        )}
+        <div className="p-6">
+          {error && (
+            <p className="mb-5 px-3 py-2.5 rounded-xl bg-th-error/10 border border-th-error/25 text-[var(--error)] text-[13px]">{error}</p>
+          )}
 
-        {isGenerating ? (
-          <div className="py-12 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 border-4 border-th-pink/30 border-t-[var(--pink)] rounded-full animate-spin mb-6"></div>
-            <h3 className="font-bold text-lg mb-2 text-[var(--pink)] animate-pulse">Drafting Clinical Document...</h3>
-            <p className="text-xs text-[var(--text-secondary)] max-w-md">
-              {genType === 'case-study' 
-                ? `${aiAssistantName} is conducting physical assessments, mapping diagnostics, and detailing the Nursing Care Plans...` 
-                : `${aiAssistantName} is tracing cell injury pathways, homeostatic changes, and clinical symptom correlations...`
-              }
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleGenerate} className="space-y-5">
-            {/* Generator Type Selector */}
-            <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2.5">
-                Generation Category
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setGenType('case-study')}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all text-center gap-1.5",
-                    genType === 'case-study' 
-                      ? "border-[var(--pink)] bg-th-pink/5 text-[var(--pink)] font-bold shadow-sm"
-                      : "border-[var(--border)] hover:bg-th-border/20 text-[var(--text-secondary)]"
-                  )}
-                >
-                  <BookOpen size={20} />
-                  <span className="text-sm font-semibold">Clinical Case Study</span>
-                  <span className="text-[10px] opacity-75">Patient profile, labs, meds, care plan</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGenType('pathophysiology')}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all text-center gap-1.5",
-                    genType === 'pathophysiology' 
-                      ? "border-[var(--pink)] bg-th-pink/5 text-[var(--pink)] font-bold shadow-sm"
-                      : "border-[var(--border)] hover:bg-th-border/20 text-[var(--text-secondary)]"
-                  )}
-                >
-                  <BrainCircuit size={20} />
-                  <span className="text-sm font-semibold">Pathophysiology Guide</span>
-                  <span className="text-[10px] opacity-75">Cellular pathways, risk factors, etiologies</span>
-                </button>
-              </div>
+          {isGenerating ? (
+            <div className="py-10 flex flex-col items-center text-center gap-3">
+              <Loader2 size={30} className="animate-spin text-[var(--pink)]" />
+              <p className="font-semibold">Drafting your {genType === 'case-study' ? 'case study' : 'pathophysiology guide'}…</p>
+              <p className="text-xs text-[var(--text-secondary)] max-w-sm">
+                {genType === 'case-study'
+                  ? `${aiAssistantName} is writing the assessment, diagnostics and nursing care plan.`
+                  : `${aiAssistantName} is tracing the disease pathway and symptom correlations.`}
+              </p>
             </div>
-
-            {/* Medical Topic/Condition */}
-            <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2">
-                Medical Condition / Topic Name
-              </label>
-              <input
-                type="text"
-                required
-                value={topic}
-                onChange={e => setTopic(e.target.value)}
-                placeholder="e.g. Myocardial Infarction, Acute Appendicitis, Chronic Kidney Disease"
-                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--pink)] transition-all font-semibold"
-              />
-            </div>
-
-            {/* Scenario Textarea */}
-            <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 flex justify-between">
-                <span>Patient Scenario / Clinical Details (Optional)</span>
-                <span className="text-[10px] font-normal lowercase tracking-normal text-th-text-secondary/60">help custom-tailor the content</span>
-              </label>
-              <textarea
-                value={scenario}
-                onChange={e => setScenario(e.target.value)}
-                placeholder={
-                  genType === 'case-study'
-                    ? "e.g., A 56-year-old female presenting with crushing retrosternal chest pain radiating to the left shoulder, diaphoresis, and blood pressure of 150/90 mmHg. History of hypertension..."
-                    : "e.g., Explain the mechanism of ischemic injury, necrosis pathways, cardiac enzyme release (troponin), and ventricular remodeling..."
-                }
-                rows={5}
-                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--pink)] transition-all leading-relaxed"
-              />
-            </div>
-
-            {/* Reference Upload */}
-            <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2.5">
-                Reference Materials <span className="text-[10px] font-normal lowercase tracking-normal text-th-text-secondary/60">(PDF, DOCX, images — optional)</span>
-              </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept=".pdf,.docx,.txt,.md,.csv,.jpg,.jpeg,.png,.webp"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <div className="flex flex-wrap gap-2 mb-2">
-                {referenceFiles.map(f => (
-                  <div key={f.name} className="flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs max-w-full">
-                    {f.loading ? (
-                      <Loader2 size={12} className="animate-spin shrink-0" />
-                    ) : f.error ? (
-                      <span className="text-[var(--error)] shrink-0" title={f.error}>⚠</span>
-                    ) : (
-                      <FileText size={12} className="text-[var(--pink)] shrink-0" />
+          ) : (
+            <form onSubmit={handleGenerate} className="space-y-5">
+              <div className="grid grid-cols-2 gap-2.5">
+                {([
+                  ['case-study', 'Case Study', 'Profile, labs, meds, care plan', BookOpen],
+                  ['pathophysiology', 'Pathophysiology', 'Pathways, causes, symptoms', BrainCircuit],
+                ] as const).map(([id, title, sub, OptIcon]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setGenType(id)}
+                    className={cn(
+                      'p-3.5 rounded-xl border text-left transition-colors',
+                      genType === id ? 'border-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]'
                     )}
-                    <span className="truncate max-w-[180px]">{f.name}</span>
-                    {!f.loading && (
-                      <button type="button" onClick={() => removeFile(f.name)} className="text-[var(--text-secondary)] hover:text-[var(--error)] shrink-0 ml-1">&times;</button>
-                    )}
-                  </div>
+                  >
+                    <OptIcon size={20} className="text-[var(--pink)] mb-1.5" weight={genType === id ? 'fill' : 'regular'} />
+                    <p className="text-sm font-semibold">{title}</p>
+                    <p className="text-[11px] text-[var(--text-secondary)]">{sub}</p>
+                  </button>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 text-xs text-[var(--text-secondary)] hover:text-[var(--pink)] font-semibold transition-colors"
-              >
-                <Upload size={14} /> 
-                {referenceFiles.length > 0 ? 'Add More References' : 'Upload References'}
-              </button>
-            </div>
 
-            {/* Submit Buttons */}
-            <div className="pt-2 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn-secondary px-6 py-2.5 text-xs font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn-primary bg-gradient-to-r from-[var(--pink)] to-[#F7A8B8] hover:opacity-90 shadow-fn px-6 py-2.5 text-xs font-bold flex items-center gap-1.5"
-              >
-                Generate Document <ArrowRight size={14} />
-              </button>
-            </div>
-          </form>
-        )}
+              <label className="block">
+                <span className="block text-[13px] font-medium mb-1.5">Condition or topic</span>
+                <input
+                  type="text"
+                  required
+                  value={topic}
+                  onChange={e => setTopic(e.target.value)}
+                  placeholder="e.g. Myocardial Infarction, Chronic Kidney Disease"
+                  className="fn-input rounded-xl bg-[var(--card)] py-2.5 text-sm"
+                />
+              </label>
+
+              <label className="block">
+                <span className="flex justify-between text-[13px] font-medium mb-1.5">
+                  Patient scenario <span className="text-[11px] font-normal text-[var(--text-secondary)]">optional</span>
+                </span>
+                <textarea
+                  value={scenario}
+                  onChange={e => setScenario(e.target.value)}
+                  placeholder={genType === 'case-study'
+                    ? 'e.g. 56-year-old female with crushing chest pain radiating to the left shoulder, BP 150/90, history of hypertension…'
+                    : 'e.g. Focus on ischemic injury, troponin release and ventricular remodeling…'}
+                  rows={4}
+                  className="fn-input rounded-xl bg-[var(--card)] py-2.5 text-sm leading-relaxed resize-none"
+                />
+              </label>
+
+              <div>
+                <span className="flex justify-between text-[13px] font-medium mb-1.5">
+                  Reference files <span className="text-[11px] font-normal text-[var(--text-secondary)]">optional · PDF, Word, images</span>
+                </span>
+                <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.jpg,.jpeg,.png,.webp" onChange={handleFileSelect} className="hidden" />
+                {referenceFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {referenceFiles.map(f => (
+                      <span key={f.name} className="flex items-center gap-1.5 bg-[var(--rose-soft)] border border-[var(--border)] rounded-full pl-2.5 pr-1.5 py-1 text-xs max-w-full">
+                        {f.loading ? <Loader2 size={12} className="animate-spin shrink-0" /> : <FileText size={12} className={cn('shrink-0', f.error ? 'text-[var(--error)]' : 'text-[var(--pink)]')} />}
+                        <span className="truncate max-w-[160px]" title={f.error}>{f.name}</span>
+                        {!f.loading && (
+                          <button type="button" onClick={() => removeFile(f.name)} className="text-[var(--text-secondary)] hover:text-[var(--error)]" aria-label={`Remove ${f.name}`}><X size={12} /></button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full border border-dashed border-[var(--accent)] rounded-xl py-3 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-[var(--rose-soft)] flex items-center justify-center gap-2">
+                  <Upload size={14} /> {referenceFiles.length > 0 ? 'Add more files' : 'Upload reference files'}
+                </button>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={onClose} className="btn-secondary px-5 py-2.5 text-sm">Cancel</button>
+                <button type="submit" className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"><Sparkles size={15} /> Generate</button>
+              </div>
+            </form>
+          )}
+        </div>
       </motion.div>
     </div>
   )

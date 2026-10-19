@@ -31,7 +31,7 @@ export default function ProgressCard() {
   const cheer = scored.length === 0
     ? 'Take your first quiz to see your score here!'
     : average >= 75
-      ? (isFrance ? "You're doing amazing, babe! 🌸" : "You're doing great — keep it up!")
+      ? (isFrance ? "You're doing amazing, babe!" : "You're doing great — keep it up!")
       : (isFrance ? 'Every quiz makes you stronger, babe!' : 'Every quiz makes you stronger!')
 
   return (

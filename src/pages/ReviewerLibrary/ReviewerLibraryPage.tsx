@@ -39,7 +39,7 @@ export default function ReviewerLibraryPage() {
 
   const handleGenerateReviewer = async () => {
     if (generationSourceType === 'uploaded' && selectedUploadIds.length === 0) {
-      alert(isFrance ? "Please select at least one uploaded file to generate from, babe! 🌸" : "Please select at least one uploaded file to generate from! 🩺")
+      alert(isFrance ? "Please select at least one uploaded file to generate from, babe!" : "Please select at least one uploaded file to generate from!")
       return
     }
 
@@ -57,7 +57,7 @@ export default function ReviewerLibraryPage() {
       setIsGenerateModalOpen(false)
     } catch (err) {
       console.error(err)
-      alert(isFrance ? "Oops! Failed to generate reviewer, babe. Please try again! 🩺🌸" : "Failed to generate reviewer. Please try again! 🩺")
+      alert(isFrance ? "Oops! Failed to generate reviewer, babe. Please try again!" : "Failed to generate reviewer. Please try again!")
     }
   }
   
@@ -78,7 +78,7 @@ export default function ReviewerLibraryPage() {
       <PageHeader
         icon={Library}
         title={isFrance ? "France's Reviewer Library" : 'Reviewer Library'}
-        subtitle={isFrance ? 'Your personalized study guides and AI insights, babe! 🌸' : 'Your study guides, flashcards and AI insights.'}
+        subtitle={isFrance ? 'Your personalized study guides and AI insights, babe!' : 'Your study guides, flashcards and AI insights.'}
         actions={
         <button
           onClick={() => {
@@ -204,7 +204,7 @@ export default function ReviewerLibraryPage() {
              <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-full flex items-center justify-center text-[var(--pink)] mb-6">
                 <Library size={40} />
              </div>
-             <p className="text-[var(--text-secondary)]">No reviewers found matching your search. {isFrance ? '🌸' : '🩺'}</p>
+             <p className="text-[var(--text-secondary)]">No reviewers found matching your search. {isFrance ? '' : ''}</p>
           </div>
         )}
       </div>
@@ -248,11 +248,11 @@ export default function ReviewerLibraryPage() {
                       <Sparkles size={40} className="animate-bounce" />
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{aiAssistantName} is reviewing... 🩺{isFrance ? '🌸' : '✨'}</h3>
+                  <h3 className="text-xl font-bold mb-2">{aiAssistantName} is reviewing...{isFrance ? '' : ''}</h3>
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed italic max-w-xs">
                     {isFrance 
-                      ? '"Sandali lang, France! Gagawa ako ng highly detailed at high-yield study reviewer para sa\'yo, babe! ✨"'
-                      : `"Please wait while ${aiAssistantName} synthesizes a highly detailed and high-yield clinical study reviewer for you! 🩺"`
+                      ? '"Sandali lang, France! Gagawa ako ng highly detailed at high-yield study reviewer para sa\'yo, babe!"'
+                      : `"Please wait while ${aiAssistantName} synthesizes a highly detailed and high-yield clinical study reviewer for you!"`
                     }
                   </p>
                   {/* Subtle cute micro-animation status */}
@@ -277,10 +277,10 @@ export default function ReviewerLibraryPage() {
                   </button>
 
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight mb-1">Generate Reviewer 🩺{isFrance ? '🌸' : '✨'}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight mb-1">Generate Reviewer{isFrance ? '' : ''}</h2>
                     <p className="text-xs text-[var(--text-secondary)] font-medium">
                       {isFrance 
-                        ? 'Doc Uno will create a personalized study guide or slides for you, babe! 🌸'
+                        ? 'Doc Uno will create a personalized study guide or slides for you, babe!'
                         : `${aiAssistantName} will create a professional study guide or slides for you!`
                       }
                     </p>
@@ -401,8 +401,8 @@ export default function ReviewerLibraryPage() {
                           <div className="p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10 text-center">
                             <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
                               {isFrance 
-                                ? <>Your Study Box is empty, France! 🌸<br />Pumunta muna sa Study Box page para mag-upload ng mga medical notes o files.</>
-                                : <>Your Study Box is currently empty! 🩺<br />Please go to the Study Box page and upload clinical notes or study files first.</>
+                                ? <>Your Study Box is empty, France!<br />Pumunta muna sa Study Box page para mag-upload ng mga medical notes o files.</>
+                                : <>Your Study Box is currently empty!<br />Please go to the Study Box page and upload clinical notes or study files first.</>
                               }
                             </p>
                           </div>
@@ -603,12 +603,12 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
             
             <div className="mt-8 p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10">
                <p className="text-[11px] font-bold text-[var(--pink)] mb-1">
-                 {isFrance ? "Doc Uno's Insight 🩺" : `${aiAssistantName}'s Clinical Insight 🩺`}
+                 {isFrance ? "Doc Uno's Insight" : `${aiAssistantName}'s Clinical Insight`}
                </p>
                <p className="text-xs text-[var(--text-secondary)] leading-relaxed italic">
                  {isFrance 
-                   ? '"Focus on the patient safety rationales in this section, France! ✨"'
-                   : `"Focus closely on the clinical rationales and nursing interventions outlined here. ✨"`
+                   ? '"Focus on the patient safety rationales in this section, France!"'
+                   : `"Focus closely on the clinical rationales and nursing interventions outlined here."`
                  }
                </p>
             </div>
@@ -819,7 +819,7 @@ function SlideViewer({ slides }: { slides: any[] }) {
   const { isFrance, aiAssistantName } = usePersonalization()
   const [currentSlideIdx, setCurrentSlideIdx] = useState(0)
   
-  if (!slides || slides.length === 0) return <p className="text-center text-[var(--text-secondary)]">No slides found. {isFrance ? '🌸' : '🩺'}</p>
+  if (!slides || slides.length === 0) return <p className="text-center text-[var(--text-secondary)]">No slides found. {isFrance ? '' : ''}</p>
   
   const currentSlide = slides[currentSlideIdx]
   
@@ -890,7 +890,7 @@ function SlideViewer({ slides }: { slides: any[] }) {
       {currentSlide.presenter_notes && (
         <div className="bg-th-pink/5 p-6 rounded-2xl border border-th-pink/10">
           <p className="text-[11px] font-bold text-[var(--pink)] mb-2 flex items-center gap-1.5">
-            {isFrance ? "Doc Uno's Presentation Script 🩺" : `${aiAssistantName}'s Presentation Script 🩺`}
+            {isFrance ? "Doc Uno's Presentation Script" : `${aiAssistantName}'s Presentation Script`}
           </p>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed italic">
             "{currentSlide.presenter_notes}"

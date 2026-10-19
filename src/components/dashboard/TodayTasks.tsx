@@ -21,7 +21,7 @@ export default function TodayTasks() {
       </div>
 
       {tasks.length === 0 ? (
-        <p className="text-sm text-[var(--text-secondary)] py-3">All caught up! 🌸 Add tasks in your planner.</p>
+        <p className="text-sm text-[var(--text-secondary)] py-3">All caught up! Add tasks in your planner.</p>
       ) : (
         <ul className="space-y-1">
           {tasks.map(task => (

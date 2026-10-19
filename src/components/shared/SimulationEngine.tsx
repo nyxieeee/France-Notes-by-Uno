@@ -130,7 +130,7 @@ function SimulationSession() {
       addMessage('assistant', cleanedResponse)
     } catch (e) {
       console.error('Chat API failure:', e)
-      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment! 🌸")
+      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment!")
     } finally {
       setIsTyping(false)
     }
@@ -169,7 +169,7 @@ function SimulationSession() {
       addMessage('assistant', cleanedResponse)
     } catch (e) {
       console.error('Chat API failure:', e)
-      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment! 🌸")
+      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment!")
     } finally {
       setIsTyping(false)
     }
@@ -296,7 +296,7 @@ function SimulationSession() {
       addMessage('assistant', cleanedResponse)
     } catch (e) {
       console.error('Chat API failure:', e)
-      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment! 🌸")
+      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment!")
     } finally {
       setIsTyping(false)
     }
@@ -494,20 +494,20 @@ function SimulationReport() {
 
       <div className="space-y-6">
         <div className="fn-card p-6 border-l-4 border-l-[var(--success)]">
-          <h3 className="font-bold text-lg mb-3">What You Did Right ✨</h3>
+          <h3 className="font-bold text-lg mb-3">What You Did Right</h3>
           <ul className="space-y-2">
             {feedback.correct.map((f, i) => <li key={i} className="text-sm text-[var(--text-secondary)] flex items-start gap-2"><span className="text-[var(--success)]">✓</span> {f}</li>)}
           </ul>
         </div>
         <div className="fn-card p-6 border-l-4 border-l-[var(--warning)]">
-          <h3 className="font-bold text-lg mb-3">Areas to Improve 🩺</h3>
+          <h3 className="font-bold text-lg mb-3">Areas to Improve</h3>
           <ul className="space-y-2">
             {feedback.missed.map((f, i) => <li key={i} className="text-sm text-[var(--text-secondary)] flex items-start gap-2"><span className="text-[var(--warning)]">•</span> {f}</li>)}
           </ul>
         </div>
         {feedback.safetyViolations.length > 0 && (
           <div className="fn-card p-6 border-l-4 border-l-[var(--error)] bg-th-error/5">
-            <h3 className="font-bold text-lg mb-3 text-[var(--error)]">Critical Safety Violations 🚨</h3>
+            <h3 className="font-bold text-lg mb-3 text-[var(--error)]">Critical Safety Violations</h3>
             <ul className="space-y-2">
               {feedback.safetyViolations.map((f, i) => <li key={i} className="text-sm text-[var(--error)] flex items-start gap-2"><span>!</span> {f}</li>)}
             </ul>

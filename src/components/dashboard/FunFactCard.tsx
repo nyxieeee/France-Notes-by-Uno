@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sparkle as Sparkles, ArrowsClockwise as RefreshCw, WarningCircle as AlertCircle, Stethoscope, Question as HelpCircle, Heart, Lightning as Zap } from '@phosphor-icons/react'
+import { stripEmoji } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateJSON, DOC_UNO_SYSTEM_PROMPT } from '@/lib/ai'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -10,8 +11,8 @@ export default function FunFactCard() {
   const [fact, setFact] = useState({ 
     id: 'idle', 
     content: isFrance
-      ? `Tap the refresh button and I'll drop a fun fact for you, babe ✨`
-      : `Tap refresh for a high-yield clinical fact ✨`,
+      ? `Tap the refresh button and I'll drop a fun fact for you, babe`
+      : `Tap refresh for a high-yield clinical fact`,
     type: 'nursing facts' 
   })
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -63,7 +64,7 @@ export default function FunFactCard() {
       
       setFact({
         id: Date.now().toString(),
-        content: newFact.content || `${aiAssistantName} is taking a quick coffee break! ☕`,
+        content: newFact.content || `${aiAssistantName} is taking a quick coffee break!`,
         type: newFact.type || "nursing facts"
       })
     } catch (error) {
@@ -72,13 +73,13 @@ export default function FunFactCard() {
       if (isFrance) {
         setFact({
           id: Date.now().toString(),
-          content: "Did you know, babe? Taking short active breaks while studying nursing blocks improves your memory retention by 200%! Stay hydrated! 🌸",
+          content: "Did you know, babe? Taking short active breaks while studying nursing blocks improves your memory retention by 200%! Stay hydrated!",
           type: "nursing facts"
         })
       } else {
         setFact({
           id: Date.now().toString(),
-          content: `Did you know, ${greetingName}? Taking short active breaks while studying complex nursing material improves your information retention by up to 200%! Stay hydrated! 🧠🩺`,
+          content: `Did you know, ${greetingName}? Taking short active breaks while studying complex nursing material improves your information retention by up to 200%! Stay hydrated!`,
           type: "nursing facts"
         })
       }
@@ -130,7 +131,7 @@ export default function FunFactCard() {
             exit={{ opacity: 0, y: -10 }}
             className="text-[13.5px] text-[var(--text)] leading-relaxed"
           >
-            "{fact.content}"
+            "{stripEmoji(fact.content)}"
           </motion.p>
         </AnimatePresence>
       </div>

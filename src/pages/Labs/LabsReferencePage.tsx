@@ -30,7 +30,7 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'electrolytes',
     label: 'Electrolytes',
-    emoji: '⚡',
+    emoji: '',
     color: '#F7A8B8',
     labs: [
       {
@@ -86,7 +86,7 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'hematology',
     label: 'Hematology',
-    emoji: '🩸',
+    emoji: '',
     color: '#FFB3C1',
     labs: [
       {
@@ -126,7 +126,7 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'chemistry',
     label: 'Chemistry',
-    emoji: '🧪',
+    emoji: '',
     color: '#A8D8B9',
     labs: [
       {
@@ -174,7 +174,7 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'abg',
     label: 'Arterial Blood Gas',
-    emoji: '💨',
+    emoji: '',
     color: '#B3E5FC',
     labs: [
       {
@@ -222,7 +222,7 @@ const LAB_DATA: LabCategory[] = [
   {
     id: 'coag',
     label: 'Coagulation',
-    emoji: '🩹',
+    emoji: '',
     color: '#FFD59E',
     labs: [
       {
@@ -537,7 +537,7 @@ export default function LabsReferencePage() {
               ))
             ) : (
               <div className="text-center py-20 fn-card border-dashed">
-                <p className="text-lg font-bold mb-2">No labs found 🔬</p>
+                <p className="text-lg font-bold mb-2">No labs found</p>
                 <p className="text-[var(--text-secondary)] text-sm">Try searching with a different term.</p>
               </div>
             )
@@ -546,7 +546,7 @@ export default function LabsReferencePage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center text-lg font-bold">
-                    ⭐
+
                   </div>
                   <div>
                     <h2 className="font-semibold text-xl">Saved & Bookmarked Labs</h2>
@@ -560,7 +560,7 @@ export default function LabsReferencePage() {
             ) : (
               <div className="text-center py-16 fn-card border-dashed">
                 <Star size={36} className="mx-auto mb-2 text-amber-400 opacity-40" />
-                <p className="text-lg font-bold mb-1">No bookmarked labs yet ⭐</p>
+                <p className="text-lg font-bold mb-1">No bookmarked labs yet</p>
                 <p className="text-[var(--text-secondary)] text-xs">Tap the star icon on any lab value to save it to your Supabase account!</p>
               </div>
             )

@@ -35,7 +35,7 @@ export async function synthesizeSpeechElevenLabs({
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({ error: response.statusText }))
-      console.error('[ElevenLabs TTS] ❌ Status:', response.status, '| ElevenLabs error:', errData.error)
+      console.error('[ElevenLabs TTS] Status:', response.status, '| ElevenLabs error:', errData.error)
       return null
     }
 

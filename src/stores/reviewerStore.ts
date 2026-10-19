@@ -86,14 +86,14 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
 
       let personalityRule = `
         PERSONALITY & MENTOR RULE:
-        - Incorporate clear, professional, and visually pleasing clinical emojis (e.g., 🩺, 👩‍⚕️, 🧠, 📝, ✨, 💊, 📋) inside your markdown headings and bullet points.
+        - Do not use emojis anywhere in the output.
         - Maintain an encouraging, warm, professional clinical instructor tone. Share smart NCLEX/board tips.
         - Address the student as "${greetingName}". NEVER use romantic terms of endearment or mentions of boyfriend-girlfriend relationships.
       `
       if (isFrance) {
         personalityRule = `
           CUTE AESTHETIC & PERSONALITY RULE:
-          - Use highly decorative, cute, and friendly emojis (e.g., 🌸, 🩺, 🧸, 🩹, ✨, 🎀, 🌷, 🦦, 🍰, 🍼) inside your markdown headings and scattered naturally throughout the content to make it visually adorable for France!
+          - Do not use emojis anywhere in the output.
           - Infuse warm, sweet boyfriend encouragement and Taglish clinical pearls naturally inside the explanations. (e.g., call her "${greetingName}", cheer her on!)
         `
       }
@@ -179,10 +179,10 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
         is_favorite: false,
         created_at: new Date().toISOString(),
         content: {
-          summary: `Oops! ${aiAssistantName} is currently busy or rate-limited. Please wait a few seconds and try again, ${greetingName}! 🌸`,
+          summary: `Oops! ${aiAssistantName} is currently busy or rate-limited. Please wait a few seconds and try again, ${greetingName}!`,
           key_points: ['AI is temporarily busy — please retry in a few seconds!'],
           flashcards: [], mnemonics: [],
-          simplified_explanation: `Don't worry, ${greetingName}! Just a temporary hiccup. Try again! 🧸🩺`
+          simplified_explanation: `Don't worry, ${greetingName}! Just a temporary hiccup. Try again!`
         }
       } as any
       set((state) => ({ 
@@ -223,8 +223,8 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       }
 
       let aestheticRule = isFrance
-        ? `CUTE AESTHETIC & PERSONALITY RULE: Use cute emojis (🌸, 🩺, 🧸, 🩹, ✨, 🎀, 🌷, 🦦). Presenter notes: sweet English boyfriend tone, call France "babe" — pure English only, no Tagalog.`
-        : `AESTHETIC RULE: Use clinical emojis (🌸, 🩺, 🧠, 🩹, ✨). Presenter notes: professional, warm clinical instructor tone in clear English.`
+        ? `PERSONALITY RULE: Do not use emojis anywhere in the output. Presenter notes: sweet English boyfriend tone, call France "babe" — pure English only, no Tagalog.`
+        : `STYLE RULE: Do not use emojis anywhere in the output. Presenter notes: professional, warm clinical instructor tone in clear English.`
 
       const systemPrompt = `
         You are ${aiAssistantName}, an expert nursing instructor creating a PowerPoint presentation.

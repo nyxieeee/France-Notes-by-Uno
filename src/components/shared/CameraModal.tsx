@@ -31,7 +31,7 @@ export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
       }
     } catch (err) {
       console.error("Error accessing camera:", err)
-      setError("Could not access camera. Please check permissions! 🌸")
+      setError("Could not access camera. Please check permissions!")
     }
   }
 

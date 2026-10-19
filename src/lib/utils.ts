@@ -44,12 +44,12 @@ export function getGreeting(): string {
 
 export function getFileIcon(type: string): string {
   switch (type) {
-    case 'pdf': return '📄'
-    case 'docx': return '📝'
-    case 'pptx': return '📊'
-    case 'txt': return '📃'
-    case 'image': return '🖼️'
-    default: return '📁'
+    case 'pdf': return ''
+    case 'docx': return ''
+    case 'pptx': return ''
+    case 'txt': return ''
+    case 'image': return ''
+    default: return ''
   }
 }
 
@@ -66,12 +66,12 @@ export function getReminderTypeColor(type: string): string {
 
 export function getReminderTypeLabel(type: string): string {
   switch (type) {
-    case 'exam': return '📝 Exam'
-    case 'quiz': return '🧪 Quiz'
-    case 'assignment': return '📋 Assignment'
-    case 'retdem': return '🩺 RetDem'
-    case 'duty': return '🏥 Duty'
-    default: return '📌 Other'
+    case 'exam': return 'Exam'
+    case 'quiz': return 'Quiz'
+    case 'assignment': return 'Assignment'
+    case 'retdem': return 'RetDem'
+    case 'duty': return 'Duty'
+    default: return 'Other'
   }
 }
 
@@ -87,11 +87,11 @@ export function getScoreColor(score: number): string {
 }
 
 export function getScoreLabel(score: number): string {
-  if (score >= 90) return 'Excellent! 🌟'
-  if (score >= 80) return 'Great job! ✨'
-  if (score >= 70) return 'Good work! 💪'
-  if (score >= 60) return 'Keep going! 📚'
-  return 'Keep studying! 🤗'
+  if (score >= 90) return 'Excellent!'
+  if (score >= 80) return 'Great job!'
+  if (score >= 70) return 'Good work!'
+  if (score >= 60) return 'Keep going!'
+  return 'Keep studying!'
 }
 
 export function generateId(): string {
@@ -169,3 +169,13 @@ export function checkAnswerCorrectness(
   return cleanGeneral(userAnswer as string) === cleanGeneral(correctAnswer as string)
 }
 
+
+// Emoji code points (pictographs, symbols, variation selector, joiners) — leaves ♡ (U+2661),
+// ✓ (U+2713) and ✕ (U+2715) alone since the UI uses them as plain symbols
+const EMOJI_CHARS = '\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{2660}\\u{2662}-\\u{2712}\\u{2714}\\u{2716}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\u{2300}-\\u{23FF}\\u{FE0F}\\u{200D}\\u{20E3}'
+const EMOJI_RUN = new RegExp(`[ \\t]*[${EMOJI_CHARS}]+`, 'gu')
+
+// Removes emoji from AI-written text, including any space left in front of them
+export function stripEmoji(text: string): string {
+  return text.replace(EMOJI_RUN, '')
+}

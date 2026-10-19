@@ -13,37 +13,37 @@ const getNursingFacts = (isFrance: boolean, greetingName: string) => {
     return [
       {
         id: 1,
-        title: "Cardiology Trivia 🩺💖",
+        title: "Cardiology Trivia",
         content: `Did you know, ${greetingName}? The heart beats about 100,000 times a day! Mine beats a little faster whenever I think of you! Keep going, future nurse!`
       },
       {
         id: 2,
-        title: "Anatomy Fact 👂✨",
+        title: "Anatomy Fact",
         content: `The smallest bone in the human body is the stapes in the middle ear, only 3mm long! But my love for you is as big as the universe!`
       },
       {
         id: 3,
-        title: "Skeletal Fact 🦴🌸",
+        title: "Skeletal Fact",
         content: `Humans are born with 300 bones, but they fuse into 206 by adulthood. No matter how many bones, you will always be the backbone of my life!`
       },
       {
         id: 4,
-        title: "Pharmacology Tip 💊💧",
+        title: "Pharmacology Tip",
         content: `The word 'drug' comes from the Dutch word 'drooge' meaning dry. Speaking of dry, drink your water now, future nurse! Stay hydrated for your brain!`
       },
       {
         id: 5,
-        title: "Nursing History 💡🩺",
+        title: "Nursing History",
         content: `Florence Nightingale was called the 'Lady with the Lamp'. You, on the other hand, are the light of my life! You're going to top that board exam!`
       },
       {
         id: 6,
-        title: "Physiology Fact 🧠⚡",
+        title: "Physiology Fact",
         content: `Your brain uses about 20% of your body's oxygen and energy. Take a deep breath now, stretch a bit, and remember: Doc Uno is super proud of you!`
       },
       {
         id: 7,
-        title: "Dermatology Trivia 💖✨",
+        title: "Dermatology Trivia",
         content: `The skin is the body's largest organ, renewing itself every 28 days! Just like your skin, every day is a fresh start to reach your nursing dreams!`
       }
     ]
@@ -51,37 +51,37 @@ const getNursingFacts = (isFrance: boolean, greetingName: string) => {
     return [
       {
         id: 1,
-        title: "Cardiology Trivia 🩺💡",
+        title: "Cardiology Trivia",
         content: `Did you know, ${greetingName}? The human heart beats about 100,000 times a day to pump blood throughout the systemic circulation! Focus on the details!`
       },
       {
         id: 2,
-        title: "Anatomy Fact 👂✨",
+        title: "Anatomy Fact",
         content: `The smallest bone in the human body is the stapes (stirrup) in the middle ear, which is only about 3mm long! It plays a vital role in sound conduction.`
       },
       {
         id: 3,
-        title: "Skeletal Fact 🦴📝",
+        title: "Skeletal Fact",
         content: `Humans are born with approximately 300 bones, which fuse into 206 by adulthood. Remember this for pediatric bone assessments!`
       },
       {
         id: 4,
-        title: "Pharmacology Tip 💊💧",
+        title: "Pharmacology Tip",
         content: `Always perform hand hygiene and check the 'Five Rights' of medication administration before giving any drug. Client safety is always the highest priority!`
       },
       {
         id: 5,
-        title: "Nursing History 💡🩺",
+        title: "Nursing History",
         content: `Florence Nightingale, the mother of modern nursing, laid the foundation of professional nursing with her principles of sanitation and patient environment.`
       },
       {
         id: 6,
-        title: "Physiology Fact 🧠⚡",
+        title: "Physiology Fact",
         content: `The human brain consumes about 20% of the body's total oxygen and energy! Take a deep breath, stay hydrated, and give your brain a quick stretch!`
       },
       {
         id: 7,
-        title: "Dermatology Trivia 🩹✨",
+        title: "Dermatology Trivia",
         content: `The epidermis renews itself completely every 28 days. Keep studying, stay consistent, and every day will renew your clinical knowledge!`
       }
     ]
@@ -91,15 +91,15 @@ const getNursingFacts = (isFrance: boolean, greetingName: string) => {
 const getEmptyMessages = (isFrance: boolean, greetingName: string) => {
   if (isFrance) {
     return [
-      `No new trivia today, ${greetingName}! Just focus on studying! Doc Uno is cheering for you! I love you! 🩺💖`,
-      `No new notifications! Stay hydrated, future nurse! I'm always proud of you! I love you, ${greetingName}! 💧🌸`,
-      `The ward is quiet today, ${greetingName}! Time to focus on your nursing board review! I love you! 📖✨`
+      `No new trivia today, ${greetingName}! Just focus on studying! Doc Uno is cheering for you! I love you!`,
+      `No new notifications! Stay hydrated, future nurse! I'm always proud of you! I love you, ${greetingName}!`,
+      `The ward is quiet today, ${greetingName}! Time to focus on your nursing board review! I love you!`
     ]
   } else {
     return [
-      `No new notifications today, ${greetingName}. Keep focusing on your study review! 🩺✨`,
-      `Your notification dashboard is clear. Remember to stay hydrated and take regular breaks! 💧📝`,
-      `Everything is quiet in the clinical logs. Ready for another review session? Let's excel! 👩‍⚕️📖`
+      `No new notifications today, ${greetingName}. Keep focusing on your study review!`,
+      `Your notification dashboard is clear. Remember to stay hydrated and take regular breaks!`,
+      `Everything is quiet in the clinical logs. Ready for another review session? Let's excel!`
     ]
   }
 }
@@ -134,8 +134,8 @@ export default function TopBar() {
       setActiveFact({
         title: `Reminder: ${firstDue.title}`,
         content: isFrance 
-          ? `Babe, deadline na ng ${firstDue.title} ngayon! Gusto mo bang mag-review tayo? You got this! 🩺💖`
-          : `You have an upcoming deadline for ${firstDue.title} today. Please ensure you are prepared. Let's study! 👩‍⚕️✨`
+          ? `Babe, deadline na ng ${firstDue.title} ngayon! Gusto mo bang mag-review tayo? You got this!`
+          : `You have an upcoming deadline for ${firstDue.title} today. Please ensure you are prepared. Let's study!`
       })
     } else {
       // Determine randomly if they have a notification today (65% chance)
@@ -261,7 +261,7 @@ export default function TopBar() {
                   <div className="text-left">
                     <h4 className="text-xs font-bold text-[var(--text)] font-sans">{aiAssistantName} says...</h4>
                     <p className="text-[10px] text-[var(--text-secondary)]">
-                      {isFrance ? `Just for you, ${greetingName} 🩺💖` : `Clinical updates for ${greetingName} ✨`}
+                      {isFrance ? `Just for you, ${greetingName}` : `Clinical updates for ${greetingName}`}
                     </p>
                   </div>
                 </div>
@@ -283,7 +283,7 @@ export default function TopBar() {
                       onClick={handleMarkAsRead}
                       className="w-full btn-primary py-1.5 text-xs rounded-xl flex items-center justify-center gap-1.5 font-semibold shadow-sm transition-all hover:shadow-md hover:scale-[1.01]"
                     >
-                      {isFrance ? "Oki Doc! 💖" : "Understood! 👩‍⚕️"}
+                      {isFrance ? "Oki Doc!" : "Understood!"}
                     </button>
                   </div>
                 ) : (

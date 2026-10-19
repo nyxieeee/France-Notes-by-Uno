@@ -116,7 +116,7 @@ export default function RetDemPage() {
             <PageHeader
               icon={Stethoscope}
               title={retdemName}
-              subtitle={isFrance ? 'Master your nursing procedures with step-by-step guides and rationales, babe! 🌸' : 'Master your nursing procedures with step-by-step guides and rationales.'}
+              subtitle={isFrance ? 'Master your nursing procedures with step-by-step guides and rationales, babe!' : 'Master your nursing procedures with step-by-step guides and rationales.'}
             />
 
             <div className="mb-6 flex flex-col md:flex-row gap-4">
@@ -163,8 +163,8 @@ export default function RetDemPage() {
                     <h2 className="text-2xl font-bold tracking-tight mb-1">AI Generate Procedure</h2>
                     <p className="text-sm text-[var(--text-secondary)] font-medium mb-6">
                       {isFrance 
-                        ? 'Anong procedure ang kailangan mo? Doc Uno will generate a complete step-by-step guide with rationales. 🩺'
-                        : `Which clinical procedure do you need? ${aiAssistantName} will generate a complete step-by-step guide with professional rationales. 🩺`
+                        ? 'Anong procedure ang kailangan mo? Doc Uno will generate a complete step-by-step guide with rationales.'
+                        : `Which clinical procedure do you need? ${aiAssistantName} will generate a complete step-by-step guide with professional rationales.`
                       }
                     </p>
                     <form
@@ -180,8 +180,8 @@ export default function RetDemPage() {
                         } catch (err) {
                           console.error(err)
                           setGenerateError(isFrance 
-                            ? "Babe, nagka-error sa pagkonek kay Doc Uno. Please try again! 🩺🌸"
-                            : `Nagka-error sa pagkonek kay ${aiAssistantName}. Please try again! 🩺`
+                            ? "Babe, nagka-error sa pagkonek kay Doc Uno. Please try again!"
+                            : `Nagka-error sa pagkonek kay ${aiAssistantName}. Please try again!`
                           )
                         }
                       }}
@@ -289,7 +289,7 @@ export default function RetDemPage() {
                   </p>
                   <p className="text-xs text-[var(--text-secondary)]">
                     {isExtracting 
-                      ? (isFrance ? 'Doc Uno is reading your files 🩺' : `${aiAssistantName} is reading your files 🩺`) 
+                      ? (isFrance ? 'Doc Uno is reading your files' : `${aiAssistantName} is reading your files`) 
                       : 'Drag & drop or click — images, TXT, PDF • Select multiple at once'
                     }
                   </p>
@@ -320,8 +320,8 @@ export default function RetDemPage() {
                       } catch (e) {
                         console.error(e)
                         setGenerateError(isFrance 
-                          ? "Babe, nagka-error sa pagkonek kay Doc Uno. Please try again! 🩺🌸"
-                          : `Nagka-error sa pagkonek kay ${aiAssistantName}. Please try again! 🩺`
+                          ? "Babe, nagka-error sa pagkonek kay Doc Uno. Please try again!"
+                          : `Nagka-error sa pagkonek kay ${aiAssistantName}. Please try again!`
                         )
                       }
                     }}
@@ -405,7 +405,7 @@ export default function RetDemPage() {
                     <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
                       <Stethoscope size={40} />
                     </div>
-                    <h3 className="text-xl font-bold mb-2">No procedures found 🩺</h3>
+                    <h3 className="text-xl font-bold mb-2">No procedures found</h3>
                     <p className="text-[var(--text-secondary)] max-w-xs mb-8">
                       Master your RetDem by uploading your clinical procedure guides to the Study Box.
                     </p>
@@ -430,7 +430,7 @@ export default function RetDemPage() {
                     <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
                       <History size={40} />
                     </div>
-                    <h3 className="text-xl font-bold mb-2">No upload history yet 🩺</h3>
+                    <h3 className="text-xl font-bold mb-2">No upload history yet</h3>
                     <p className="text-[var(--text-secondary)] max-w-xs mb-8">
                       Upload your clinical guidelines above and generate custom RetDem practice steps!
                     </p>
@@ -662,14 +662,14 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                  Recitation Mode
               </h3>
               <p className="text-xs opacity-90 mb-4 font-medium">{isFrance 
-                   ? 'Doc Uno will guide you through verbalizing steps and rationales, babe! 🌸'
-                   : `${aiAssistantName} will guide you through verbalizing steps and rationales. 🩺`
+                   ? 'Doc Uno will guide you through verbalizing steps and rationales, babe!'
+                   : `${aiAssistantName} will guide you through verbalizing steps and rationales.`
                  }</p>
               <div className="space-y-2">
                  {[
-                   { id: 'gentle', label: 'Gentle Mode 🌸' },
-                   { id: 'clinical_instructor', label: 'CI Mode 🩺' },
-                   ...(isFrance ? [{ id: 'doc_uno', label: 'Doc Uno Mode 💖' }] : []),
+                   { id: 'gentle', label: 'Gentle Mode' },
+                   { id: 'clinical_instructor', label: 'CI Mode' },
+                   ...(isFrance ? [{ id: 'doc_uno', label: 'Doc Uno Mode' }] : []),
                  ].map(m => (
                    <button
                      key={m.id}

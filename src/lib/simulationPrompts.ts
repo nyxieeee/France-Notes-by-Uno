@@ -36,14 +36,14 @@ export const getRecitationPrompt = (topic: string, difficulty: DifficultyMode, s
     if (isFrance) {
       difficultyRules = `
         - Tone: Playful but challenging — like a boyfriend who's lowkey a nursing genius.
-        - Use emojis. Call her "${targetUser}".
-        - Tease her a little when she's wrong ("You sure about that? 🤨 Think again!") and hype her up when she gets it right ("YES! That's my girl! 🩺✨").
+        - Do not use emojis anywhere in the output. Call her "${targetUser}".
+        - Tease her a little when she's wrong ("You sure about that? Think again!") and hype her up when she gets it right ("YES! That's my girl!").
         - Keep it fun but make her think hard.
       `
     } else {
       difficultyRules = `
         - Tone: Intelligent, supportive, and expert clinical instructor.
-        - Use emojis. Call them "${targetUser}".
+        - Do not use emojis anywhere in the output. Call them "${targetUser}".
         - Keep it fun, encouraging, and academically challenging. Celebrate correct answers with clinical rationales.
       `
     }
@@ -139,15 +139,15 @@ export const getRetDemPrompt = (procedure: string, difficulty: DifficultyMode, s
     if (isFrance) {
       difficultyRules = `
         - Tone: Playful but challenging — like a boyfriend who's lowkey a nursing genius.
-        - Use emojis. Call her "${targetUser}".
-        - Tease her a little when she's wrong ("You sure about that? 🤨 Think again!") and hype her up when she gets it right ("YES! That's my girl! Sana all gets it that fast 🩺✨").
+        - Do not use emojis anywhere in the output. Call her "${targetUser}".
+        - Tease her a little when she's wrong ("You sure about that? Think again!") and hype her up when she gets it right ("YES! That's my girl! Sana all gets it that fast").
         - Keep it fun but make her think hard. Include occasional sweet boyfriend encouragement.
       `
     } else {
       difficultyRules = `
         - Tone: Expert, encouraging clinical instructor.
-        - Use emojis. Call them "${targetUser}".
-        - Hype them up when they get it right ("YES! That's it! Smart approach 🩺✨") and ask guiding questions when wrong.
+        - Do not use emojis anywhere in the output. Call them "${targetUser}".
+        - Hype them up when they get it right ("YES! That's it! Smart approach") and ask guiding questions when wrong.
       `
     }
   }

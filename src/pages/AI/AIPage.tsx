@@ -177,7 +177,7 @@ export default function AIPage() {
     if (sessions.length === 0) {
       return (
         <div className="text-center py-8 px-4 text-xs text-th-text-secondary/60 font-medium">
-          No chat history yet. Start a conversation below! 🌱
+          No chat history yet. Start a conversation below!
         </div>
       )
     }
@@ -285,7 +285,7 @@ export default function AIPage() {
                 <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover animate-pulse-soft" />
              </div>
              <div>
-                <h2 className="text-lg font-bold tracking-tight leading-none mb-1">Ask {aiAssistantName} {isFrance ? '🩺' : '👩‍⚕️'}</h2>
+                <h2 className="text-lg font-bold tracking-tight leading-none mb-1">Ask {aiAssistantName} {isFrance ? '' : ''}</h2>
                 <div className="flex items-center gap-1.5">
                    <span className="w-1.5 h-1.5 bg-[var(--success)] rounded-full animate-pulse"></span>
                    <span className="text-[11px] font-bold text-[var(--text-secondary)]">
@@ -308,9 +308,9 @@ export default function AIPage() {
                <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 animate-float">
                   <MessageCircle size={40} />
                </div>
-               <h3 className="text-xl font-bold mb-2">Hello, {greetingName}! ✨</h3>
+               <h3 className="text-xl font-bold mb-2">Hello, {greetingName}!</h3>
                <p className="text-[var(--text-secondary)] max-w-sm mb-10">
-                 I'm {aiAssistantName}, your AI nursing companion. Ask me anything about your studies, patient care, or just for some motivation! {isFrance ? '🩺🌸' : '🩺✨'}
+                 I'm {aiAssistantName}, your AI nursing companion. Ask me anything about your studies, patient care, or just for some motivation! {isFrance ? '' : ''}
                </p>
                
                <div className="grid grid-cols-1 gap-3 w-full max-w-md px-4">

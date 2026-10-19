@@ -68,7 +68,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
     // Header
     await renderAndPlace(`
       <div style="background:#fdf2f8; padding:18px 22px 16px; border-bottom:1.5px solid #fbcfe8;">
-        <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">✨ ${isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Study Notes`}</div>
+        <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">${isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Study Notes`}</div>
         <div style="font-size:18px; font-weight:800; color:#1f2937; line-height:1.2;">${reviewer.title}</div>
       </div>
     `)
@@ -77,7 +77,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
     if (reviewer.content.summary) {
       await renderAndPlace(`
         <div style="padding:16px 22px 10px;">
-          <div style="color:#ec4899; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">📖 Core Concepts / Overview</div>
+          <div style="color:#ec4899; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Core Concepts / Overview</div>
           <div style="color:#4b5563; font-size:11px; line-height:1.8;">
             ${parseMarkdown(reviewer.content.summary)}
           </div>
@@ -90,7 +90,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
       const lis = reviewer.content.key_points.map(pt => `<li style="margin-bottom:8px;">${pt}</li>`).join('')
       await renderAndPlace(`
         <div style="padding:10px 22px 10px;">
-          <div style="color:#ec4899; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">🩺 Key Nursing Priorities & Board-Exam High Yields</div>
+          <div style="color:#ec4899; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Key Nursing Priorities & Board-Exam High Yields</div>
           <div style="color:#4b5563; font-size:11px; line-height:1.8;">
             <ul style="padding-left:20px; margin:0;">
               ${lis}
@@ -104,7 +104,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
     if (reviewer.content.mnemonics && reviewer.content.mnemonics.length > 0) {
       const pearls = reviewer.content.mnemonics.map(m => `
         <div style="margin-bottom:12px;">
-          <strong style="color:#ec4899; font-size:11px;">🧸 ${m.title}</strong>
+          <strong style="color:#ec4899; font-size:11px;">${m.title}</strong>
           <div style="color:#4b5563; font-size:11px; line-height:1.7; margin-top:2px;">${m.content}</div>
         </div>
       `).join('')
@@ -112,7 +112,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
       await renderAndPlace(`
         <div style="padding:12px 22px;">
           <div style="background:#fff5fb; border:1px solid #fbcfe8; border-radius:10px; padding:16px 18px;">
-            <div style="color:#be185d; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px;">💡 ${isFrance ? "Doc Uno's Clinical Pearls & Study Tips" : `${aiAssistantName}'s Clinical Pearls & Key Insights`}</div>
+            <div style="color:#be185d; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px;">${isFrance ? "Doc Uno's Clinical Pearls & Study Tips" : `${aiAssistantName}'s Clinical Pearls & Key Insights`}</div>
             <div style="font-size:11px; color:#4b5563; line-height:1.6; margin-bottom:12px;">
               ${isFrance 
                 ? "Kaya mo 'yan, future RN! Master these high-yield memory aids:"
@@ -129,7 +129,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
     await renderAndPlace(`
       <div style="background:#fdf2f8; border-top:1.5px solid #fbcfe8; padding:12px 22px; text-align:center;">
         <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase;">
-          ${isFrance ? "Made with ❤️ by Doc Uno for France" : `Prepared with ❤️ by ${aiAssistantName}`}
+          ${isFrance ? "Made with by Doc Uno for France" : `Prepared with by ${aiAssistantName}`}
         </div>
         <div style="font-size:8px; font-weight:700; color:#d1d5db; margin-top:3px; letter-spacing:1px; text-transform:uppercase;">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
       </div>
@@ -263,7 +263,7 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     })
 
     // Decorative stethoscope emoji
-    coverSlide.addText(isFrance ? "🩺 🌸 🧸 🎀" : "🩺 🧠 👩‍⚕️ ✨", {
+    coverSlide.addText(isFrance ? "" : "", {
       x: 9.5, y: 0.9, w: 2.5,
       fontSize: 18,
       align: 'right'
@@ -290,8 +290,8 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     // Sweet footer note
     coverSlide.addText(
       isFrance 
-        ? 'Prepared with love by Doc Uno for France 🌸🩺' 
-        : 'Clinical Lecture Series • Prepared by Nurse Florence 🩺👩‍⚕️',
+        ? 'Prepared with love by Doc Uno for France' 
+        : 'Clinical Lecture Series • Prepared by Nurse Florence',
       {
         x: 1.3, y: 5.6, w: 10.7,
         fontSize: 12,
@@ -376,7 +376,7 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
       }
 
       // Footer branding
-      slide.addText(isFrance ? "Doc Uno's Reviewer 🌸" : "France Notes 🩺", {
+      slide.addText(isFrance ? "Doc Uno's Reviewer" : "France Notes", {
         x: 9.0, y: 6.4, w: 3.0,
         fontSize: 9,
         color: bodyTextColor,
@@ -395,13 +395,13 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
 export const printFlashcards = (reviewer: ReviewerItem) => {
   const cards = reviewer.content.flashcards
   if (!cards || cards.length === 0) {
-    alert("Babe, there are no flashcards generated for this reviewer yet! 🌸")
+    alert("Babe, there are no flashcards generated for this reviewer yet!")
     return
   }
 
   const printWindow = window.open('', '_blank')
   if (!printWindow) {
-    alert("Please allow popups to print your flashcards! 🩺")
+    alert("Please allow popups to print your flashcards!")
     return
   }
 
@@ -545,11 +545,11 @@ export const printFlashcards = (reviewer: ReviewerItem) => {
     <body>
       <div class="header">
         <h1>${reviewer.title} - Printable Flashcards</h1>
-        <p>${isFrance ? "Prepared with love by Doc Uno for France 🌸" : "Clinical Practice Series • France Notes App 🩺"}</p>
+        <p>${isFrance ? "Prepared with love by Doc Uno for France" : "Clinical Practice Series • France Notes App"}</p>
       </div>
 
       <div class="instructions">
-        <strong>💡 Printing & Folding Instructions:</strong> Print this sheet on standard paper or cardstock. Cut along the outer <strong>dashed lines</strong>. Fold along the middle <strong>dotted vertical crease</strong> to align the Front and Back, then tape or glue them together to create your double-sided flashcard!
+        <strong>Printing & Folding Instructions:</strong> Print this sheet on standard paper or cardstock. Cut along the outer <strong>dashed lines</strong>. Fold along the middle <strong>dotted vertical crease</strong> to align the Front and Back, then tape or glue them together to create your double-sided flashcard!
       </div>
 
       <div class="grid-container">

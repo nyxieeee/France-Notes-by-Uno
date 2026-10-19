@@ -96,7 +96,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
             - The 'clinical_logic' field should provide high-yield test-taking tips, priority clinical indicators, or memorization cues in clear English to help France easily recall it during her exams.
 
             CUTE AESTHETIC & PERSONALITY RULE:
-            - Write rationales with cute emojis (🌸, 🩺, 🧸, 🩹, ✨, 🌷, 🦦) to make the text visually pleasing!
+            - Do not use emojis anywhere in the output.
             - Intersperse warm, encouraging English boyfriend words (e.g. calling her "babe", cheering her on) inside the 'rationale' and 'clinical_logic' fields so it feels like a sweet, private review session — in pure English only, no Tagalog!
 
             CRITICAL DIVERSITY & DYNAMIC VARIETY RULE:
@@ -119,7 +119,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
             - Strictly NO romantic references, endearments, or mentions of boyfriend/girlfriend.
 
             CLINICAL AESTHETIC & PERSONALITY RULE:
-            - Write rationales with clinical emojis (🩺, 🧠, 📝, 🩹, ✨, 💊) inside markdown headings and bullet points.
+            - Do not use emojis anywhere in the output.
 
             CRITICAL DIVERSITY & DYNAMIC VARIETY RULE:
             - Every single time a quiz is generated, it MUST be completely unique and highly dynamic!

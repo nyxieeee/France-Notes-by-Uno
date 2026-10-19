@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-6">
           <div className="max-w-md text-center space-y-4">
-            <div className="text-6xl">🩺</div>
+            <div className="text-6xl"></div>
             <h1 className="text-xl font-bold text-[var(--text)]">Something went wrong</h1>
             <p className="text-sm text-[var(--text-secondary)]">
               Don't worry — this happens sometimes. Try refreshing the page.

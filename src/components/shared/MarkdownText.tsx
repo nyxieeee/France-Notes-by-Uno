@@ -1,6 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { cn } from '@/lib/utils'
+import { cn, stripEmoji } from '@/lib/utils'
 
 interface MarkdownTextProps {
   content: string
@@ -11,7 +11,7 @@ export default function MarkdownText({ content, className }: MarkdownTextProps) 
   return (
     <div className={cn("markdown-content select-text", className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-        {content}
+        {stripEmoji(content || '')}
       </ReactMarkdown>
     </div>
   )

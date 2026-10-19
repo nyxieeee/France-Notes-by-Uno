@@ -32,7 +32,7 @@ export default function StreakCard() {
       </div>
 
       <p className="mt-4 text-[11.5px] text-[var(--text-secondary)]">
-        {streak > 0 ? 'Keep your streak alive — study a little today! 🌷' : 'Upload notes or take a quiz to start a streak!'}
+        {streak > 0 ? 'Keep your streak alive — study a little today!' : 'Upload notes or take a quiz to start a streak!'}
       </p>
     </section>
   )

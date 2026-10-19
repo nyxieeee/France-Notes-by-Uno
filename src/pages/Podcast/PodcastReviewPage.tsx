@@ -63,7 +63,7 @@ function SpeakerAvatar({ speaker, active }: { speaker: 'DOC_UNO' | 'NURSE_FLOREN
           : 'border-[var(--border)] bg-th-secondary-bg/30 opacity-50'
       )}
     >
-      {isUno ? '🩺' : '👩‍⚕️'}
+      {isUno ? '' : ''}
     </motion.div>
   )
 }
@@ -96,7 +96,7 @@ function TranscriptLine({ line, active, index }: { line: DialogueLine; active: b
           'text-[11px] font-bold mb-1',
           active ? 'text-[var(--pink)]' : 'text-[var(--text-secondary)]'
         )}>
-          {isUno ? 'Doc Uno 🩺' : 'Nurse Florence 👩‍⚕️'}
+          {isUno ? 'Doc Uno' : 'Nurse Florence'}
         </p>
         <p className={cn('text-sm leading-relaxed', active ? 'text-[var(--text)] font-medium' : 'text-[var(--text-secondary)]')}>
           {line.text}
@@ -469,7 +469,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
       <PageHeader
         icon={Mic2}
         title="Nursepod"
-        subtitle={isFrance ? 'Listen to Doc Uno & Nurse Florence break down your nursing topics, babe! 🌷' : 'Doc Uno & Nurse Florence bring your nursing topics to life as a podcast.'}
+        subtitle={isFrance ? 'Listen to Doc Uno & Nurse Florence break down your nursing topics, babe!' : 'Doc Uno & Nurse Florence bring your nursing topics to life as a podcast.'}
         actions={
           <button
             onClick={() => setShowHistoryView(p => !p)}
@@ -527,7 +527,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-xl bg-th-pink/20 text-[var(--pink)] flex items-center justify-center font-semibold shrink-0">
-                        🎙️
+
                       </div>
                       <div className="min-w-0">
                         <h4 className="font-bold text-sm truncate">{ep.title}</h4>
@@ -568,10 +568,10 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-1.5 mb-4">
               {([
-                { id: 'type' as SourceMode, label: '✏️ Free Text' },
-                { id: 'topic' as SourceMode, label: '📚 Topics' },
-                { id: 'file' as SourceMode, label: '📄 Files' },
-                { id: 'knowledge' as SourceMode, label: '🌿 Saved Refs' },
+                { id: 'type' as SourceMode, label: 'Free Text' },
+                { id: 'topic' as SourceMode, label: 'Topics' },
+                { id: 'file' as SourceMode, label: 'Files' },
+                { id: 'knowledge' as SourceMode, label: 'Saved Refs' },
               ]).map(m => (
                 <button
                   key={m.id}
@@ -763,7 +763,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                   <Mic2 size={36} className="text-white animate-bounce" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Writing full podcast episode... 🎙️</h3>
+              <h3 className="text-xl font-semibold mb-2">Writing full podcast episode...</h3>
               <p className="text-sm text-[var(--text-secondary)] max-w-md">
                 Doc Uno & Nurse Florence are developing an extensive professional episode with clinical case breakdowns and board exam strategies!
               </p>
@@ -792,7 +792,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
 
                   <div className="relative z-10 flex items-start gap-4">
                     <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 flex items-center justify-center text-3xl shrink-0 shadow-lg">
-                      🎙️
+
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
@@ -803,9 +803,9 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                       </div>
                       <h2 className="text-white font-semibold text-lg leading-tight truncate">{episodeTitle}</h2>
                       <p className="text-white/80 text-xs font-semibold mt-1 flex items-center gap-2">
-                        <span className="flex items-center gap-1"><span>🩺</span> Doc Uno</span>
+                        <span className="flex items-center gap-1"><span></span> Doc Uno</span>
                         <span className="text-white/50">×</span>
-                        <span className="flex items-center gap-1"><span>👩‍⚕️</span> Nurse Florence</span>
+                        <span className="flex items-center gap-1"><span></span> Nurse Florence</span>
                       </p>
                       <div className="flex items-center gap-3 mt-2">
                         <span className="flex items-center gap-1 text-white/60 text-[10px] font-bold">
@@ -828,7 +828,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                         animate={{ opacity: 1, x: 0 }}
                         className="text-white/80 text-xs font-semibold truncate flex-1"
                       >
-                        {script[currentLine]?.speaker === 'DOC_UNO' ? '🩺 Doc Uno speaking...' : '👩‍⚕️ Nurse Florence speaking...'}
+                        {script[currentLine]?.speaker === 'DOC_UNO' ? 'Doc Uno speaking...' : 'Nurse Florence speaking...'}
                       </motion.p>
                     )}
                   </div>
@@ -906,7 +906,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
             animate={{ opacity: 1 }}
             className="fn-card p-10 flex flex-col items-center text-center border-dashed"
           >
-            <div className="text-5xl mb-4">🎙️</div>
+            <div className="text-5xl mb-4"></div>
             <p className="text-lg font-bold mb-2">No episode yet</p>
             <p className="text-sm text-[var(--text-secondary)]">
               Select a source above (Custom Topic, Study Box, Uploaded Files, or Knowledge References) and click <span className="font-bold text-[var(--pink)]">Generate Episode</span>!

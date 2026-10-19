@@ -107,7 +107,7 @@ export default function PlannerPage() {
       <PageHeader
         icon={CalendarIcon}
         title="Planner"
-        subtitle={isFrance ? 'Organize your schedule, set deadlines, and let Doc Uno remind you! 🌸' : `Manage your deadlines and let ${aiAssistantName} keep you on track.`}
+        subtitle={isFrance ? 'Organize your schedule, set deadlines, and let Doc Uno remind you!' : `Manage your deadlines and let ${aiAssistantName} keep you on track.`}
         actions={
         <button 
           onClick={() => {

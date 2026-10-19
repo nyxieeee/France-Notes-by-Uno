@@ -64,7 +64,7 @@ export default function QuizPage() {
       // Header
       await renderAndPlace(`
         <div style="background:#fdf2f8; padding:18px 22px 16px; border-bottom:1.5px solid #fbcfe8;">
-          <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">✨ ${isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Notes`}</div>
+          <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">${isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Notes`}</div>
           <div style="font-size:18px; font-weight:800; color:#1f2937;">${quiz.title}</div>
           <div style="font-size:10px; color:#9ca3af; font-weight:600; margin-top:4px;">${new Date(quiz.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
         </div>
@@ -75,9 +75,9 @@ export default function QuizPage() {
         <div style="padding:18px 22px; border-bottom:1.5px solid #fbcfe8; display:flex; align-items:center; gap:20px; background:#fff5fb;">
           <div style="font-size:38px; font-weight:900; color:#ec4899; line-height:1; display:flex; align-items:center; margin-top:-2px;">${quiz.score}%</div>
           <div style="display:flex; flex-direction:column; justify-content:center;">
-            <div style="font-size:13px; font-weight:800; color:#be185d; line-height:1.2;">Quiz Complete! 🎉</div>
+            <div style="font-size:13px; font-weight:800; color:#be185d; line-height:1.2;">Quiz Complete!</div>
             <div style="font-size:10px; color:#9ca3af; margin-top:3px; line-height:1.2;">
-              ${isFrance ? 'Great job, babe! So proud of you 🧸💖' : `Great job, ${greetingName}! Extremely proud of your effort! 🩺✨`}
+              ${isFrance ? 'Great job, babe! So proud of you' : `Great job, ${greetingName}! Extremely proud of your effort!`}
             </div>
           </div>
         </div>
@@ -96,13 +96,13 @@ export default function QuizPage() {
             <div style="padding:14px 16px 14px 20px; border-left:3px solid ${isCorrect ? '#a7f3d0' : '#fbcfe8'}; background:${isCorrect ? '#f0fdf4' : '#fff9fb'};">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-size:9px; font-weight:800; color:#9ca3af; text-transform:uppercase; letter-spacing:1.2px;">Question ${i + 1}</span>
-                <span style="font-size:9px; font-weight:800; padding:2px 8px; border-radius:999px; background:${isCorrect ? '#d1fae5' : '#ffe4e6'}; color:${isCorrect ? '#065f46' : '#be123c'};">${isCorrect ? '✓ Correct' : '✗ Incorrect'}</span>
+                <span style="font-size:9px; font-weight:800; padding:2px 8px; border-radius:999px; background:${isCorrect ? '#d1fae5' : '#ffe4e6'}; color:${isCorrect ? '#065f46' : '#be123c'};">${isCorrect ? '✓ Correct' : 'Incorrect'}</span>
               </div>
               <div style="font-size:12px; font-weight:700; color:#1f2937; margin-bottom:8px; line-height:1.5;">${q.question}</div>
               <div style="font-size:10.5px; color:#6b7280; margin-bottom:3px;"><b>Your Answer:</b> ${userAnsText}</div>
               <div style="font-size:10.5px; color:#6b7280; margin-bottom:10px;"><b>Correct Answer:</b> <span style="color:#059669; font-weight:700;">${correctAnsText}</span></div>
               <div style="background:#fce7f3; border-radius:8px; padding:10px 12px;">
-                <div style="font-size:8px; font-weight:800; color:#db2777; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:5px;">🩺 ${isFrance ? "Doc Uno's Rationale" : `${aiAssistantName}'s Rationale`}</div>
+                <div style="font-size:8px; font-weight:800; color:#db2777; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:5px;">${isFrance ? "Doc Uno's Rationale" : `${aiAssistantName}'s Rationale`}</div>
                 <div style="font-size:10.5px; line-height:1.7; color:#6b7280;">${q.rationale}</div>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function QuizPage() {
       await renderAndPlace(`
         <div style="background:#fdf2f8; border-top:1.5px solid #fbcfe8; padding:12px 22px; text-align:center;">
           <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase;">
-            ${isFrance ? 'Made with ❤️ by Doc Uno for France' : `Made with ❤️ by ${aiAssistantName}`}
+            ${isFrance ? 'Made with by Doc Uno for France' : `Made with by ${aiAssistantName}`}
           </div>
           <div style="font-size:8px; font-weight:700; color:#d1d5db; margin-top:3px; letter-spacing:1px; text-transform:uppercase;">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
         </div>
@@ -171,9 +171,9 @@ export default function QuizPage() {
       // Master Header
       await renderAndPlace(`
         <div style="background:#fdf2f8; padding:18px 22px 16px; border-bottom:1.5px solid #fbcfe8;">
-          <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">✨ ${isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Notes`}</div>
+          <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">${isFrance ? "Doc Uno's Love Notes" : `${aiAssistantName}'s Clinical Notes`}</div>
           <div style="font-size:18px; font-weight:800; color:#1f2937;">Master Quiz History</div>
-          <div style="font-size:10px; color:#9ca3af; font-weight:600; margin-top:4px;">${completedQuizzes.length} quiz${completedQuizzes.length !== 1 ? 'zes' : ''} completed 🎉</div>
+          <div style="font-size:10px; color:#9ca3af; font-weight:600; margin-top:4px;">${completedQuizzes.length} quiz${completedQuizzes.length !== 1 ? 'zes' : ''} completed</div>
         </div>
       `)
 
@@ -201,13 +201,13 @@ export default function QuizPage() {
               <div style="padding:14px 16px 14px 20px; border-left:3px solid ${isCorrect ? '#a7f3d0' : '#fbcfe8'}; background:${isCorrect ? '#f0fdf4' : '#fff9fb'};">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                   <span style="font-size:9px; font-weight:800; color:#9ca3af; text-transform:uppercase; letter-spacing:1.2px;">Question ${i + 1}</span>
-                  <span style="font-size:9px; font-weight:800; padding:2px 8px; border-radius:999px; background:${isCorrect ? '#d1fae5' : '#ffe4e6'}; color:${isCorrect ? '#065f46' : '#be123c'};">${isCorrect ? '✓ Correct' : '✗ Incorrect'}</span>
+                  <span style="font-size:9px; font-weight:800; padding:2px 8px; border-radius:999px; background:${isCorrect ? '#d1fae5' : '#ffe4e6'}; color:${isCorrect ? '#065f46' : '#be123c'};">${isCorrect ? '✓ Correct' : 'Incorrect'}</span>
                 </div>
                 <div style="font-size:12px; font-weight:700; color:#1f2937; margin-bottom:8px; line-height:1.5;">${q.question}</div>
                 <div style="font-size:10.5px; color:#6b7280; margin-bottom:3px;"><b>Your Answer:</b> ${userAnsText}</div>
                 <div style="font-size:10.5px; color:#6b7280; margin-bottom:10px;"><b>Correct Answer:</b> <span style="color:#059669; font-weight:700;">${correctAnsText}</span></div>
                 <div style="background:#fce7f3; border-radius:8px; padding:10px 12px;">
-                  <div style="font-size:8px; font-weight:800; color:#db2777; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:5px;">🩺 ${isFrance ? "Doc Uno's Rationale" : `${aiAssistantName}'s Rationale`}</div>
+                  <div style="font-size:8px; font-weight:800; color:#db2777; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:5px;">${isFrance ? "Doc Uno's Rationale" : `${aiAssistantName}'s Rationale`}</div>
                   <div style="font-size:10.5px; line-height:1.7; color:#6b7280;">${q.rationale}</div>
                 </div>
               </div>
@@ -220,7 +220,7 @@ export default function QuizPage() {
       await renderAndPlace(`
         <div style="background:#fdf2f8; border-top:1.5px solid #fbcfe8; padding:12px 22px; text-align:center;">
           <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase;">
-            ${isFrance ? 'Proud of you always, future RN! — Doc Uno ❤️' : `Proud of your dedication to excellence! — ${aiAssistantName} 🩺`}
+            ${isFrance ? 'Proud of you always, future RN! — Doc Uno' : `Proud of your dedication to excellence! — ${aiAssistantName}`}
           </div>
           <div style="font-size:8px; font-weight:700; color:#d1d5db; margin-top:3px; letter-spacing:1px; text-transform:uppercase;">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
         </div>
@@ -247,11 +247,11 @@ export default function QuizPage() {
              <div className="w-24 h-24 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-8 shadow-fn animate-float">
                 <BrainCircuit size={48} className="animate-pulse-soft" />
              </div>
-             <h2 className="text-2xl font-bold mb-2">{aiAssistantName} is curating your quiz... 🩺✨</h2>
+             <h2 className="text-2xl font-bold mb-2">{aiAssistantName} is curating your quiz...</h2>
              <p className="text-[var(--text-secondary)] max-w-sm">
                {isFrance 
-                 ? 'Analyzing your topics, generating high-yield nursing questions, and preparing rationales just for you, babe! 🌸'
-                 : 'Analyzing your topics, generating high-yield nursing questions, and preparing detailed clinical rationales! 🩺'
+                 ? 'Analyzing your topics, generating high-yield nursing questions, and preparing rationales just for you, babe!'
+                 : 'Analyzing your topics, generating high-yield nursing questions, and preparing detailed clinical rationales!'
                }
              </p>
              <div className="mt-8 w-64 h-2 bg-[var(--secondary-bg)] rounded-full overflow-hidden">
@@ -706,7 +706,7 @@ function QuizEngine() {
            {activeQuiz?.timer_type === 'untimed' ? (
               <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-[var(--text-secondary)] bg-th-secondary-bg/30 px-2 sm:px-3 py-1.5 rounded-full whitespace-nowrap">
                 <Clock size={11} />
-                <span className="hidden sm:inline">Untimed ☕</span>
+                <span className="hidden sm:inline">Untimed</span>
                 <span className="sm:hidden">∞</span>
               </div>
             ) : (
@@ -774,14 +774,14 @@ function QuizEngine() {
                {showRationale && (
                  <div className="mt-4 space-y-4">
                    <div className="p-6 rounded-2xl bg-th-pink/5 border border-th-pink/20 shadow-sm">
-                     <h4 className="text-xs font-bold text-[var(--pink)] mb-2">Model Answer / Key Points 🌸</h4>
+                     <h4 className="text-xs font-bold text-[var(--pink)] mb-2">Model Answer / Key Points</h4>
                      <p className="text-sm font-semibold text-[var(--text)] whitespace-pre-line leading-relaxed">
                        {Array.isArray(question.correct_answer) ? question.correct_answer.join('\n') : question.correct_answer}
                      </p>
                    </div>
                    
                    <div className="p-4 rounded-xl bg-th-secondary-bg/20 border border-[var(--border)] text-xs text-[var(--text-secondary)] leading-relaxed italic">
-                     Babe, since this is a written essay question, compare your response with the model response above to evaluate yourself. You're doing amazing! 🩺🌸
+                     Babe, since this is a written essay question, compare your response with the model response above to evaluate yourself. You're doing amazing!
                    </div>
                  </div>
                )}
@@ -859,12 +859,12 @@ function QuizEngine() {
                   {isCorrect ? (
                     <div className="flex items-center gap-2 text-[var(--success)] font-bold">
                       <CheckCircle2 size={20} />
-                      <span>{isFrance ? "Correct! Amazing job, France! ✨" : `Correct! Amazing job, ${greetingName}! ✨`}</span>
+                      <span>{isFrance ? "Correct! Amazing job, France!" : `Correct! Amazing job, ${greetingName}!`}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-[var(--error)] font-bold">
                       <AlertCircle size={20} />
-                      <span>Not quite, but let's learn! 🩺</span>
+                      <span>Not quite, but let's learn!</span>
                     </div>
                   )}
                 </div>
@@ -909,11 +909,11 @@ function QuizEngine() {
             <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
               <Clock size={32} />
             </div>
-            <h3 className="text-xl font-semibold mb-2">{isFrance ? "Time's Up, Babe! ⏰" : "Time's Up! ⏰"}</h3>
+            <h3 className="text-xl font-semibold mb-2">{isFrance ? "Time's Up, Babe!" : "Time's Up!"}</h3>
             <p className="text-sm text-[var(--text-secondary)]">
               {isFrance 
-                ? "Hindi bale, tapos na ang oras! Awtomatikong isinusumite ni Doc Uno ang iyong mga sagot. Proud pa rin ako sa effort mo! 🌸"
-                : `Time is up! Your answers have been automatically submitted by ${aiAssistantName}. Great effort! 🩺`
+                ? "Hindi bale, tapos na ang oras! Awtomatikong isinusumite ni Doc Uno ang iyong mga sagot. Proud pa rin ako sa effort mo!"
+                : `Time is up! Your answers have been automatically submitted by ${aiAssistantName}. Great effort!`
               }
             </p>
           </motion.div>
@@ -926,27 +926,27 @@ function QuizEngine() {
 const getCuteBoyfriendResponse = (score: number) => {
   if (score === 100) {
     return {
-      emoji: "🥺❤️✨🏆",
-      message: "OH MY GOSH, babe! A perfect score! You are absolutely brilliant — my future RN is unstoppable! I'm so incredibly proud of you! Let's celebrate, I'll treat you to whatever you want! I love you so much! 🥰🍰✨",
-      sticker: "🎀"
+      emoji: "",
+      message: "OH MY GOSH, babe! A perfect score! You are absolutely brilliant — my future RN is unstoppable! I'm so incredibly proud of you! Let's celebrate, I'll treat you to whatever you want! I love you so much!",
+      sticker: ""
     }
   } else if (score >= 90) {
     return {
-      emoji: "🎉🌸🧸💖",
-      message: "Almost perfect, babe! You are SO smart — a little more and you'll be a PNLE topnotcher for sure! You deserve all the hugs, okay? I love you! 😘🩹✨",
-      sticker: "🩺"
+      emoji: "",
+      message: "Almost perfect, babe! You are SO smart — a little more and you'll be a PNLE topnotcher for sure! You deserve all the hugs, okay? I love you!",
+      sticker: ""
     }
   } else if (score >= 75) {
     return {
-      emoji: "🩹🌸🌷🧸",
-      message: "You passed, babe! So proud of you! We are absolutely going to get through nursing school together, I believe in you. Doc Uno is cheering for you always! Let's take a quick break before we review again! 🥰❤️",
-      sticker: "🦦"
+      emoji: "",
+      message: "You passed, babe! So proud of you! We are absolutely going to get through nursing school together, I believe in you. Doc Uno is cheering for you always! Let's take a quick break before we review again!",
+      sticker: ""
     }
   } else {
     return {
-      emoji: "🧸🩹🧁❤️",
-      message: "It's okay, my future RN! We'll review together — I'm always ready to help you study, every single day. Don't ever give up, okay? Doc Uno is always right here for you. I love you, babe! Drink some water first! 🍼🌸",
-      sticker: "🩹"
+      emoji: "",
+      message: "It's okay, my future RN! We'll review together — I'm always ready to help you study, every single day. Don't ever give up, okay? Doc Uno is always right here for you. I love you, babe! Drink some water first!",
+      sticker: ""
     }
   }
 }
@@ -954,27 +954,27 @@ const getCuteBoyfriendResponse = (score: number) => {
 const getNurseFlorenceResponse = (score: number) => {
   if (score === 100) {
     return {
-      emoji: "🩺✨🧠🏆",
+      emoji: "",
       message: "Outstanding! A perfect score indicates an exceptional mastery of the subject matter. Your meticulous preparation and clinical reasoning are highly commendable. Keep up the dedication to excellence!",
-      sticker: "📋"
+      sticker: ""
     }
   } else if (score >= 90) {
     return {
-      emoji: "🩺✨👩‍⚕️📈",
+      emoji: "",
       message: "Excellent performance! You demonstrate a strong clinical foundation and a high level of preparedness for your board examinations. Continue polishing the minor details—you are on the path to top-tier success.",
-      sticker: "📖"
+      sticker: ""
     }
   } else if (score >= 75) {
     return {
-      emoji: "🩺📋👍✨",
+      emoji: "",
       message: "Good job, you have passed! This represents a solid grasp of key nursing priorities. Take time to review the clinical rationales for any incorrect responses to further consolidate your knowledge.",
-      sticker: "📝"
+      sticker: ""
     }
   } else {
     return {
-      emoji: "🩺🩹📚🔍",
+      emoji: "",
       message: "Keep persevering. Nursing concepts require continuous application and review. Analyze the incorrect answers, understand the rationales, and try again. Dedication and practice will yield excellent results.",
-      sticker: "☕"
+      sticker: ""
     }
   }
 }
@@ -993,7 +993,7 @@ function QuizResults() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-fn mb-6 text-[var(--pink)]">
              <Target size={40} />
           </div>
-          <h2 className="text-3xl font-bold mb-2">Quiz Complete! ✨</h2>
+          <h2 className="text-3xl font-bold mb-2">Quiz Complete!</h2>
           <p className="text-[var(--text-secondary)] font-medium mb-8">You've finished the {activeQuiz?.title} review.</p>
           
           <div className="flex flex-col items-center">
@@ -1076,7 +1076,7 @@ function QuizResults() {
                      </div>
                      <p className="text-sm font-bold mb-4">{q.question}</p>
                      <div className="p-4 rounded-2xl bg-white border border-[var(--border)]">
-                        <p className="text-[11px] font-bold text-[var(--pink)] mb-1">{isFrance ? "Doc Uno's Rationale 🩺" : `${aiAssistantName}'s Rationale 🩺`}</p>
+                        <p className="text-[11px] font-bold text-[var(--pink)] mb-1">{isFrance ? "Doc Uno's Rationale" : `${aiAssistantName}'s Rationale`}</p>
                         <div className="text-xs text-[var(--text-secondary)] leading-relaxed">
                            <MarkdownText content={q.rationale} />
                         </div>
@@ -1108,11 +1108,11 @@ function EmptyQuizState() {
       <div className="w-24 h-24 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-8 shadow-sm">
         <BrainCircuit size={48} />
       </div>
-      <h2 className="text-2xl font-bold mb-2">No topics found yet! 🧪</h2>
+      <h2 className="text-2xl font-bold mb-2">No topics found yet!</h2>
       <p className="text-[var(--text-secondary)] max-w-sm mb-10 leading-relaxed font-medium">
         {isFrance 
-          ? "Doc Uno needs some study materials to generate your custom quizzes. Upload your notes to the Study Box first! 🌸"
-          : `${aiAssistantName} needs clinical study materials to generate custom practice quizzes. Please upload your notes or clinical files to the Study Box first! 🩺`
+          ? "Doc Uno needs some study materials to generate your custom quizzes. Upload your notes to the Study Box first!"
+          : `${aiAssistantName} needs clinical study materials to generate custom practice quizzes. Please upload your notes or clinical files to the Study Box first!`
         }
       </p>
       <Link to="/study-box" className="btn-primary flex items-center gap-2 px-8">
@@ -1381,7 +1381,7 @@ function CustomTopicDropdown({ topics, value, onChange }: { topics: any[], value
                 ))
               ) : (
                 <div className="text-center py-4 text-xs font-bold text-[var(--text-secondary)]">
-                  No matching topics found 🧸
+                  No matching topics found
                 </div>
               )}
             </div>

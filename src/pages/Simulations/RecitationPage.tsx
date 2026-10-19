@@ -71,7 +71,7 @@ function RecitationSetup() {
       <PageHeader
         icon={Mic}
         title={isFrance ? "France's Recitation Practice" : 'Recitation Mode'}
-        subtitle={isFrance ? 'Prepare for clinicals by defending your knowledge out loud, babe! 🌸' : 'Prepare for clinicals by defending your knowledge out loud.'}
+        subtitle={isFrance ? 'Prepare for clinicals by defending your knowledge out loud, babe!' : 'Prepare for clinicals by defending your knowledge out loud.'}
       />
 
       <div className="fn-card p-8 space-y-8">
@@ -204,7 +204,7 @@ function RecitationSetup() {
             <div className="space-y-2 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
               {filesWithContent.length === 0 ? (
                 <div className="p-4 rounded-2xl border border-dashed border-[var(--border)] text-center text-sm text-[var(--text-secondary)]">
-                  No uploaded files with content found. Upload notes to your Study Box first! 📂
+                  No uploaded files with content found. Upload notes to your Study Box first!
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -241,7 +241,7 @@ function RecitationSetup() {
             <div className="space-y-2 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
               {savedKnowledge.length === 0 ? (
                 <div className="p-4 rounded-2xl border border-dashed border-[var(--border)] text-center text-sm text-[var(--text-secondary)]">
-                  No saved references yet. Save something from the Knowledge Garden first! 🌿
+                  No saved references yet. Save something from the Knowledge Garden first!
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -298,9 +298,9 @@ function RecitationSetup() {
           <label className="text-sm font-bold text-[var(--text-secondary)]">Select Difficulty</label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { id: 'gentle', label: 'Gentle Mode 🌸', desc: isFrance ? 'Guided, warm, and supportive review, babe.' : 'Guided, step-by-step supportive mentoring.' },
-              { id: 'clinical_instructor', label: 'Clinical Instructor 🩺', desc: 'Strict, professional high-pressure oral exam questioning.' },
-              ...(isFrance ? [{ id: 'doc_uno', label: 'Doc Uno Mode 💖', desc: 'Teasing, challenging, sweet boyfriend-style questioning.' }] : [])
+              { id: 'gentle', label: 'Gentle Mode', desc: isFrance ? 'Guided, warm, and supportive review, babe.' : 'Guided, step-by-step supportive mentoring.' },
+              { id: 'clinical_instructor', label: 'Clinical Instructor', desc: 'Strict, professional high-pressure oral exam questioning.' },
+              ...(isFrance ? [{ id: 'doc_uno', label: 'Doc Uno Mode', desc: 'Teasing, challenging, sweet boyfriend-style questioning.' }] : [])
             ].map(d => (
               <div
                 key={d.id}

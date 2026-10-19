@@ -121,16 +121,16 @@ export default function ProfilePage() {
   const favoritesCount = items.filter(item => item.is_favorite).length + reviewers.filter(r => r.is_favorite).length
 
   const badgesList = [
-    { icon: '🩺', label: 'First Step', desc: 'Started first reviewer', unlocked: reviewers.length > 0 },
-    { icon: '🧪', label: 'Quiz Whiz', desc: 'Got 100% on any quiz', unlocked: quizzes.some(q => q.score !== null && q.score === 100) },
-    { icon: '🌸', label: 'Clinical Explorer', desc: 'Generated a RetDem procedure', unlocked: procedures.length > 0 },
-    { icon: '📚', label: 'Scholar', desc: `Uploaded 5+ notes in ${studyBoxName}`, unlocked: items.length >= 5 },
-    { icon: '🧠', label: 'Pathology Master', desc: 'Completed 3+ quizzes', unlocked: quizzes.filter(q => q.completed).length >= 3 },
-    { icon: '🎀', label: 'Board Topnotcher', desc: 'Average quiz score >= 85%', unlocked: quizzes.length > 0 && (quizzes.reduce((acc, q) => acc + (q.score || 0), 0) / quizzes.length) >= 85 },
-    { icon: '🏥', label: 'Night Duty', desc: 'Active duty reminder set', unlocked: reminders.some(r => r.reminder_type === 'duty') },
-    { icon: '💖', label: isFrance ? "Uno's Favorite" : "Starred Scholar", desc: 'Favorited 5+ materials', unlocked: favoritesCount >= 5 },
-    { icon: '🦦', label: 'Fast Learner', desc: 'Created slides presentation', unlocked: reviewers.some(r => r.content.slides && r.content.slides.length > 0) },
-    { icon: '🏆', label: 'NCLEX Survivor', desc: 'Finished NCLEX style quiz', unlocked: quizzes.some(q => q.question_type === 'nclex' && q.completed) }
+    { icon: '', label: 'First Step', desc: 'Started first reviewer', unlocked: reviewers.length > 0 },
+    { icon: '', label: 'Quiz Whiz', desc: 'Got 100% on any quiz', unlocked: quizzes.some(q => q.score !== null && q.score === 100) },
+    { icon: '', label: 'Clinical Explorer', desc: 'Generated a RetDem procedure', unlocked: procedures.length > 0 },
+    { icon: '', label: 'Scholar', desc: `Uploaded 5+ notes in ${studyBoxName}`, unlocked: items.length >= 5 },
+    { icon: '', label: 'Pathology Master', desc: 'Completed 3+ quizzes', unlocked: quizzes.filter(q => q.completed).length >= 3 },
+    { icon: '', label: 'Board Topnotcher', desc: 'Average quiz score >= 85%', unlocked: quizzes.length > 0 && (quizzes.reduce((acc, q) => acc + (q.score || 0), 0) / quizzes.length) >= 85 },
+    { icon: '', label: 'Night Duty', desc: 'Active duty reminder set', unlocked: reminders.some(r => r.reminder_type === 'duty') },
+    { icon: '', label: isFrance ? "Uno's Favorite" : "Starred Scholar", desc: 'Favorited 5+ materials', unlocked: favoritesCount >= 5 },
+    { icon: '', label: 'Fast Learner', desc: 'Created slides presentation', unlocked: reviewers.some(r => r.content.slides && r.content.slides.length > 0) },
+    { icon: '', label: 'NCLEX Survivor', desc: 'Finished NCLEX style quiz', unlocked: quizzes.some(q => q.question_type === 'nclex' && q.completed) }
   ]
   const badgesCount = badgesList.filter(b => b.unlocked).length
 
@@ -226,26 +226,26 @@ export default function ProfilePage() {
                 <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-th-pink/20 shrink-0">
                    <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover" />
                 </div>
-                <h3 className="font-heading font-bold text-base text-[var(--text)]">{aiAssistantName} says... {isFrance ? '🩺✨' : '👩‍⚕️✨'}</h3>
+                <h3 className="font-heading font-bold text-base text-[var(--text)]">{aiAssistantName} says... {isFrance ? '' : ''}</h3>
              </div>
              <div className="p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10 text-center">
                 <p className="text-sm italic leading-relaxed text-[var(--text-secondary)] font-medium">
                    {items.length === 0 ? (
                       isFrance 
-                        ? `"Babe, I haven't seen your materials in the Study Box yet! 📂 Upload your notes now so I can turn them into beautiful clinical reviewers. I believe in you! 🩺🌸"`
-                        : `"I haven't seen any study materials in your Study Box yet! 📂 Please upload your nursing notes so I can generate comprehensive clinical study guides for you. Let's excel together! 👩‍⚕️✨"`
+                        ? `"Babe, I haven't seen your materials in the Study Box yet! Upload your notes now so I can turn them into beautiful clinical reviewers. I believe in you!"`
+                        : `"I haven't seen any study materials in your Study Box yet! Please upload your nursing notes so I can generate comprehensive clinical study guides for you. Let's excel together!"`
                     ) : quizzes.length > 0 ? (
                       isFrance
-                        ? `"${greetingName}, you've completed ${quizzes.filter(q => q.completed).length} quiz${quizzes.filter(q => q.completed).length > 1 ? 'zes' : ''} already! You are so brilliant, babe. You're getting closer to that RN title every single day. Drink some water and keep going! 💧🌷"`
-                        : `"${greetingName}, you've completed ${quizzes.filter(q => q.completed).length} quiz${quizzes.filter(q => q.completed).length > 1 ? 'zes' : ''}! Excellent dedication. You are making steady progress toward your RN certification. Keep studying! 🩺✨"`
+                        ? `"${greetingName}, you've completed ${quizzes.filter(q => q.completed).length} quiz${quizzes.filter(q => q.completed).length > 1 ? 'zes' : ''} already! You are so brilliant, babe. You're getting closer to that RN title every single day. Drink some water and keep going!"`
+                        : `"${greetingName}, you've completed ${quizzes.filter(q => q.completed).length} quiz${quizzes.filter(q => q.completed).length > 1 ? 'zes' : ''}! Excellent dedication. You are making steady progress toward your RN certification. Keep studying!"`
                     ) : reviewers.length > 0 ? (
                       isFrance
-                        ? `"You are so dedicated to studying, babe! 📚 You already have ${reviewers.length} custom reviewers. Let's generate a Quiz or RetDem to master the clinical flow even more! I'm so proud of you! 💕"`
-                        : `"Excellent study habits, ${greetingName}! 📚 You have generated ${reviewers.length} study guides. Let's create a custom quiz or clinical simulation next to test your recall! 👩‍⚕️✨"`
+                        ? `"You are so dedicated to studying, babe! You already have ${reviewers.length} custom reviewers. Let's generate a Quiz or RetDem to master the clinical flow even more! I'm so proud of you!"`
+                        : `"Excellent study habits, ${greetingName}! You have generated ${reviewers.length} study guides. Let's create a custom quiz or clinical simulation next to test your recall!"`
                     ) : (
                       isFrance
-                        ? `"${greetingName}, you've uploaded ${items.length} notes to your Study Box! That's incredible. Let's start generating clinical reviewers to master the board exams together! 🌸🩺"`
-                        : `"${greetingName}, you have uploaded ${items.length} notes to your Study Box. Outstanding! Let's start generating custom clinical study guides to master your nursing curriculum! 🩺✨"`
+                        ? `"${greetingName}, you've uploaded ${items.length} notes to your Study Box! That's incredible. Let's start generating clinical reviewers to master the board exams together!"`
+                        : `"${greetingName}, you have uploaded ${items.length} notes to your Study Box. Outstanding! Let's start generating custom clinical study guides to master your nursing curriculum!"`
                     )}
                 </p>
              </div>
@@ -333,7 +333,7 @@ export default function ProfilePage() {
                        <p className="font-bold text-[var(--pink)] mb-0.5">{badge.label}</p>
                        <p className="text-gray-300 leading-normal">{badge.desc}</p>
                        <p className={cn("text-[9px] mt-1 font-bold", badge.unlocked ? "text-[var(--success)]" : "text-amber-400")}>
-                         {badge.unlocked ? '✨ Unlocked!' : '🔒 Locked'}
+                         {badge.unlocked ? 'Unlocked!' : 'Locked'}
                        </p>
                      </div>
                   </div>
