@@ -28,7 +28,6 @@ if (existsSync(envPath)) {
   }
 }
 
-const GROQ_API_KEY = process.env.VITE_GROQ_API_KEY
 const MISTRAL_API_KEY = process.env.VITE_MISTRAL_API_KEY
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY
 const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY
@@ -38,7 +37,7 @@ const ELEVENLABS_VOICES = {
   NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || 'EXAVITQu4vr4xnSDxMaL', // Sarah
 }
 
-if (!GROQ_API_KEY && !MISTRAL_API_KEY && !GEMINI_API_KEY) {
+if (!MISTRAL_API_KEY && !GEMINI_API_KEY) {
   console.warn('⚠ No API keys found in .env. Create a .env file from .env.example')
 }
 
@@ -79,18 +78,7 @@ async function handleRequest(req, res) {
   }
 
   try {
-    if (path === '/api/groq') {
-      if (!GROQ_API_KEY) throw new Error('VITE_GROQ_API_KEY not set')
-      const apiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
-        body: JSON.stringify(body),
-      })
-      const data = await apiRes.json()
-      res.writeHead(apiRes.status, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify(data))
-
-    } else if (path === '/api/mistral') {
+    if (path === '/api/mistral') {
       if (!MISTRAL_API_KEY) throw new Error('VITE_MISTRAL_API_KEY not set')
       const apiRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
@@ -156,6 +144,6 @@ async function handleRequest(req, res) {
 const PORT = 3001
 createServer(handleRequest).listen(PORT, () => {
   console.log(`✅ API dev server running on http://localhost:${PORT}`)
-  console.log(`   Routes: /api/groq, /api/mistral, /api/gemini, /api/elevenlabs`)
+  console.log(`   Routes: /api/mistral, /api/gemini, /api/elevenlabs`)
   console.log(`   Start Vite in another terminal: npm run dev`)
 })

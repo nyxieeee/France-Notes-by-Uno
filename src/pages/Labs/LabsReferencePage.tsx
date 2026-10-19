@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FlaskConical, Search, ChevronDown, TrendingUp, TrendingDown, AlertTriangle, Star, Copy, Check } from 'lucide-react'
+import { Flask as FlaskConical, MagnifyingGlass as Search, CaretDown as ChevronDown, TrendUp as TrendingUp, TrendDown as TrendingDown, Warning as AlertTriangle, Star, Copy, Check } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
@@ -277,7 +278,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
       layout
       className={cn(
         'fn-card border-2 transition-all cursor-pointer overflow-hidden',
-        expanded ? 'border-[var(--pink)]/40' : 'hover:border-[var(--pink)]/20'
+        expanded ? 'border-th-pink/40' : 'hover:border-th-pink/20'
       )}
       onClick={() => setExpanded(p => !p)}
     >
@@ -290,14 +291,14 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
           )}
           title={isSaved ? "Unbookmark Lab" : "Bookmark Lab"}
         >
-          <Star size={18} fill={isSaved ? "currentColor" : "none"} />
+          <Star size={18} weight={isSaved ? "fill" : "regular"} />
         </button>
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
-            <h4 className="font-black text-base">{lab.name}</h4>
+            <h4 className="font-semibold text-base">{lab.name}</h4>
             {lab.abbreviation && (
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--secondary-bg)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full">
+              <span className="text-[11px] font-bold bg-[var(--secondary-bg)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full">
                 {lab.abbreviation}
               </span>
             )}
@@ -310,7 +311,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={copyLabSummary}
-            className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-[var(--pink)]/10 rounded-xl transition-all"
+            className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-th-pink/10 rounded-xl transition-all"
             title="Copy Lab Reference"
           >
             {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
@@ -342,7 +343,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
                 <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingDown size={14} className="text-blue-500" />
-                    <p className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
                       {lab.lowName} (Too Low)
                     </p>
                   </div>
@@ -359,7 +360,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
                 <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp size={14} className="text-red-500" />
-                    <p className="text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-wider">
+                    <p className="text-xs font-semibold text-red-600 dark:text-red-400">
                       {lab.highName} (Too High)
                     </p>
                   </div>
@@ -375,7 +376,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
               </div>
 
               {lab.clinicalPearl && (
-                <div className="flex gap-2.5 p-3 bg-[var(--pink)]/8 border border-[var(--pink)]/20 rounded-2xl">
+                <div className="flex gap-2.5 p-3 bg-th-pink/8 border border-th-pink/20 rounded-2xl">
                   <AlertTriangle size={14} className="text-[var(--pink)] shrink-0 mt-0.5" />
                   <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                     <span className="font-bold text-[var(--pink)]">Clinical Pearl: </span>
@@ -461,20 +462,7 @@ export default function LabsReferencePage() {
 
   return (
     <div className="page-container">
-      {/* Header */}
-      <div className="flex flex-col items-center text-center max-w-2xl mx-auto mb-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-16 h-16 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-[2rem] flex items-center justify-center mb-4 shadow-sm"
-        >
-          <FlaskConical size={32} />
-        </motion.div>
-        <h1 className="text-4xl font-black mb-2 font-heading">Normal Labs 🧪</h1>
-        <p className="text-[var(--text-secondary)] text-sm max-w-lg">
-          Quick-reference normal ranges with low/high clinical implications. Star your essential labs to sync with your account!
-        </p>
-      </div>
+      <PageHeader icon={FlaskConical} title="Reference Lab Charts" subtitle="Normal ranges with low/high clinical implications. Star the labs you use most to keep them handy." />
 
       {/* Search */}
       <div className="max-w-xl mx-auto mb-6">
@@ -496,13 +484,13 @@ export default function LabsReferencePage() {
           <button
             onClick={() => setActiveTab('saved')}
             className={cn(
-              'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all border-2 shrink-0',
+              'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all border-2 shrink-0',
               activeTab === 'saved'
                 ? 'bg-amber-500 text-white border-amber-500 shadow-md'
                 : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-amber-400'
             )}
           >
-            <Star size={14} fill={activeTab === 'saved' ? 'currentColor' : 'none'} className="text-amber-300" />
+            <Star size={14} weight={activeTab === 'saved' ? "fill" : "regular"} className="text-amber-300" />
             <span>Saved Labs ({savedLabs.length})</span>
           </button>
 
@@ -511,10 +499,10 @@ export default function LabsReferencePage() {
               key={cat.id}
               onClick={() => setActiveTab(cat.id)}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all border-2 shrink-0',
+                'flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all border-2 shrink-0',
                 activeTab === cat.id
                   ? 'text-white border-transparent shadow-md'
-                  : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/30'
+                  : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/30'
               )}
               style={activeTab === cat.id ? { backgroundColor: cat.color, borderColor: cat.color } : {}}
             >
@@ -539,7 +527,7 @@ export default function LabsReferencePage() {
             filtered.length > 0 ? (
               filtered.map(cat => (
                 <div key={cat.id} className="space-y-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-1.5 px-1">
+                  <p className="text-[11px] font-bold text-[var(--text-secondary)] flex items-center gap-1.5 px-1">
                     <span>{cat.emoji}</span> {cat.label}
                   </p>
                   {cat.labs.map(lab => (
@@ -561,8 +549,8 @@ export default function LabsReferencePage() {
                     ⭐
                   </div>
                   <div>
-                    <h2 className="font-black text-xl">Saved & Bookmarked Labs</h2>
-                    <p className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-widest">{savedLabObjects.length} bookmarked lab values synced with Supabase</p>
+                    <h2 className="font-semibold text-xl">Saved & Bookmarked Labs</h2>
+                    <p className="text-[11px] text-[var(--text-secondary)] font-bold">{savedLabObjects.length} bookmarked lab values synced with Supabase</p>
                   </div>
                 </div>
                 {savedLabObjects.map(lab => (
@@ -587,8 +575,8 @@ export default function LabsReferencePage() {
                     {activeCategory.emoji}
                   </div>
                   <div>
-                    <h2 className="font-black text-xl">{activeCategory.label}</h2>
-                    <p className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-widest">{activeCategory.labs.length} values • tap to expand</p>
+                    <h2 className="font-semibold text-xl">{activeCategory.label}</h2>
+                    <p className="text-[11px] text-[var(--text-secondary)] font-bold">{activeCategory.labs.length} values • tap to expand</p>
                   </div>
                 </div>
                 {activeCategory.labs.map(lab => (

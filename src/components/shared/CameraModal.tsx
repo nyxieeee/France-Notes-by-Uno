@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Camera, RefreshCcw, Check } from 'lucide-react'
+import { X, Camera, ArrowsCounterClockwise as RefreshCcw, Check } from '@phosphor-icons/react'
 
 interface CameraModalProps {
   onCapture: (base64Image: string) => void
@@ -72,13 +72,13 @@ export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-[var(--bg)]/90 backdrop-blur-md p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-th-bg/90 backdrop-blur-md p-4"
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
-        className="bg-[var(--card)] w-full max-w-2xl rounded-[2.5rem] shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col"
+        className="bg-[var(--card)] w-full max-w-2xl rounded-2xl shadow-fn-lg border border-[var(--border)] overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="p-4 flex items-center justify-between border-b border-[var(--border)]">
@@ -112,7 +112,7 @@ export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
         </div>
 
         {/* Controls */}
-        <div className="p-6 bg-[var(--bg)]/50 flex justify-center items-center gap-4">
+        <div className="p-6 bg-th-bg/50 flex justify-center items-center gap-4">
           {capturedImage ? (
             <>
               <button onClick={handleRetake} className="btn-secondary flex items-center gap-2">

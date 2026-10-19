@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Cropper, { Area, Point } from 'react-easy-crop'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -7,32 +8,15 @@ import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
-import { 
-  User, 
-  Settings, 
-  LogOut, 
-  Moon, 
-  Sun, 
-  Award, 
-  Calendar, 
-  GraduationCap,
-  ChevronRight,
-  ChevronDown,
-  Shield,
-  Bell,
-  Palette,
-  Camera,
-  X,
-  Save,
-  Heart,
-  Lock
-} from 'lucide-react'
+import { User, Gear as Settings, SignOut as LogOut, Moon, Sun, Medal as Award, Calendar, GraduationCap, CaretRight as ChevronRight, CaretDown as ChevronDown, Shield, Bell, Palette, Camera, X, FloppyDisk as Save, Heart, Lock } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatDate } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function ProfilePage() {
   const { user, logout, updateProfile } = useAuthStore()
+  const navigate = useNavigate()
   const { theme, toggleTheme } = useThemeStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -151,9 +135,9 @@ export default function ProfilePage() {
   const badgesCount = badgesList.filter(b => b.unlocked).length
 
   const stats = [
-    { label: 'Courses', value: String(coursesCount), icon: GraduationCap, color: 'bg-blue-100 text-blue-600' },
-    { label: 'Badges', value: String(badgesCount), icon: Award, color: 'bg-purple-100 text-purple-600' },
-    { label: 'Favorites', value: String(favoritesCount), icon: Heart, color: 'bg-[var(--pink)]/10 text-[var(--pink)]' }
+    { label: 'Topics', value: String(coursesCount), icon: GraduationCap, color: 'bg-[var(--rose-soft)] text-[var(--pink)]' },
+    { label: 'Badges', value: String(badgesCount), icon: Award, color: 'bg-[var(--rose-soft)] text-[var(--pink)]' },
+    { label: 'Favorites', value: String(favoritesCount), icon: Heart, color: 'bg-th-pink/10 text-[var(--pink)]' }
   ]
 
   const settingsOptions = [
@@ -165,10 +149,7 @@ export default function ProfilePage() {
 
   return (
     <div className="page-container max-w-4xl overflow-x-hidden">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Your Profile {isFrance ? '🌸' : '✨'}</h1>
-        <p className="text-[var(--text-secondary)] font-medium">Manage your nursing journey and study preferences. {isFrance ? '✨' : '🩺'}</p>
-      </div>
+      <PageHeader icon={User} title="Profile & Settings" subtitle="Manage your account, appearance and study preferences." />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Card */}
@@ -179,18 +160,18 @@ export default function ProfilePage() {
              </div>
              
              <div className="relative mb-6 inline-block cursor-pointer group select-none" onClick={handleAvatarClick}>
-                <div className="w-28 h-28 rounded-[2.5rem] bg-[var(--secondary-bg)] border-4 border-[var(--pink)] overflow-hidden shadow-fn mx-auto transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg relative">
+                <div className="w-28 h-28 rounded-2xl bg-[var(--secondary-bg)] border-4 border-[var(--pink)] overflow-hidden shadow-fn mx-auto transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg relative">
                    {user?.avatar_url ? (
                      <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
                    ) : (
-                     <div className="w-full h-full flex items-center justify-center text-4xl text-[var(--pink)] font-bold">
+                     <div className="w-full h-full flex items-center justify-center text-3xl text-[var(--pink)] font-bold">
                         {user?.full_name?.charAt(0)}
                      </div>
                    )}
                    {/* Cool premium hover overlay */}
                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1">
                      <Camera size={18} className="text-white animate-pulse-soft" />
-                     <span className="text-white text-[10px] font-extrabold tracking-wider uppercase font-sans">Change</span>
+                     <span className="text-white text-[11px] font-semibold font-sans">Change</span>
                    </div>
                 </div>
                 <button 
@@ -232,7 +213,7 @@ export default function ProfilePage() {
                 </button>
                 <button 
                   onClick={logout}
-                  className="flex-1 btn-ghost flex items-center justify-center gap-2 py-2 text-xs rounded-xl text-[var(--error)] border border-[var(--error)]/10 hover:bg-[var(--error)]/5 hover:border-[var(--error)]/20 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 btn-ghost flex items-center justify-center gap-2 py-2 text-xs rounded-xl text-[var(--error)] border border-th-error/10 hover:bg-th-error/5 hover:border-th-error/20 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <LogOut size={15} />
                   <span>Logout</span>
@@ -242,12 +223,12 @@ export default function ProfilePage() {
 
           <div className="fn-card p-6">
              <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-[var(--pink)]/20 shrink-0">
+                <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-th-pink/20 shrink-0">
                    <img src={isFrance ? "/doc-uno-avatar.jpg" : "/nurse-florence-avatar.jpg"} alt={aiAssistantName} className="w-full h-full object-cover" />
                 </div>
                 <h3 className="font-heading font-bold text-base text-[var(--text)]">{aiAssistantName} says... {isFrance ? '🩺✨' : '👩‍⚕️✨'}</h3>
              </div>
-             <div className="p-4 bg-[var(--pink)]/5 rounded-2xl border border-[var(--pink)]/10 text-center">
+             <div className="p-4 bg-th-pink/5 rounded-2xl border border-th-pink/10 text-center">
                 <p className="text-sm italic leading-relaxed text-[var(--text-secondary)] font-medium">
                    {items.length === 0 ? (
                       isFrance 
@@ -287,14 +268,14 @@ export default function ProfilePage() {
                   <stat.icon size={20} />
                 </div>
                 <p className="text-xl font-bold">{stat.value}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">{stat.label}</p>
+                <p className="text-[11px] font-bold text-[var(--text-secondary)]">{stat.label}</p>
               </motion.div>
             ))}
           </div>
 
           {/* Settings Section */}
           <div className="fn-card overflow-hidden">
-             <div className="p-6 border-b border-[var(--border)] bg-gradient-to-r from-[var(--pink)]/10 to-transparent">
+             <div className="p-6 border-b border-[var(--border)] bg-gradient-to-r from-th-pink/10 to-transparent">
                 <h3 className="font-heading font-bold text-lg flex items-center gap-2">
                    <Settings className="text-[var(--pink)]" size={20} />
                    Settings & Preferences
@@ -316,7 +297,7 @@ export default function ProfilePage() {
                           <p className="text-xs text-[var(--text-secondary)] font-medium">{option.sub}</p>
                        </div>
                     </div>
-                    <ChevronRight size={18} className="text-[var(--text-secondary)]/30 group-hover:text-[var(--pink)] group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-th-text-secondary/30 group-hover:text-[var(--pink)] group-hover:translate-x-1 transition-all" />
                   </button>
                 ))}
              </div>
@@ -338,7 +319,7 @@ export default function ProfilePage() {
                      <div className={cn(
                        "w-full aspect-square bg-[var(--bg)] rounded-[1.5rem] border-2 flex items-center justify-center text-2xl transition-all shadow-sm",
                        badge.unlocked 
-                         ? "border-[var(--pink)] bg-[var(--pink)]/5 ring-2 ring-[var(--pink)]/20" 
+                         ? "border-[var(--pink)] bg-th-pink/5 ring-2 ring-th-pink/20" 
                          : "border-dashed border-[var(--border)] grayscale opacity-40 group-hover:opacity-65"
                      )}>
                         {badge.icon}
@@ -380,11 +361,11 @@ export default function ProfilePage() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fn-card w-full max-w-md relative z-10 flex flex-col max-h-[85vh]"
             >
-              <div className="flex items-center justify-between p-6 border-b border-[var(--border)] bg-gradient-to-r from-[var(--secondary-bg)]/20 to-transparent">
+              <div className="flex items-center justify-between p-6 border-b border-[var(--border)] bg-gradient-to-r from-th-secondary-bg/20 to-transparent">
                 <h3 className="font-heading font-bold text-lg">{activeSetting}</h3>
                 <button 
                   onClick={() => setActiveSetting(null)}
-                  className="w-8 h-8 rounded-full bg-[var(--bg)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--pink)]/10 hover:text-[var(--pink)] transition-colors"
+                  className="w-8 h-8 rounded-full bg-[var(--bg)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-th-pink/10 hover:text-[var(--pink)] transition-colors"
                 >
                   <X size={18} />
                 </button>
@@ -394,7 +375,7 @@ export default function ProfilePage() {
                 {activeSetting === 'Personal Information' && (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1 mb-1 block">Full Name</label>
+                      <label className="text-xs font-bold text-[var(--text-secondary)] ml-1 mb-1 block">Full Name</label>
                       <input 
                         type="text" 
                         value={editForm.full_name}
@@ -404,7 +385,7 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1 mb-1 block">Nursing School</label>
+                      <label className="text-xs font-bold text-[var(--text-secondary)] ml-1 mb-1 block">Nursing School</label>
                       <input 
                         type="text" 
                         value={editForm.school}
@@ -414,12 +395,12 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div className="relative z-20">
-                      <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] ml-1 mb-1 block">Year Level</label>
+                      <label className="text-xs font-bold text-[var(--text-secondary)] ml-1 mb-1 block">Year Level</label>
                       <div 
                         className="relative cursor-pointer"
                         onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
                       >
-                        <div className={`fn-input flex items-center bg-[var(--card)] ${!editForm.year_level ? 'text-[var(--text-secondary)]/70' : 'text-[var(--text)]'}`}>
+                        <div className={`fn-input flex items-center bg-[var(--card)] ${!editForm.year_level ? 'text-th-text-secondary/70' : 'text-[var(--text)]'}`}>
                           {editForm.year_level ? [
                             { value: '1st Year', label: '1st Year' },
                             { value: '2nd Year', label: '2nd Year' },
@@ -428,7 +409,7 @@ export default function ProfilePage() {
                             { value: 'RN', label: 'Registered Nurse' }
                           ].find(o => o.value === editForm.year_level)?.label : "Select year level"}
                         </div>
-                        <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                        <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-th-text-secondary/50 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} size={18} />
                       </div>
                       
                       {isYearDropdownOpen && (
@@ -446,7 +427,7 @@ export default function ProfilePage() {
                           ].map(option => (
                             <div
                               key={option.value}
-                              className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${editForm.year_level === option.value ? 'bg-[var(--pink)]/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
+                              className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${editForm.year_level === option.value ? 'bg-th-pink/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
                               onClick={() => {
                                 setEditForm({ ...editForm, year_level: option.value });
                                 setIsYearDropdownOpen(false);
@@ -508,21 +489,17 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     
-                    <button className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--border)] hover:border-[var(--pink)] hover:bg-[var(--pink)]/5 transition-colors text-left group">
+                    <button 
+                      onClick={() => navigate('/update-password')}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--border)] hover:border-[var(--pink)] hover:bg-th-pink/5 transition-colors text-left group"
+                    >
                       <div>
                         <p className="font-bold text-sm group-hover:text-[var(--pink)]">Change Password</p>
                         <p className="text-xs text-[var(--text-secondary)]">Update your account credentials</p>
                       </div>
                       <ChevronRight size={18} className="text-[var(--text-secondary)] group-hover:text-[var(--pink)]" />
                     </button>
-                    
-                    <button className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--border)] hover:border-[var(--error)]/40 hover:bg-[var(--error)]/5 transition-colors text-left group">
-                      <div>
-                        <p className="font-bold text-sm text-[var(--error)]">Clear Local Cache</p>
-                        <p className="text-xs text-[var(--text-secondary)]">Free up space (does not delete data)</p>
-                      </div>
-                      <ChevronRight size={18} className="text-[var(--text-secondary)]" />
-                    </button>
+
                   </div>
                 )}
 
@@ -535,7 +512,7 @@ export default function ProfilePage() {
                           onClick={() => theme === 'dark' && toggleTheme()}
                           className={cn(
                             "p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all",
-                            theme === 'light' ? "border-[var(--pink)] bg-[var(--pink)]/5 text-[var(--pink)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/50"
+                            theme === 'light' ? "border-[var(--pink)] bg-th-pink/5 text-[var(--pink)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/50"
                           )}
                         >
                           <Sun size={24} />
@@ -545,7 +522,7 @@ export default function ProfilePage() {
                           onClick={() => theme === 'light' && toggleTheme()}
                           className={cn(
                             "p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all",
-                            theme === 'dark' ? "border-[var(--pink)] bg-[var(--pink)]/5 text-[var(--pink)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--pink)]/50"
+                            theme === 'dark' ? "border-[var(--pink)] bg-th-pink/5 text-[var(--pink)]" : "border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/50"
                           )}
                         >
                           <Moon size={24} />

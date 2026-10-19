@@ -1,27 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRetDemStore } from '@/stores/retDemStore'
-import { 
-  Stethoscope, 
-  ChevronRight, 
-  Clock, 
-  CheckSquare, 
-  ArrowLeft,
-  Play,
-  Heart,
-  Search,
-  BookOpen,
-  Info,
-  ListChecks,
-  Sparkles,
-  Upload,
-  X,
-  FileText,
-  Image,
-  Loader2,
-  CheckCircle2,
-  Trash2,
-  History
-} from 'lucide-react'
+import { Stethoscope, CaretRight as ChevronRight, Clock, CheckSquare, ArrowLeft, Play, Heart, MagnifyingGlass as Search, BookOpen, Info, ListChecks, Sparkle as Sparkles, UploadSimple as Upload, X, FileText, Image, CircleNotch as Loader2, CheckCircle as CheckCircle2, Trash as Trash2, ClockCounterClockwise as History } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -29,7 +9,8 @@ import MarkdownText from '@/components/shared/MarkdownText'
 import type { RetDemProcedure } from '@/types'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { SimulationEngine } from '@/components/shared/SimulationEngine'
-import { visionExtractText } from '@/lib/groq'
+import { visionExtractText } from '@/lib/ai'
+import { extractTextFromFile } from '@/lib/extractor'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function RetDemPage() {
@@ -76,11 +57,8 @@ export default function RetDemPage() {
           })
           extractedText = await visionExtractText(base64)
         } else {
-          extractedText = await new Promise<string>((resolve) => {
-            const reader = new FileReader()
-            reader.onload = (e) => resolve(e.target?.result as string)
-            reader.readAsText(file)
-          })
+          // PDFs (including scanned ones) and DOCX need real parsing, not readAsText
+          extractedText = await extractTextFromFile(file)
         }
         addUploadedFile(file.name, extractedText)
       } catch (e) {
@@ -135,19 +113,15 @@ export default function RetDemPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold tracking-tight mb-2">{retdemName}</h1>
-              <p className="text-[var(--text-secondary)] font-medium">
-                {isFrance 
-                  ? 'Master your nursing procedures with step-by-step guides and rationales, babe! 🩺🌸'
-                  : 'Master your nursing procedures with step-by-step guides and rationales. 🩺✨'
-                }
-              </p>
-            </div>
+            <PageHeader
+              icon={Stethoscope}
+              title={retdemName}
+              subtitle={isFrance ? 'Master your nursing procedures with step-by-step guides and rationales, babe! 🌸' : 'Master your nursing procedures with step-by-step guides and rationales.'}
+            />
 
             <div className="mb-6 flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-th-text-secondary/50" size={18} />
                 <input 
                   type="text" 
                   placeholder="Search procedures (e.g., wound care, IV, injections)..." 
@@ -180,7 +154,7 @@ export default function RetDemPage() {
                     initial={{ opacity: 0, scale: 0.92, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.92, y: 10 }}
-                    className="bg-[var(--card)] w-full max-w-lg rounded-[2rem] shadow-2xl border border-[var(--border)] p-8"
+                    className="bg-[var(--card)] w-full max-w-lg rounded-2xl shadow-2xl border border-[var(--border)] p-8"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="w-14 h-14 bg-[var(--pink)] rounded-[1.2rem] flex items-center justify-center text-white mb-6 shadow-fn">
@@ -275,7 +249,7 @@ export default function RetDemPage() {
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -10 }}
-                      className="flex items-center gap-3 px-4 py-2.5 fn-card bg-gradient-to-r from-[var(--success)]/5 to-transparent border-[var(--success)]/30"
+                      className="flex items-center gap-3 px-4 py-2.5 fn-card bg-gradient-to-r from-th-success/5 to-transparent border-th-success/30"
                     >
                       <CheckCircle2 size={14} className="text-[var(--success)] shrink-0" />
                       <span className="text-xs font-bold text-[var(--success)] shrink-0">#{i + 1}</span>
@@ -283,7 +257,7 @@ export default function RetDemPage() {
                       <span className="text-xs text-[var(--text-secondary)] shrink-0">{f.text.length} chars</span>
                       <button
                         onClick={() => removeUploadedFile(f.id)}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-[var(--error)]/10 text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors shrink-0"
+                        className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-th-error/10 text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors shrink-0"
                       ><X size={13} /></button>
                     </motion.div>
                   ))}
@@ -298,7 +272,7 @@ export default function RetDemPage() {
                 onClick={() => !isExtracting && fileInputRef.current?.click()}
                 className={cn(
                   "fn-card border-2 border-dashed p-5 flex items-center gap-4 cursor-pointer transition-all",
-                  isDragging ? "border-[var(--pink)] bg-[var(--pink)]/5 scale-[1.01]" : "border-[var(--border)] hover:border-[var(--pink)]/50 hover:bg-[var(--secondary-bg)]/50"
+                  isDragging ? "border-[var(--pink)] bg-th-pink/5 scale-[1.01]" : "border-[var(--border)] hover:border-th-pink/50 hover:bg-th-secondary-bg/50"
                 )}
               >
                 <div className={cn(
@@ -361,13 +335,13 @@ export default function RetDemPage() {
                   </button>
                   <button
                     onClick={clearUploadedFiles}
-                    className="px-4 py-3 rounded-2xl border border-[var(--border)] text-xs font-bold text-[var(--text-secondary)] hover:border-[var(--error)]/40 hover:text-[var(--error)] transition-colors"
+                    className="px-4 py-3 rounded-2xl border border-[var(--border)] text-xs font-bold text-[var(--text-secondary)] hover:border-th-error/40 hover:text-[var(--error)] transition-colors"
                   >Clear all</button>
                 </motion.div>
               )}
 
               {generateError && (
-                <div className="mt-3 p-3 rounded-2xl bg-[var(--error)]/10 border border-[var(--error)]/20 text-xs font-semibold text-[var(--error)] text-center">
+                <div className="mt-3 p-3 rounded-2xl bg-th-error/10 border border-th-error/20 text-xs font-semibold text-[var(--error)] text-center">
                   {generateError}
                 </div>
               )}
@@ -379,12 +353,12 @@ export default function RetDemPage() {
                 onClick={() => setActiveTab('library')}
                 className={cn(
                   "px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 relative",
-                  activeTab === 'library' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-[var(--pink)]/80"
+                  activeTab === 'library' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-th-pink/80"
                 )}
               >
                 <BookOpen size={16} />
                 Procedures Library
-                <span className="px-2 py-0.5 text-[10px] rounded-full bg-[var(--pink)]/10 text-[var(--pink)] font-bold">
+                <span className="px-2 py-0.5 text-[10px] rounded-full bg-th-pink/10 text-[var(--pink)] font-bold">
                   {procedures.length}
                 </span>
                 {activeTab === 'library' && (
@@ -398,12 +372,12 @@ export default function RetDemPage() {
                 onClick={() => setActiveTab('history')}
                 className={cn(
                   "px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 relative",
-                  activeTab === 'history' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-[var(--pink)]/80"
+                  activeTab === 'history' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-th-pink/80"
                 )}
               >
                 <History size={16} />
                 Upload History
-                <span className="px-2 py-0.5 text-[10px] rounded-full bg-[var(--pink)]/10 text-[var(--pink)] font-bold">
+                <span className="px-2 py-0.5 text-[10px] rounded-full bg-th-pink/10 text-[var(--pink)] font-bold">
                   {uploadHistory.length}
                 </span>
                 {activeTab === 'history' && (
@@ -428,7 +402,7 @@ export default function RetDemPage() {
                   ))
                 ) : (
                   <div className="md:col-span-2 flex flex-col items-center justify-center py-20 text-center fn-card border-dashed">
-                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-[2rem] flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
+                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
                       <Stethoscope size={40} />
                     </div>
                     <h3 className="text-xl font-bold mb-2">No procedures found 🩺</h3>
@@ -453,7 +427,7 @@ export default function RetDemPage() {
                   ))
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center fn-card border-dashed">
-                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-[2rem] flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
+                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
                       <History size={40} />
                     </div>
                     <h3 className="text-xl font-bold mb-2">No upload history yet 🩺</h3>
@@ -494,7 +468,7 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
         onClick={(e) => e.stopPropagation()}
       >
         {confirmDelete ? (
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--error)]/30 rounded-xl px-2 py-1 shadow-sm">
+          <div className="flex items-center gap-1 bg-[var(--card)] border border-th-error/30 rounded-xl px-2 py-1 shadow-sm">
             <span className="text-[10px] font-bold text-[var(--error)]">Delete?</span>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete() }}
@@ -508,7 +482,7 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
         ) : (
           <button
             onClick={(e) => { e.stopPropagation(); setConfirmDelete(true) }}
-            className="w-8 h-8 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-[var(--error)]/40 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-th-error/40 transition-all"
           >
             <Trash2 size={14} />
           </button>
@@ -517,11 +491,11 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
 
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
+          <span className="text-[11px] font-bold px-2.5 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
             {proc.category}
           </span>
           {(proc as any).is_generated && (
-            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 bg-[var(--pink)] text-white rounded-full flex items-center gap-1 shadow-sm shrink-0">
+            <span className="text-[11px] font-bold px-2 py-1 bg-[var(--pink)] text-white rounded-full flex items-center gap-1 shadow-sm shrink-0">
               <Sparkles size={10} /> AI
             </span>
           )}
@@ -535,12 +509,9 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
         </p>
 
         <div className="flex items-center justify-between">
-          <div className="flex -space-x-2">
-            {[1,2,3].map(i => (
-              <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-[var(--bg)] flex items-center justify-center text-xs">🩺</div>
-            ))}
-            <div className="w-8 h-8 rounded-full border-2 border-white bg-[var(--secondary-bg)] flex items-center justify-center text-[10px] font-bold text-[var(--pink)]">+12</div>
-          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {proc.steps.length} step{proc.steps.length === 1 ? '' : 's'} · {proc.materials.length} material{proc.materials.length === 1 ? '' : 's'}
+          </p>
           <button className="btn-primary p-3 rounded-2xl flex items-center justify-center shadow-fn">
             <ChevronRight size={20} />
           </button>
@@ -559,7 +530,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
   const [checkedMaterials, setCheckedMaterials] = useState<string[]>([])
   const [revealedSteps, setRevealedSteps] = useState<number[]>([])
   const { startSession } = useSimulationStore()
-  const { uploadedFiles } = useRetDemStore()
+  const { uploadedFiles, toggleProcedureFavorite } = useRetDemStore()
   const { isFrance, greetingName, aiAssistantName } = usePersonalization()
 
   const isCIMode = mode === 'clinical_instructor'
@@ -600,21 +571,21 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
          <div className="flex-1">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
+              <span className="text-[11px] font-bold px-3 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
                 {procedure.category}
               </span>
               <span className="text-[10px] text-[var(--text-secondary)] font-medium flex items-center gap-1">
                 <Clock size={12} /> {procedure.duration}
               </span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">{procedure.title}</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">{procedure.title}</h1>
             <p className="text-[var(--text-secondary)] font-medium leading-relaxed max-w-2xl">
               {procedure.description}
             </p>
             {uploadedFiles.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {uploadedFiles.map((f, i) => (
-                  <div key={f.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--success)]/10 text-[var(--success)] text-xs font-bold border border-[var(--success)]/20">
+                  <div key={f.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-th-success/10 text-[var(--success)] text-xs font-bold border border-th-success/20">
                     <CheckCircle2 size={11} />
                     #{i + 1} {f.name}
                   </div>
@@ -623,14 +594,17 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
             )}
          </div>
          <div className="flex gap-2 shrink-0">
-            <button className="btn-secondary px-6 py-3 flex items-center gap-2">
-               <Heart size={18} /> Save
+            <button 
+              onClick={() => toggleProcedureFavorite(procedure.id)}
+              className="btn-secondary px-6 py-3 flex items-center gap-2"
+            >
+               <Heart size={18} weight={procedure.is_favorite ? 'fill' : 'regular'} className={procedure.is_favorite ? 'text-[var(--pink)]' : ''} /> {procedure.is_favorite ? 'Saved' : 'Save'}
             </button>
             <button 
               onClick={() => startSession('retdem', procedure.title, mode as any, buildProcedureSourceText(), sourceName)}
               className="btn-primary px-8 py-3 flex items-center gap-2 shadow-fn-md"
             >
-               <Play size={18} fill="currentColor" /> Start Practice
+               <Play size={18} weight="fill" /> Start Practice
                {uploadedFiles.length > 0 && <span className="text-[10px] font-bold opacity-75 bg-white/20 px-2 py-0.5 rounded-full">+ {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''}</span>}
             </button>
          </div>
@@ -639,7 +613,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Checklist & Info */}
         <div className="space-y-6">
-           <div className="fn-card p-6 bg-gradient-to-br from-[var(--pink)]/10 to-[var(--secondary-bg)]/20">
+           <div className="fn-card p-6 bg-gradient-to-br from-th-pink/10 to-th-secondary-bg/20">
               <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
                  <ListChecks className="text-[var(--pink)]" size={20} />
                  Materials Checklist
@@ -651,8 +625,8 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                      className={cn(
                        "flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer group",
                        checkedMaterials.includes(m) 
-                         ? "bg-white border-[var(--pink)]/30 text-[var(--text-secondary)]" 
-                         : "bg-white/50 border-[var(--border)] hover:border-[var(--pink)]/50"
+                         ? "bg-white border-th-pink/30 text-[var(--text-secondary)]" 
+                         : "bg-white/50 border-[var(--border)] hover:border-th-pink/50"
                      )}
                    >
                      <div 
@@ -721,7 +695,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                  <BookOpen className="text-[var(--pink)]" size={24} />
                  Step-by-Step Procedure
               </h3>
-              <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">
+              <span className="text-xs font-bold text-[var(--text-secondary)]">
                  {procedure.steps.length} Steps Total
               </span>
            </div>
@@ -737,7 +711,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                   transition={{ delay: i * 0.05 }}
                   className={cn(
                     "fn-card p-6 group hover:shadow-fn transition-all border-l-4",
-                    isRevealed ? "border-l-[var(--pink)]" : "border-l-[var(--text-secondary)]/30"
+                    isRevealed ? "border-l-[var(--pink)]" : "border-l-th-text-secondary/30"
                   )}
                 >
                    <div className="flex gap-6">
@@ -749,7 +723,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                       </div>
                       <div className="space-y-4 flex-1">
                          <div>
-                           <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-1">Action</p>
+                           <p className="text-[11px] font-bold text-[var(--pink)] mb-1">Action</p>
                            <p className="font-bold text-base leading-snug">{step.action}</p>
                          </div>
                          
@@ -757,9 +731,9 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                             <motion.div 
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: 'auto' }}
-                              className="p-4 bg-[var(--bg)] rounded-2xl border border-[var(--border)] group-hover:border-[var(--pink)]/30 transition-all"
+                              className="p-4 bg-[var(--bg)] rounded-2xl border border-[var(--border)] group-hover:border-th-pink/30 transition-all"
                             >
-                              <p className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-widest mb-1">Rationale</p>
+                              <p className="text-[11px] font-bold text-[var(--pink)] mb-1">Rationale</p>
                               <div className="text-sm text-[var(--text-secondary)] font-medium italic leading-relaxed">
                                  <MarkdownText content={step.rationale} />
                               </div>
@@ -767,7 +741,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
                          ) : (
                             <button 
                               onClick={() => setRevealedSteps(prev => [...prev, step.step])}
-                              className="w-full p-4 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-[var(--pink)]/50 text-[var(--text-secondary)] text-xs font-bold transition-all flex items-center justify-center gap-2"
+                              className="w-full p-4 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-th-pink/50 text-[var(--text-secondary)] text-xs font-bold transition-all flex items-center justify-center gap-2"
                             >
                               <Sparkles size={14} /> Reveal Rationale (CI Mode)
                             </button>
@@ -808,7 +782,7 @@ function HistoryFileCard({ file, onDelete }: {
   return (
     <div className="fn-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[var(--pink)] transition-all">
       <div className="flex items-start gap-4 flex-1 min-w-0">
-        <div className="w-12 h-12 rounded-2xl bg-[var(--pink)]/10 text-[var(--pink)] flex items-center justify-center shrink-0">
+        <div className="w-12 h-12 rounded-2xl bg-th-pink/10 text-[var(--pink)] flex items-center justify-center shrink-0">
           <FileText size={22} />
         </div>
         <div className="flex-1 min-w-0">
@@ -821,7 +795,7 @@ function HistoryFileCard({ file, onDelete }: {
             <span>{file.text.length.toLocaleString()} characters</span>
           </div>
           
-          <p className="text-xs text-[var(--text-secondary)] line-clamp-1 mt-2 bg-[var(--secondary-bg)]/40 px-3 py-1.5 rounded-xl border border-[var(--border)] italic font-semibold">
+          <p className="text-xs text-[var(--text-secondary)] line-clamp-1 mt-2 bg-th-secondary-bg/40 px-3 py-1.5 rounded-xl border border-[var(--border)] italic font-semibold">
             "{file.text.slice(0, 120)}..."
           </p>
         </div>
@@ -836,7 +810,7 @@ function HistoryFileCard({ file, onDelete }: {
         </button>
 
         {showConfirm ? (
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--error)]/30 rounded-xl px-2 py-1 shadow-sm">
+          <div className="flex items-center gap-1 bg-[var(--card)] border border-th-error/30 rounded-xl px-2 py-1 shadow-sm">
             <span className="text-[10px] font-bold text-[var(--error)]">Delete?</span>
             <button
               onClick={onDelete}
@@ -850,7 +824,7 @@ function HistoryFileCard({ file, onDelete }: {
         ) : (
           <button
             onClick={() => setShowConfirm(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-[var(--error)]/40 transition-all"
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-th-error/40 transition-all"
           >
             <Trash2 size={14} />
           </button>
@@ -870,7 +844,7 @@ function HistoryFileCard({ file, onDelete }: {
               initial={{ opacity: 0, scale: 0.92, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 10 }}
-              className="bg-[var(--card)] w-full max-w-2xl rounded-[2rem] shadow-2xl border border-[var(--border)] p-8 max-h-[80vh] flex flex-col"
+              className="bg-[var(--card)] w-full max-w-2xl rounded-2xl shadow-2xl border border-[var(--border)] p-8 max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between mb-4">
@@ -887,7 +861,7 @@ function HistoryFileCard({ file, onDelete }: {
                   <X size={16} />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto bg-[var(--secondary-bg)]/50 border border-[var(--border)] rounded-2xl p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
+              <div className="flex-1 overflow-y-auto bg-th-secondary-bg/50 border border-[var(--border)] rounded-2xl p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
                 {file.text}
               </div>
               <div className="mt-6 flex justify-end">

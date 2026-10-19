@@ -8,6 +8,20 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Theme tokens that support opacity modifiers, e.g. bg-th-pink/10 (arbitrary var() colors can't)
+        'th-bg': 'rgb(var(--bg-rgb) / <alpha-value>)',
+        'th-card': 'rgb(var(--card-rgb) / <alpha-value>)',
+        'th-secondary-bg': 'rgb(var(--secondary-bg-rgb) / <alpha-value>)',
+        'th-pink': 'rgb(var(--pink-rgb) / <alpha-value>)',
+        'th-pink-hover': 'rgb(var(--pink-hover-rgb) / <alpha-value>)',
+        'th-accent': 'rgb(var(--accent-rgb) / <alpha-value>)',
+        'th-text': 'rgb(var(--text-rgb) / <alpha-value>)',
+        'th-text-secondary': 'rgb(var(--text-secondary-rgb) / <alpha-value>)',
+        'th-border': 'rgb(var(--border-rgb) / <alpha-value>)',
+        'th-success': 'rgb(var(--success-rgb) / <alpha-value>)',
+        'th-warning': 'rgb(var(--warning-rgb) / <alpha-value>)',
+        'th-error': 'rgb(var(--error-rgb) / <alpha-value>)',
+        'th-rose-soft': 'rgb(var(--rose-soft-rgb) / <alpha-value>)',
         // Light Mode
         'fn-bg': '#FFF8F6',
         'fn-card': '#FFFFFF',
@@ -37,7 +51,8 @@ export default {
       },
       fontFamily: {
         heading: ['Poppins', 'sans-serif'],
-        body: ['Nunito', 'sans-serif'],
+        body: ['"DM Sans"', 'sans-serif'],
+        script: ['Caveat', 'cursive'],
         logo: ['"Baloo 2"', 'cursive'],
       },
       borderRadius: {
@@ -47,9 +62,9 @@ export default {
         '4xl': '2rem',
       },
       boxShadow: {
-        'fn': '0 4px 24px 0 rgba(247, 168, 184, 0.13)',
-        'fn-md': '0 8px 32px 0 rgba(247, 168, 184, 0.18)',
-        'fn-lg': '0 16px 48px 0 rgba(247, 168, 184, 0.22)',
+        'fn': '0 2px 14px 0 rgba(var(--shadow-rgb), 0.07)',
+        'fn-md': '0 8px 28px 0 rgba(var(--shadow-rgb), 0.12)',
+        'fn-lg': '0 16px 44px 0 rgba(var(--shadow-rgb), 0.16)',
         'fn-dark': '0 4px 24px 0 rgba(0,0,0,0.35)',
       },
       animation: {

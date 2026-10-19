@@ -3,34 +3,69 @@
 @tailwind utilities;
 
 @layer base {
+  /* Dusty rose + warm cream palette */
   :root {
-    --bg: #FFF8F6;
+    --bg: #FBF4F2;
     --card: #FFFFFF;
-    --secondary-bg: #FFD6E0;
-    --pink: #F7A8B8;
-    --pink-hover: #FF7FA3;
-    --accent: #FFC2D1;
-    --text: #5B4636;
-    --text-secondary: #8C6A74;
-    --border: #F3D8DE;
-    --success: #A8D8B9;
-    --warning: #FFD59E;
-    --error: #FFB3C1;
+    --secondary-bg: #F8E6E5;
+    --pink: #BE5B6C;
+    --pink-hover: #A64B5B;
+    --accent: #EFC9CC;
+    --text: #4A3237;
+    --text-secondary: #8E747A;
+    --border: #F0E0DE;
+    --success: #7FB592;
+    --warning: #E5B76A;
+    --error: #D46A7B;
+    --rose-soft: #FCEDEC;
+    --shadow-rgb: 190, 91, 108;
+
+    /* Same colors as space-separated RGB so Tailwind can apply opacity (e.g. bg-th-pink/10) */
+    --bg-rgb: 251 244 242;
+    --card-rgb: 255 255 255;
+    --secondary-bg-rgb: 248 230 229;
+    --pink-rgb: 190 91 108;
+    --pink-hover-rgb: 166 75 91;
+    --accent-rgb: 239 201 204;
+    --text-rgb: 74 50 55;
+    --text-secondary-rgb: 142 116 122;
+    --border-rgb: 240 224 222;
+    --success-rgb: 127 181 146;
+    --warning-rgb: 229 183 106;
+    --error-rgb: 212 106 123;
+    --rose-soft-rgb: 252 237 236;
   }
 
   .dark {
-    --bg: #1F1A1D;
-    --card: #2A2327;
-    --secondary-bg: #332B30;
-    --pink: #F7A8B8;
-    --pink-hover: #FF8FB1;
-    --accent: #FFB3C7;
-    --text: #F9F1F3;
-    --text-secondary: #CBBAC1;
-    --border: #3A3136;
-    --success: #9FD4AF;
-    --warning: #F6C177;
-    --error: #F29CAB;
+    --bg: #1C1517;
+    --card: #261D20;
+    --secondary-bg: #33272B;
+    --pink: #D9798A;
+    --pink-hover: #E592A1;
+    --accent: #6B3F48;
+    --text: #F7ECEE;
+    --text-secondary: #C3ADB2;
+    --border: #3A2D31;
+    --success: #8CC7A0;
+    --warning: #EBC27C;
+    --error: #EC8D9C;
+    --rose-soft: #2E2226;
+    --shadow-rgb: 0, 0, 0;
+
+    /* Same colors as space-separated RGB so Tailwind can apply opacity (e.g. bg-th-pink/10) */
+    --bg-rgb: 28 21 23;
+    --card-rgb: 38 29 32;
+    --secondary-bg-rgb: 51 39 43;
+    --pink-rgb: 217 121 138;
+    --pink-hover-rgb: 229 146 161;
+    --accent-rgb: 107 63 72;
+    --text-rgb: 247 236 238;
+    --text-secondary-rgb: 195 173 178;
+    --border-rgb: 58 45 49;
+    --success-rgb: 140 199 160;
+    --warning-rgb: 235 194 124;
+    --error-rgb: 236 141 156;
+    --rose-soft-rgb: 46 34 38;
   }
 
   * {
@@ -45,7 +80,7 @@
 
   body {
     @apply font-body text-[var(--text)] bg-[var(--bg)];
-    font-size: 15px;
+    font-size: 14.5px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -60,7 +95,7 @@
 @layer components {
   /* Card base */
   .fn-card {
-    @apply bg-[var(--card)] rounded-3xl border border-[var(--border)] shadow-fn;
+    @apply bg-[var(--card)] rounded-2xl border border-[var(--border)] shadow-fn;
     transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
 
@@ -75,14 +110,14 @@
 
   /* Buttons */
   .btn-primary {
-    @apply bg-[var(--pink)] text-white font-heading font-semibold px-6 py-3 rounded-2xl
+    @apply bg-[var(--pink)] text-white font-heading font-medium px-6 py-3 rounded-full
       hover:bg-[var(--pink-hover)] active:scale-95 transition-all duration-200
       shadow-fn hover:shadow-fn-md disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-[var(--secondary-bg)] text-[var(--text)] font-heading font-semibold px-6 py-3 rounded-2xl
-      hover:bg-[var(--accent)] active:scale-95 transition-all duration-200
+    @apply bg-[var(--card)] text-[var(--pink)] font-heading font-medium px-6 py-3 rounded-full
+      hover:bg-[var(--rose-soft)] active:scale-95 transition-all duration-200
       border border-[var(--border)] disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
@@ -149,14 +184,19 @@
     scrollbar-color: var(--border) transparent;
   }
 
+  /* Small grey caption used for section labels */
+  .fn-eyebrow {
+    @apply text-[11px] font-semibold text-[var(--text-secondary)] tracking-wide;
+  }
+
   /* Section title */
   .section-title {
-    @apply font-heading font-bold text-xl text-[var(--text)] mb-4;
+    @apply font-heading font-semibold text-lg text-[var(--text)] mb-4;
   }
 
   /* Gradient text */
   .gradient-text {
-    @apply bg-gradient-to-r from-[#F7A8B8] to-[#FF7FA3] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[var(--pink)] to-[#D98A97] bg-clip-text text-transparent;
   }
 
   /* Bottom nav safe area */

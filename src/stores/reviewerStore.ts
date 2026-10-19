@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { ReviewerItem } from '@/types'
-import { generateJSON } from '@/lib/groq'
+import { generateJSON } from '@/lib/ai'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useStudyBoxStore } from './studyBoxStore'
 import { useAuthStore } from './authStore'

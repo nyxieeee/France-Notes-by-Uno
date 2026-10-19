@@ -1,18 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useReminderStore } from '@/stores/reminderStore'
 import { Reminder } from '@/types'
-import { 
-  Calendar as CalendarIcon, 
-  Plus, 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  Trash2,
-  CheckCircle2,
-  Sparkles,
-  BookOpen,
-  ChevronUp
-} from 'lucide-react'
+import { Calendar as CalendarIcon, Plus, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Clock, Trash as Trash2, CheckCircle as CheckCircle2, Sparkle as Sparkles, BookOpen, CaretUp as ChevronUp } from '@phosphor-icons/react'
+import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate, getReminderTypeColor, getReminderTypeLabel } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -114,19 +104,11 @@ export default function PlannerPage() {
 
   return (
     <div className="page-container max-w-6xl mx-auto">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
-            <CalendarIcon className="text-[var(--pink)]" size={32} />
-            Study Planner
-          </h1>
-          <p className="text-[var(--text-secondary)] font-medium">
-            {isFrance 
-              ? 'Organize your schedule, set deadlines, and let Doc Uno remind you! 🩺🌸' 
-              : `Manage your deadlines and let ${aiAssistantName} keep you on track. 🩺✨`
-            }
-          </p>
-        </div>
+      <PageHeader
+        icon={CalendarIcon}
+        title="Planner"
+        subtitle={isFrance ? 'Organize your schedule, set deadlines, and let Doc Uno remind you! 🌸' : `Manage your deadlines and let ${aiAssistantName} keep you on track.`}
+        actions={
         <button 
           onClick={() => {
             const today = new Date()
@@ -139,7 +121,8 @@ export default function PlannerPage() {
         >
           <Plus size={18} /> Add Reminder
         </button>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -152,10 +135,10 @@ export default function PlannerPage() {
                 {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
               </h2>
               <div className="flex gap-2">
-                <button onClick={handlePrevMonth} className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--pink)]/50 transition-colors">
+                <button onClick={handlePrevMonth} className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-th-pink/50 transition-colors">
                   <ChevronLeft size={18} />
                 </button>
-                <button onClick={handleNextMonth} className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--pink)]/50 transition-colors">
+                <button onClick={handleNextMonth} className="p-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-th-pink/50 transition-colors">
                   <ChevronRight size={18} />
                 </button>
               </div>
@@ -164,7 +147,7 @@ export default function PlannerPage() {
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                <div key={d} className="text-center text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] py-2">
+                <div key={d} className="text-center text-[11px] font-bold text-[var(--text-secondary)] py-2">
                   {d}
                 </div>
               ))}
@@ -173,7 +156,7 @@ export default function PlannerPage() {
             <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Empty cells for start of month */}
               {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square rounded-2xl bg-[var(--bg)]/50 border border-transparent opacity-30"></div>
+                <div key={`empty-${i}`} className="aspect-square rounded-2xl bg-th-bg/50 border border-transparent opacity-30"></div>
               ))}
               
               {/* Actual days */}
@@ -192,8 +175,8 @@ export default function PlannerPage() {
                     className={cn(
                       "aspect-square rounded-2xl border transition-all cursor-pointer p-1 sm:p-2 flex flex-col relative group",
                       isToday 
-                        ? "bg-[var(--pink)]/5 border-[var(--pink)]" 
-                        : "bg-[var(--bg)] border-[var(--border)] hover:border-[var(--pink)]/50"
+                        ? "bg-th-pink/5 border-[var(--pink)]" 
+                        : "bg-[var(--bg)] border-[var(--border)] hover:border-th-pink/50"
                     )}
                   >
                     <span className={cn(
@@ -238,12 +221,12 @@ export default function PlannerPage() {
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
               {upcomingReminders.length > 0 ? (
                 upcomingReminders.map(reminder => (
-                  <div key={reminder.id} className="p-3 rounded-2xl border border-[var(--border)] bg-[var(--bg)] hover:border-[var(--pink)]/40 transition-colors group">
+                  <div key={reminder.id} className="p-3 rounded-2xl border border-[var(--border)] bg-[var(--bg)] hover:border-th-pink/40 transition-colors group">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={cn(
-                            "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
+                            "text-[10.5px] font-bold px-2 py-0.5 rounded-full",
                             getReminderTypeColor(reminder.reminder_type)
                           )}>
                             {getReminderTypeLabel(reminder.reminder_type)}
@@ -254,13 +237,13 @@ export default function PlannerPage() {
                       <div className="flex gap-1 shrink-0">
                          <button 
                            onClick={() => toggleReminder(reminder.id)}
-                           className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] hover:bg-[var(--success)]/10 hover:text-[var(--success)] transition-colors"
+                           className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] hover:bg-th-success/10 hover:text-[var(--success)] transition-colors"
                          >
                            <CheckCircle2 size={14} />
                          </button>
                          <button 
                            onClick={() => removeReminder(reminder.id)}
-                           className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] hover:bg-[var(--error)]/10 hover:text-[var(--error)] transition-colors"
+                           className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] hover:bg-th-error/10 hover:text-[var(--error)] transition-colors"
                          >
                            <Trash2 size={14} />
                          </button>
@@ -285,7 +268,7 @@ export default function PlannerPage() {
               {completedReminders.length > 0 && (
                 <>
                   <div className="h-px bg-[var(--border)] my-6 w-full"></div>
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-3">Completed</h3>
+                  <h3 className="text-xs font-bold text-[var(--text-secondary)] mb-3">Completed</h3>
                   {completedReminders.map(reminder => (
                     <div key={reminder.id} className="p-3 rounded-2xl border border-[var(--border)] bg-[var(--bg)] opacity-60 hover:opacity-100 transition-opacity">
                       <div className="flex items-start justify-between gap-3">
@@ -335,7 +318,7 @@ export default function PlannerPage() {
               
               <form onSubmit={handleAddReminder} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Title / Subject</label>
+                  <label className="text-xs font-bold text-[var(--text-secondary)] mb-1.5 block ml-1">Title / Subject</label>
                   <input 
                     type="text" 
                     required
@@ -347,7 +330,7 @@ export default function PlannerPage() {
                 </div>
                 
                 <div className="relative">
-                  <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Category</label>
+                  <label className="text-xs font-bold text-[var(--text-secondary)] mb-1.5 block ml-1">Category</label>
                   <button
                     type="button"
                     onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
@@ -394,9 +377,9 @@ export default function PlannerPage() {
                                   setIsCategoryDropdownOpen(false)
                                 }}
                                 className={cn(
-                                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-[var(--pink)]/5",
+                                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5",
                                   newType === category.value 
-                                    ? "bg-[var(--pink)]/10 text-[var(--pink)]" 
+                                    ? "bg-th-pink/10 text-[var(--pink)]" 
                                     : "text-[var(--text)]"
                                 )}
                               >
@@ -416,7 +399,7 @@ export default function PlannerPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Date</label>
+                    <label className="text-xs font-bold text-[var(--text-secondary)] mb-1.5 block ml-1">Date</label>
                     <input 
                       type="date" 
                       required
@@ -426,7 +409,7 @@ export default function PlannerPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-1.5 block ml-1">Time (Optional)</label>
+                    <label className="text-xs font-bold text-[var(--text-secondary)] mb-1.5 block ml-1">Time (Optional)</label>
                     <input 
                       type="time" 
                       value={newTime}

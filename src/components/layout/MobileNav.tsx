@@ -1,48 +1,29 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { 
-  Home, 
-  Archive, 
-  BrainCircuit, 
-  MessageCircle, 
-  User,
-  Sparkles,
-  Stethoscope,
-  Calendar,
-  Library,
-  MoreHorizontal,
-  X,
-  Calculator,
-  Mic2,
-  FlaskConical
-} from 'lucide-react'
+import { House as Home, Archive, MagnifyingGlass as Search, DotsThree as MoreHorizontal, X, Headphones } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigation, isNavItemActive } from './navigation'
 
 const primaryNavItems = [
-  { icon: Home,          label: 'Home',    path: '/home' },
-  { icon: Archive,       label: 'Box',     path: '/study-box' },
-  { icon: BrainCircuit,  label: 'Quiz',    path: '/quiz' },
-  { icon: MessageCircle, label: 'AI',      path: '/ai' },
-  { icon: User,          label: 'Profile', path: '/profile' },
-]
-
-const moreNavItems = [
-  { icon: Stethoscope, label: 'Simulations', path: '/simulations', isBeta: true },
-  { icon: Library,     label: 'Reviewer Library', path: '/reviewer-library' },
-  { icon: Sparkles,    label: 'Knowledge Garden', path: '/knowledge-garden' },
-  { icon: Calendar,    label: 'Planner',  path: '/planner' },
-  { icon: Calculator,  label: 'Dosage Calc', path: '/dosage-calculator' },
-  { icon: Mic2,        label: 'Nursepod', path: '/podcast-review' },
-  { icon: FlaskConical, label: 'Normal Labs', path: '/labs-reference' },
+  { icon: Home,       label: 'Home',   path: '/home' },
+  { icon: Archive,    label: 'Study',  path: '/study-box' },
+  { icon: Headphones, label: 'Listen', path: '/podcast-review' },
+  { icon: Search,     label: 'Search', path: '/search' },
 ]
 
 export default function MobileNav() {
+  // Everything not in the bottom bar goes in the More sheet, Quizzes and Notes first
+  const moreNavItems = useNavigation()
+    .flatMap(g => g.items)
+    .filter(item => !primaryNavItems.some(p => p.path === item.path))
+    .sort((a, b) => Number(['/quiz', '/notes'].includes(b.path)) - Number(['/quiz', '/notes'].includes(a.path)))
+
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
 
-  const isMoreActive = moreNavItems.some(item => location.pathname.startsWith(item.path))
+  const isMoreActive = moreNavItems.some(item => isNavItemActive(item, location.pathname))
 
   // Close drawer when navigating
   useEffect(() => {
@@ -76,52 +57,57 @@ export default function MobileNav() {
         )}
       </AnimatePresence>
 
-      {/* More Flyout Menu */}
+      {/* More Sheet */}
       <AnimatePresence>
         {moreOpen && (
           <motion.div
             ref={moreRef}
-            initial={{ opacity: 0, y: 16, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="md:hidden fixed bottom-[72px] right-3 z-50 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-md p-2 min-w-[180px] origin-bottom-right"
+            className="md:hidden fixed left-3 right-3 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] z-50 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-lg p-4"
           >
-            <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-[var(--border)]">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">More</span>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <span className="text-sm font-heading font-semibold">More</span>
               <button
                 onClick={() => setMoreOpen(false)}
-                className="p-1 rounded-lg hover:bg-[var(--secondary-bg)] text-[var(--text-secondary)] transition-colors"
+                className="p-1.5 rounded-full hover:bg-[var(--secondary-bg)] text-[var(--text-secondary)] transition-colors"
+                aria-label="Close menu"
               >
-                <X size={13} />
+                <X size={15} />
               </button>
             </div>
-            {moreNavItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative',
-                  isActive
-                    ? 'bg-[var(--pink)]/10 text-[var(--pink)]'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)] hover:text-[var(--text)]'
-                )}
-              >
-                <item.icon size={18} />
-                <span className="text-sm font-semibold">{item.label}</span>
-                {item.isBeta && (
-                  <span className="ml-auto bg-[var(--pink)] text-white text-[7px] font-bold px-1.5 py-0.5 rounded-sm tracking-wider">
-                    BETA
-                  </span>
-                )}
-              </NavLink>
-            ))}
+            <div className="grid grid-cols-4 gap-2">
+              {moreNavItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={() => cn(
+                    'flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl transition-colors relative text-center',
+                    isNavItemActive(item, location.pathname)
+                      ? 'bg-[var(--secondary-bg)] text-[var(--pink)]'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]'
+                  )}
+                >
+                  <div className="w-10 h-10 rounded-full bg-[var(--rose-soft)] border border-[var(--border)] flex items-center justify-center text-[var(--pink)]">
+                    <item.icon size={18} />
+                  </div>
+                  <span className="text-[10.5px] font-semibold leading-tight">{item.shortLabel ?? item.label}</span>
+                  {item.isBeta && (
+                    <span className="absolute top-1.5 right-1.5 bg-[var(--pink)] text-white text-[7px] font-bold px-1 py-0.5 rounded tracking-wider">
+                      BETA
+                    </span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Bottom Nav Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--card)]/90 backdrop-blur-xl border-t border-[var(--border)] flex items-center justify-around px-2 z-50"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-th-card/90 backdrop-blur-xl border-t border-[var(--border)] flex items-center justify-around px-2 z-50"
         style={{ 
           height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)'
@@ -141,12 +127,12 @@ export default function MobileNav() {
             {({ isActive }) => (
               <>
                 <div className={cn(
-                  'p-1.5 rounded-xl transition-all duration-300',
-                  isActive && 'bg-[var(--pink)]/10 scale-110'
+                  'px-3 py-1 rounded-full transition-all duration-300',
+                  isActive && 'bg-[var(--secondary-bg)]'
                 )}>
-                  <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                  <item.icon size={21} weight={isActive ? 'fill' : 'regular'} />
                 </div>
-                <span className="text-[10px] font-bold tracking-tight leading-none">{item.label}</span>
+                <span className="text-[10.5px] font-semibold leading-none">{item.label}</span>
               </>
             )}
           </NavLink>
@@ -161,12 +147,12 @@ export default function MobileNav() {
           )}
         >
           <div className={cn(
-            'p-1.5 rounded-xl transition-all duration-300',
-            (moreOpen || isMoreActive) && 'bg-[var(--pink)]/10 scale-110'
+            'px-3 py-1 rounded-full transition-all duration-300',
+            (moreOpen || isMoreActive) && 'bg-[var(--secondary-bg)]'
           )}>
-            <MoreHorizontal size={20} strokeWidth={(moreOpen || isMoreActive) ? 2.5 : 2} />
+            <MoreHorizontal size={21} weight={(moreOpen || isMoreActive) ? 'bold' : 'regular'} />
           </div>
-          <span className="text-[10px] font-bold tracking-tight leading-none">More</span>
+          <span className="text-[10.5px] font-semibold leading-none">More</span>
         </button>
       </nav>
     </>

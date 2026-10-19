@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { Sparkles, RefreshCw, AlertCircle, Stethoscope, HelpCircle, Heart, Zap } from 'lucide-react'
+import { Sparkle as Sparkles, ArrowsClockwise as RefreshCw, WarningCircle as AlertCircle, Stethoscope, Question as HelpCircle, Heart, Lightning as Zap } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
-import { generateJSON, DOC_UNO_SYSTEM_PROMPT } from '@/lib/groq'
+import { generateJSON, DOC_UNO_SYSTEM_PROMPT } from '@/lib/ai'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function FunFactCard() {
@@ -105,46 +104,39 @@ export default function FunFactCard() {
   const header = getHeaderInfo()
 
   return (
-    <div className={cn(
-      "fn-card p-6 text-white relative overflow-hidden group transition-all duration-700",
-      "bg-gradient-to-br shadow-fn-md",
-      header.color
-    )}>
-      {/* Decorative circles */}
-      <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-      <div className="absolute bottom-[-10px] left-[-10px] w-16 h-16 bg-white/10 rounded-full blur-lg"></div>
- 
-      <div className="flex items-center justify-between mb-4 relative z-10">
+    <div className="fn-card p-5 relative overflow-hidden bg-[var(--rose-soft)]">
+      <div className="flex items-center justify-between mb-2 relative z-10">
         <div className="flex items-center gap-2">
-          <header.icon size={18} className="animate-pulse-soft" />
-          <span className="font-heading font-bold text-sm uppercase tracking-widest">
-            {isFrance ? 'Fun Facts with Uno ✨' : `Clinical Facts with Florence ✨`}
+          <header.icon size={16} className="text-[var(--pink)]" />
+          <span className="font-heading font-semibold text-[15px]">
+            {isFrance ? 'Fun Facts with Uno' : 'Clinical Facts with Florence'}
           </span>
         </div>
         <button 
           onClick={refreshFact}
-          className={`p-1.5 hover:bg-white/20 rounded-lg transition-all ${isRefreshing ? 'animate-spin' : ''}`}
+          aria-label="New fact"
+          className={`p-1.5 text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-[var(--card)] rounded-lg transition-all ${isRefreshing ? 'animate-spin' : ''}`}
         >
           <RefreshCw size={16} />
         </button>
       </div>
 
-      <div className="relative z-10 min-h-[6rem] flex items-center py-2">
+      <div className="relative z-10 min-h-[4.5rem] flex items-center py-1">
         <AnimatePresence mode="wait">
           <motion.p 
             key={fact.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="text-lg font-medium leading-relaxed italic"
+            className="text-[13.5px] text-[var(--text)] leading-relaxed"
           >
             "{fact.content}"
           </motion.p>
         </AnimatePresence>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-white/20 relative z-10">
-        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Type: {fact.type}</p>
+      <div className="mt-3 pt-3 border-t border-[var(--border)] relative z-10">
+        <p className="text-[10.5px] font-semibold text-[var(--pink)] capitalize">{fact.type}</p>
       </div>
     </div>
   )

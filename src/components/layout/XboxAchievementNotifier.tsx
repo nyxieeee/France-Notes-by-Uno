@@ -5,7 +5,7 @@ import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
-import { Award } from 'lucide-react'
+import { Medal as Award } from '@phosphor-icons/react'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 type BadgeItem = {
@@ -115,14 +115,14 @@ export default function XboxAchievementNotifier() {
           className="fixed top-20 right-4 md:right-6 z-[9999] w-[calc(100vw-32px)] max-w-[380px] pointer-events-none select-none"
         >
           {/* Xbox Style Glow Container */}
-          <div className="relative overflow-hidden p-[1px] rounded-full bg-gradient-to-r from-[var(--pink)] via-pink-400 to-[var(--pink)] shadow-2xl shadow-[var(--pink)]/20">
+          <div className="relative overflow-hidden p-[1px] rounded-full bg-gradient-to-r from-[var(--pink)] via-[var(--accent)] to-[var(--pink)] shadow-2xl shadow-th-pink/20">
             {/* Ambient Background blur */}
-            <div className="absolute inset-0 bg-[var(--card)]/95 backdrop-blur-xl rounded-full" />
+            <div className="absolute inset-0 bg-th-card/95 backdrop-blur-xl rounded-full" />
             
             {/* The main panel */}
-            <div className="relative flex items-center gap-4 py-3 px-5 rounded-full bg-[var(--card)]/90 text-left">
+            <div className="relative flex items-center gap-4 py-3 px-5 rounded-full bg-th-card/90 text-left">
               {/* Circular Achievement Badge */}
-              <div className="relative shrink-0 w-11 h-11 rounded-full bg-gradient-to-tr from-[var(--pink)] to-pink-300 flex items-center justify-center text-xl shadow-md">
+              <div className="relative shrink-0 w-11 h-11 rounded-full bg-gradient-to-tr from-[var(--pink)] to-[var(--accent)] flex items-center justify-center text-xl shadow-md">
                 <Award size={18} className="absolute text-white/20 animate-spin-slow shrink-0" />
                 <span className="relative z-10 shrink-0">{activeNotification.icon}</span>
               </div>
@@ -130,11 +130,11 @@ export default function XboxAchievementNotifier() {
               {/* Text content */}
               <div className="flex-1 min-w-0 pr-2">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[10px] font-bold text-[var(--pink)] uppercase tracking-[0.25em] font-mono leading-none">
+                  <span className="text-[11px] font-bold text-[var(--pink)] font-mono leading-none">
                     Achievement Unlocked 🏆
                   </span>
                 </div>
-                <h4 className="text-sm font-extrabold text-[var(--text)] leading-snug truncate">
+                <h4 className="text-sm font-semibold text-[var(--text)] leading-snug truncate">
                   {activeNotification.label}
                 </h4>
                 <p className="text-[10px] italic font-semibold text-[var(--text-secondary)] leading-relaxed line-clamp-2">

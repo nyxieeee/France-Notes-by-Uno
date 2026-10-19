@@ -11,6 +11,8 @@ import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
 import { useQuizStore } from '@/stores/quizStore'
 import { useChatStore } from '@/stores/chatStore'
+import { useNotesStore } from '@/stores/notesStore'
+import { useSimulationStore } from '@/stores/simulationStore'
 
 export default function AppShell() {
   useEffect(() => {
@@ -22,6 +24,8 @@ export default function AppShell() {
     useReminderStore.getState().fetchReminders()
     useQuizStore.getState().fetchQuizzes()
     useChatStore.getState().fetchMessages()
+    useNotesStore.getState().fetchNotes()
+    useSimulationStore.getState().fetchHistory()
   }, [])
 
   return (
@@ -30,7 +34,7 @@ export default function AppShell() {
       <XboxAchievementNotifier />
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:w-72 md:flex-col">
+      <div className="hidden md:flex md:w-64 md:flex-col shrink-0">
         <DesktopSidebar />
       </div>
 
