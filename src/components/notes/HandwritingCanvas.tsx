@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { getStroke } from 'perfect-freehand'
 import {
-  PenNib, Highlighter, Eraser, ArrowCounterClockwise, ArrowClockwise, HandPointing, FilePlus,
+  PenNib, Highlighter, Eraser, ArrowCounterClockwise, ArrowClockwise, HandPointing, FilePlus, X,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import type { HandwritingDrawing, InkPoint, InkStroke } from '@/types'
@@ -108,6 +108,8 @@ export default function HandwritingCanvas({ drawing, onChange }: {
   const [penSize, setPenSize] = useState(PEN_SIZES[1])
   // Fingers draw until an Apple Pencil (or other stylus) is used; then fingers scroll (palm rejection)
   const [fingerDraws, setFingerDraws] = useState(true)
+  // Shown once when the Pencil switches fingers to scrolling, so finger writing doesn't silently stop working
+  const [penNotice, setPenNotice] = useState(false)
   const [width, setWidth] = useState(0)
   const undoStack = useRef<InkStroke[][]>([])
   const redoStack = useRef<InkStroke[][]>([])
@@ -124,14 +126,21 @@ export default function HandwritingCanvas({ drawing, onChange }: {
     return () => observer.disconnect()
   }, [])
 
-  const commit = (next: { strokes?: InkStroke[]; paper?: Paper; pages?: number }, recordHistory = true) => {
-    if (next.strokes && recordHistory) {
-      undoStack.current = [...undoStack.current.slice(-HISTORY_LIMIT + 1), strokes]
+  // Latest committed drawing, updated synchronously. Fast handwriting can finish a second stroke
+  // before React re-renders, so commits must build on this rather than on render-time state.
+  const latest = useRef({ strokes: drawing.strokes, paper: drawing.paper, pages: drawing.pages })
+
+  const commit = (next: { strokes?: InkStroke[] | ((current: InkStroke[]) => InkStroke[]); paper?: Paper; pages?: number }, recordHistory = true) => {
+    const current = latest.current
+    const nextStrokes = typeof next.strokes === 'function' ? next.strokes(current.strokes) : next.strokes
+    if (nextStrokes && recordHistory) {
+      undoStack.current = [...undoStack.current.slice(-HISTORY_LIMIT + 1), current.strokes]
       redoStack.current = []
       syncHistory()
     }
-    const merged = { strokes: next.strokes ?? strokes, paper: next.paper ?? paper, pages: next.pages ?? pages }
-    if (next.strokes) setStrokes(merged.strokes)
+    const merged = { strokes: nextStrokes ?? current.strokes, paper: next.paper ?? current.paper, pages: next.pages ?? current.pages }
+    latest.current = merged
+    if (nextStrokes) setStrokes(merged.strokes)
     if (next.paper) setPaper(merged.paper)
     if (next.pages) setPages(merged.pages)
     onChange(merged)
@@ -140,14 +149,14 @@ export default function HandwritingCanvas({ drawing, onChange }: {
   const undo = () => {
     const prev = undoStack.current.pop()
     if (!prev) return
-    redoStack.current.push(strokes)
+    redoStack.current.push(latest.current.strokes)
     commit({ strokes: prev }, false)
     syncHistory()
   }
   const redo = () => {
     const next = redoStack.current.pop()
     if (!next) return
-    undoStack.current.push(strokes)
+    undoStack.current.push(latest.current.strokes)
     commit({ strokes: next }, false)
     syncHistory()
   }
@@ -215,7 +224,7 @@ export default function HandwritingCanvas({ drawing, onChange }: {
 
         <div className="ml-auto flex items-center gap-1.5">
           <button
-            onClick={() => setFingerDraws(f => !f)}
+            onClick={() => { setFingerDraws(f => !f); setPenNotice(false) }}
             title={fingerDraws ? 'Finger draws — tap to scroll with finger instead' : 'Finger scrolls — tap to draw with finger'}
             aria-pressed={fingerDraws}
             className={cn('p-2 rounded-xl text-xs flex items-center gap-1', fingerDraws ? 'bg-[var(--secondary-bg)] text-[var(--pink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]')}
@@ -237,6 +246,18 @@ export default function HandwritingCanvas({ drawing, onChange }: {
         </div>
       </div>
 
+      {penNotice && (
+        <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl bg-[var(--rose-soft)] border border-th-pink/20 text-[12.5px]">
+          <HandPointing size={16} className="text-[var(--pink)] shrink-0 mt-px" />
+          <p className="flex-1 text-[var(--text-secondary)]">
+            Stylus detected, so fingers now scroll and your palm won't leave marks. To write with your finger, tap <strong className="text-[var(--text)]">Finger scrolls</strong> in the toolbar.
+          </p>
+          <button onClick={() => setPenNotice(false)} className="text-[var(--text-secondary)] hover:text-[var(--pink)] shrink-0" aria-label="Dismiss">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Pages */}
       <div ref={wrapRef} className="w-full flex flex-col items-center gap-4">
         {width > 0 && Array.from({ length: pages }, (_, i) => (
@@ -248,12 +269,12 @@ export default function HandwritingCanvas({ drawing, onChange }: {
             strokes={strokes}
             activeStroke={activeStroke}
             fingerDraws={fingerDraws}
-            onPenDetected={() => setFingerDraws(false)}
-            onStroke={stroke => commit({ strokes: [...strokes, stroke] })}
-            onErase={ids => commit({ strokes: strokes.filter((_, idx) => !ids.has(idx)) })}
+            onPenDetected={() => { if (fingerDraws) { setFingerDraws(false); setPenNotice(true) } }}
+            onStroke={stroke => commit({ strokes: current => [...current, stroke] })}
+            onErase={ids => commit({ strokes: current => current.filter((_, idx) => !ids.has(idx)) })}
           />
         ))}
-        <button onClick={() => commit({ pages: pages + 1 })} className="btn-secondary px-5 py-2 text-sm flex items-center gap-2">
+        <button onClick={() => commit({ pages: latest.current.pages + 1 })} className="btn-secondary px-5 py-2 text-sm flex items-center gap-2">
           <FilePlus size={16} /> Add page
         </button>
       </div>
@@ -276,7 +297,12 @@ function InkPage({ index, width, paper, strokes, activeStroke, fingerDraws, onPe
   const liveRef = useRef<HTMLCanvasElement>(null)
   const points = useRef<InkPoint[]>([])
   const erased = useRef<Set<number>>(new Set())
-  const scrollFrom = useRef<number | null>(null)
+  // Finger scrolling (when the Pencil is in use): which touch is scrolling and where it last was
+  const scrollFrom = useRef<{ id: number; y: number } | null>(null)
+  // The one pointer currently drawing; other contacts (a resting palm, a second finger) are ignored
+  const drawing = useRef<{ id: number; type: string } | null>(null)
+  const fingerDrawsRef = useRef(fingerDraws)
+  useEffect(() => { fingerDrawsRef.current = fingerDraws }, [fingerDraws])
   // Bumped while erasing so the page repaints without the strokes being rubbed out
   const [eraseTick, setEraseTick] = useState(0)
   const height = Math.round(width * PAGE_RATIO)
@@ -336,11 +362,31 @@ function InkPage({ index, width, paper, strokes, activeStroke, fingerDraws, onPe
 
   const isScrollGesture = (e: React.PointerEvent) => e.pointerType === 'touch' && !fingerDraws
 
+  const clearLive = () => {
+    const ctx = liveRef.current?.getContext('2d')
+    ctx?.clearRect(0, 0, width, height)
+  }
+
   const handleDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.pointerType === 'pen') onPenDetected()
-    if (isScrollGesture(e)) { scrollFrom.current = e.clientY; return }
+    // The Pencil always wins over a scrolling touch, which is usually the palm resting on the screen
+    if (e.pointerType === 'pen') scrollFrom.current = null
+    if (drawing.current) {
+      // A pencil landing while a "finger" stroke is in progress means that touch was the palm: drop it
+      if (e.pointerType === 'pen' && drawing.current.type === 'touch') {
+        points.current = []
+        clearLive()
+      } else {
+        return
+      }
+    }
+    if (isScrollGesture(e)) {
+      if (!scrollFrom.current) scrollFrom.current = { id: e.pointerId, y: e.clientY }
+      return
+    }
     if (e.button !== 0) return
-    e.currentTarget.setPointerCapture(e.pointerId)
+    drawing.current = { id: e.pointerId, type: e.pointerType }
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* capture is optional */ }
     const point = toPoint(e)
     if (!activeStroke) {
       erased.current = new Set()
@@ -354,12 +400,12 @@ function InkPage({ index, width, paper, strokes, activeStroke, fingerDraws, onPe
   }
 
   const handleMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (scrollFrom.current !== null) {
-      liveRef.current?.closest('main')?.scrollBy(0, scrollFrom.current - e.clientY)
-      scrollFrom.current = e.clientY
+    if (scrollFrom.current?.id === e.pointerId) {
+      liveRef.current?.closest('main')?.scrollBy(0, scrollFrom.current.y - e.clientY)
+      scrollFrom.current = { id: e.pointerId, y: e.clientY }
       return
     }
-    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
+    if (drawing.current?.id !== e.pointerId) return
     // Coalesced events give every sample the Pencil reports between frames — much smoother ink
     const coalesced = e.nativeEvent.getCoalescedEvents?.() ?? []
     const samples = coalesced.length > 0 ? coalesced : [e.nativeEvent]
@@ -374,9 +420,12 @@ function InkPage({ index, width, paper, strokes, activeStroke, fingerDraws, onPe
   }
 
   const handleUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (scrollFrom.current !== null) { scrollFrom.current = null; return }
-    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
-    e.currentTarget.releasePointerCapture(e.pointerId)
+    if (scrollFrom.current?.id === e.pointerId) { scrollFrom.current = null; return }
+    if (drawing.current?.id !== e.pointerId) return
+    drawing.current = null
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
+    // The final position is only reported on pointerup; without it quick strokes come out short
+    if (activeStroke && e.type === 'pointerup') points.current.push(toPoint(e))
     if (!activeStroke) {
       // Apply the whole eraser swipe at once so it's a single undo step
       if (erased.current.size > 0) onErase(new Set(erased.current))
@@ -385,12 +434,32 @@ function InkPage({ index, width, paper, strokes, activeStroke, fingerDraws, onPe
     }
     if (points.current.length > 0) onStroke({ ...activeStroke, points: points.current })
     points.current = []
-    const ctx = liveRef.current?.getContext('2d')
-    ctx?.clearRect(0, 0, width, height)
+    clearLive()
   }
 
+  // iPadOS (Scribble, text selection, double-tap zoom) can claim a Pencil or finger stroke part-way
+  // through and cancel it, which cuts letters short. Owning the touches on the page stops that.
+  useEffect(() => {
+    const canvas = liveRef.current
+    if (!canvas) return
+    const own = (e: TouchEvent) => {
+      const stylus = Array.from(e.changedTouches).some(t => (t as Touch & { touchType?: string }).touchType === 'stylus')
+      if (stylus || fingerDrawsRef.current || drawing.current) e.preventDefault()
+    }
+    canvas.addEventListener('touchstart', own, { passive: false })
+    canvas.addEventListener('touchmove', own, { passive: false })
+    return () => {
+      canvas.removeEventListener('touchstart', own)
+      canvas.removeEventListener('touchmove', own)
+    }
+  }, [])
+
   return (
-    <div className="relative rounded-md shadow-fn-md border border-[var(--border)] overflow-hidden" style={{ width, height }}>
+    <div
+      className="relative rounded-md shadow-fn-md border border-[var(--border)] overflow-hidden select-none"
+      style={{ width, height, WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
+      onContextMenu={e => e.preventDefault()}
+    >
       <canvas ref={baseRef} width={width * ratio} height={height * ratio} style={{ width, height }} className="absolute inset-0" />
       <canvas
         ref={liveRef}
