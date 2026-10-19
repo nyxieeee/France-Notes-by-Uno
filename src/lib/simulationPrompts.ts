@@ -1,4 +1,4 @@
-import { DifficultyMode } from '@/stores/simulationStore'
+import type { DifficultyMode } from '@/stores/simulationStore'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from '@/stores/authStore'
 

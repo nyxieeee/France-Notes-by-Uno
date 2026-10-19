@@ -155,7 +155,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   sendMessage: async (content: string) => {
-    const { sessions, activeSessionId } = get()
+    const { activeSessionId } = get()
     const user = useAuthStore.getState().user
     if (!user?.id) return
 

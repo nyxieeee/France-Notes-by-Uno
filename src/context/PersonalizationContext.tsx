@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import type { PersonalizationConfig } from '@/lib/personalization'

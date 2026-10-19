@@ -5,12 +5,13 @@ import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
-import { Medal as Award } from '@phosphor-icons/react'
+import { Medal as Award, Footprints, Target, FirstAidKit, Books, Exam, Trophy, MoonStars, Star, PresentationChart, Certificate } from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 type BadgeItem = {
   id: string
-  icon: string
+  icon: Icon
   label: string
   desc: string
   unlocked: boolean
@@ -44,7 +45,7 @@ const professionalMessages: Record<string, string> = {
 
 export default function XboxAchievementNotifier() {
   const { isFrance } = usePersonalization()
-  const { items, topics } = useStudyBoxStore()
+  const { items } = useStudyBoxStore()
   const { quizzes } = useQuizStore()
   const { reviewers } = useReviewerStore()
   const { procedures } = useRetDemStore()
@@ -64,16 +65,16 @@ export default function XboxAchievementNotifier() {
 
   // All 10 badges and their unlock conditions
   const badgesList: BadgeItem[] = [
-    { id: 'first_step', icon: '', label: 'First Step', desc: 'Started first reviewer', unlocked: reviewers.length > 0 },
-    { id: 'quiz_whiz', icon: '', label: 'Quiz Whiz', desc: 'Got 100% on any quiz', unlocked: quizzes.some(q => q.score !== null && q.score === 100) },
-    { id: 'clinical_explorer', icon: '', label: 'Clinical Explorer', desc: 'Generated a RetDem procedure', unlocked: procedures.length > 0 },
-    { id: 'scholar', icon: '', label: 'Scholar', unlocked: items.length >= 5, desc: 'Uploaded 5+ notes' },
-    { id: 'pathology_master', icon: '', label: 'Pathology Master', unlocked: quizzes.filter(q => q.completed).length >= 3, desc: 'Completed 3+ quizzes' },
-    { id: 'board_topnotcher', icon: '', label: 'Board Topnotcher', unlocked: quizzes.length > 0 && (quizzes.reduce((acc, q) => acc + (q.score || 0), 0) / quizzes.length) >= 85, desc: 'Average quiz score >= 85%' },
-    { id: 'night_duty', icon: '', label: 'Night Duty', unlocked: reminders.some(r => r.reminder_type === 'duty'), desc: 'Active duty reminder set' },
-    { id: 'unos_favorite', icon: '', label: 'Uno\'s Favorite', unlocked: favoritesCount >= 5, desc: 'Favorited 5+ materials' },
-    { id: 'fast_learner', icon: '', label: 'Fast Learner', unlocked: reviewers.some(r => r.content.slides && r.content.slides.length > 0), desc: 'Created slides presentation' },
-    { id: 'nclex_survivor', icon: '', label: 'NCLEX Survivor', unlocked: quizzes.some(q => q.question_type === 'nclex' && q.completed), desc: 'Finished NCLEX style quiz' }
+    { id: 'first_step', icon: Footprints, label: 'First Step', desc: 'Started first reviewer', unlocked: reviewers.length > 0 },
+    { id: 'quiz_whiz', icon: Target, label: 'Quiz Whiz', desc: 'Got 100% on any quiz', unlocked: quizzes.some(q => q.score !== null && q.score === 100) },
+    { id: 'clinical_explorer', icon: FirstAidKit, label: 'Clinical Explorer', desc: 'Generated a RetDem procedure', unlocked: procedures.length > 0 },
+    { id: 'scholar', icon: Books, label: 'Scholar', unlocked: items.length >= 5, desc: 'Uploaded 5+ notes' },
+    { id: 'pathology_master', icon: Exam, label: 'Pathology Master', unlocked: quizzes.filter(q => q.completed).length >= 3, desc: 'Completed 3+ quizzes' },
+    { id: 'board_topnotcher', icon: Trophy, label: 'Board Topnotcher', unlocked: quizzes.length > 0 && (quizzes.reduce((acc, q) => acc + (q.score || 0), 0) / quizzes.length) >= 85, desc: 'Average quiz score >= 85%' },
+    { id: 'night_duty', icon: MoonStars, label: 'Night Duty', unlocked: reminders.some(r => r.reminder_type === 'duty'), desc: 'Active duty reminder set' },
+    { id: 'unos_favorite', icon: Star, label: 'Uno\'s Favorite', unlocked: favoritesCount >= 5, desc: 'Favorited 5+ materials' },
+    { id: 'fast_learner', icon: PresentationChart, label: 'Fast Learner', unlocked: reviewers.some(r => r.content.slides && r.content.slides.length > 0), desc: 'Created slides presentation' },
+    { id: 'nclex_survivor', icon: Certificate, label: 'NCLEX Survivor', unlocked: quizzes.some(q => q.question_type === 'nclex' && q.completed), desc: 'Finished NCLEX style quiz' }
   ]
 
   useEffect(() => {
@@ -124,7 +125,7 @@ export default function XboxAchievementNotifier() {
               {/* Circular Achievement Badge */}
               <div className="relative shrink-0 w-11 h-11 rounded-full bg-gradient-to-tr from-[var(--pink)] to-[var(--accent)] flex items-center justify-center text-xl shadow-md">
                 <Award size={18} className="absolute text-white/20 animate-spin-slow shrink-0" />
-                <span className="relative z-10 shrink-0">{activeNotification.icon}</span>
+                <activeNotification.icon size={20} weight="fill" className="relative z-10 shrink-0 text-white" />
               </div>
               
               {/* Text content */}

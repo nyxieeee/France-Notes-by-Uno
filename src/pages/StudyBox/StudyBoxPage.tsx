@@ -351,7 +351,7 @@ export default function StudyBoxPage() {
           </div>
           {items.length === 0 ? (
             <>
-              <h3 className="font-heading font-semibold">Your {studyBoxName} is empty {isFrance ? '' : ''}</h3>
+              <h3 className="font-heading font-semibold">Your {studyBoxName} is empty</h3>
               <p className="text-sm text-[var(--text-secondary)] max-w-sm mt-1 mb-5">Upload lecture notes, handouts, PDFs or photos of your notes to start reviewing.</p>
               <button onClick={() => fileInputRef.current?.click()} className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2"><Upload size={16} /> Upload your first note</button>
             </>

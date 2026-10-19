@@ -197,7 +197,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
   generatePresentation: async (sourceItemIds: string[], topicId?: string | null) => {
     set({ isGeneratingPresentation: true, isGenerating: true })
     const config = getPersonalizationConfig(useAuthStore.getState().user)
-    const { isFrance, greetingName, aiAssistantName } = config
+    const { isFrance, aiAssistantName } = config
 
     try {
       let sourceText = ''
