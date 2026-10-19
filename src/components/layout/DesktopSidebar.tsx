@@ -58,7 +58,7 @@ export default function DesktopSidebar() {
     ]},
     { label: 'Nursing Tools', items: [
       { icon: MessageCircle, label: `Ask ${aiAssistantName}`, path: '/ai' },
-      { icon: FlaskConical, label: 'Normal Labs', path: '/labs-reference' },
+      { icon: FlaskConical, label: 'Reference Lab Charts', path: '/labs-reference' },
       { icon: Calculator, label: 'Dosage Calculator', path: '/dosage-calculator' },
     ]},
     { label: 'Planning & Progress', items: [

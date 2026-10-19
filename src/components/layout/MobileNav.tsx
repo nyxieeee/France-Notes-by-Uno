@@ -20,7 +20,7 @@ export default function MobileNav() {
     { icon: Library,       label: 'Reviewers', path: '/reviewer-library' },
     { icon: Stethoscope,   label: 'Simulations', path: '/simulations', isBeta: true },
     { icon: Calendar,      label: 'Planner', path: '/planner' },
-    { icon: FlaskConical,  label: 'Normal Labs', path: '/labs-reference' },
+    { icon: FlaskConical,  label: 'Lab Charts', path: '/labs-reference' },
     { icon: Calculator,    label: 'Dosage Calc', path: '/dosage-calculator' },
     { icon: Settings,      label: 'Profile', path: '/profile' },
   ]

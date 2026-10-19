@@ -7,7 +7,7 @@ export default function QuickTools() {
 
   const tools = [
     { icon: MessageCircle, label: aiAssistantName, caption: 'Ask, learn, get instant help', to: '/ai' },
-    { icon: FlaskConical, label: 'Normal Labs', caption: 'Lab values & clinical pearls', to: '/labs-reference' },
+    { icon: FlaskConical, label: 'Reference Lab Charts', caption: 'Lab values & clinical pearls', to: '/labs-reference' },
     { icon: Calculator, label: 'Dosage Calculator', caption: 'Doses, drips & conversions', to: '/dosage-calculator' },
     { icon: Headphones, label: 'Nursepod', caption: 'Listen & learn on the go', to: '/podcast-review' },
   ]

@@ -1,20 +1,32 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Sparkle as Sparkles, Envelope as Mail, Lock, User, ArrowRight, GraduationCap, BookOpen, Eye, EyeSlash as EyeOff, CaretDown as ChevronDown } from '@phosphor-icons/react'
-import { useAuthStore } from '@/stores/authStore'
+import { Envelope, Lock, User, ArrowRight, ArrowLeft, GraduationCap, BookOpen, CaretDown, EnvelopeSimpleOpen } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
+import { useAuthStore } from '@/stores/authStore'
+import AuthLayout from '@/components/auth/AuthLayout'
+import {
+  AuthField, PasswordField, PasswordRules, passwordMeetsRules,
+  GoogleButton, OrDivider, AuthError, AuthStatus, Spinner,
+} from '@/components/auth/AuthFields'
+
+const YEAR_LEVELS = [
+  { value: '1st Year', label: '1st Year' },
+  { value: '2nd Year', label: '2nd Year' },
+  { value: '3rd Year', label: '3rd Year' },
+  { value: '4th Year', label: '4th Year' },
+  { value: 'RN', label: 'Registered Nurse' },
+]
 
 export default function SignupPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [school, setSchool] = useState('')
   const [yearLevel, setYearLevel] = useState('')
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [isPendingConfirmation, setIsPendingConfirmation] = useState(false)
-  const { signup, isLoading, isAuthenticated } = useAuthStore()
+  const { signup, loginWithGoogle, isLoading, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -25,223 +37,113 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
+    setError(null)
+    if (!passwordMeetsRules(password)) {
+      setError('Please choose a password that meets all the requirements below.')
+      return
+    }
     try {
-      console.log('Submitting signup form for email:', email)
       const res = await signup(name, email, password, school, yearLevel)
-      console.log('Signup result returned:', res)
       if (res?.confirmationRequired) {
-        console.log('Confirmation is required, setting isPendingConfirmation to true')
         setIsPendingConfirmation(true)
       } else {
-        console.log('Confirmation NOT required, navigating to /home')
         navigate('/home')
       }
     } catch (err: any) {
-      console.error('Signup error caught:', err)
       setError(err.message || 'Signup failed. Please try again.')
     }
   }
 
-  return (
-    <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-[var(--secondary-bg)]/30 rounded-full blur-[100px] animate-pulse-soft"></div>
-      <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-[var(--pink)]/10 rounded-full blur-[100px] animate-pulse-soft animation-delay-400"></div>
+  if (isPendingConfirmation) {
+    return (
+      <AuthLayout footerNote="Almost there! ♡">
+        <AuthStatus icon={EnvelopeSimpleOpen} title="Check Your Email">
+          <p>We've sent a verification link to<br /><strong className="text-[var(--text)]">{email}</strong></p>
+          <p className="text-xs">Click the link in your inbox to verify your account. If you don't see it, check your spam folder.</p>
+        </AuthStatus>
+        <div className="mt-7 flex flex-col items-center gap-3">
+          <Link to="/login" className="btn-primary w-full py-3 flex items-center justify-center gap-2">
+            Go to Sign In <ArrowRight size={17} />
+          </Link>
+          <button type="button" onClick={() => setIsPendingConfirmation(false)} className="text-xs font-medium text-[var(--pink)] hover:underline flex items-center gap-1">
+            <ArrowLeft size={13} /> Wrong email? Go back
+          </button>
+        </div>
+      </AuthLayout>
+    )
+  }
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-md"
-      >
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] overflow-hidden shadow-fn border-2 border-[var(--pink)]/20 mb-4 animate-float">
-            <img src="/france-notes-square-logo.png" alt="France Notes Logo" className="w-full h-full object-cover scale-[1.16]" />
+  return (
+    <AuthLayout footerNote="You're one step closer to your dreams ♡">
+      <h1 className="text-[28px] font-semibold tracking-tight">Create Your Account</h1>
+      <p className="mt-1.5 text-sm text-[var(--text-secondary)]">
+        Join future RNs and get access to all the tools you need.
+      </p>
+
+      <div className="mt-6">
+        <GoogleButton onClick={() => loginWithGoogle()} disabled={isLoading} />
+      </div>
+
+      <OrDivider />
+
+      <AuthError message={error} />
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <AuthField label="Full Name" icon={User} autoComplete="name" placeholder="Enter your full name" value={name} onChange={e => setName(e.target.value)} required />
+        <AuthField label="Email Address" icon={Envelope} type="email" autoComplete="email" placeholder="Enter your email address" value={email} onChange={e => setEmail(e.target.value)} required />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <AuthField label="Nursing School" icon={GraduationCap} placeholder="School name" value={school} onChange={e => setSchool(e.target.value)} />
+
+          <div className="relative z-20">
+            <span className="block text-[13px] font-medium text-[var(--text)] mb-1.5">Year Level</span>
+            <button
+              type="button"
+              onClick={() => setIsYearDropdownOpen(o => !o)}
+              className="fn-input rounded-xl bg-[var(--card)] pl-11 pr-9 py-2.5 text-sm text-left relative"
+            >
+              <BookOpen size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/70" />
+              <span className={yearLevel ? 'text-[var(--text)]' : 'text-[var(--text-secondary)]'}>
+                {YEAR_LEVELS.find(o => o.value === yearLevel)?.label || 'Select'}
+              </span>
+              <CaretDown size={15} className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isYearDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsYearDropdownOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute z-50 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-fn-md overflow-hidden"
+                >
+                  {YEAR_LEVELS.map(option => (
+                    <button
+                      type="button"
+                      key={option.value}
+                      onClick={() => { setYearLevel(option.value); setIsYearDropdownOpen(false) }}
+                      className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--rose-soft)] ${yearLevel === option.value ? 'text-[var(--pink)] font-medium' : ''}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </motion.div>
+              </>
+            )}
           </div>
-          <h1 className="font-logo text-4xl font-bold gradient-text mb-2">France Notes</h1>
-          <p className="text-[var(--text-secondary)] font-body">Start your nursing journey today! 🩺✨</p>
         </div>
 
-        <div className="fn-card p-8 bg-[var(--card)]/80 backdrop-blur-md">
-          {isPendingConfirmation ? (
-            <div className="text-center space-y-6 py-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[var(--pink)]/10 text-[var(--pink)] animate-bounce mb-2">
-                <Mail size={32} />
-              </div>
-              <h2 className="text-2xl font-bold text-[var(--text)]">Verify Your Email</h2>
-              <div className="space-y-3">
-                <p className="text-[var(--text-secondary)] text-sm">
-                  We've sent a verification link to <strong className="text-[var(--text)]">{email}</strong>.
-                </p>
-                <p className="text-[var(--text-secondary)] text-xs">
-                  Please click the link inside the email to confirm your address.
-                </p>
-              </div>
-              <div className="flex flex-col items-center gap-3 pt-4 border-t border-[var(--border)]">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 border-2 border-[var(--pink)]/30 border-t-[var(--pink)] rounded-full animate-spin" />
-                  <span className="text-xs text-[var(--text-secondary)]">Waiting for confirmation...</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPendingConfirmation(false)}
-                  className="text-xs text-[var(--pink)] hover:underline mt-2"
-                >
-                  Back to Sign Up
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              {error && (
-                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-xl text-center">
-                  {error}
-                </div>
-              )}
-              <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold ml-1">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
-                <input 
-                  type="text" 
-                  className="fn-input pl-11" 
-                  placeholder="Your full name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
+        <PasswordField label="Password" icon={Lock} autoComplete="new-password" placeholder="Create a password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <PasswordRules password={password} />
 
-            {/* Email */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold ml-1">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
-                <input 
-                  type="email" 
-                  className="fn-input pl-11" 
-                  placeholder="name@nursing.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
+        <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 flex items-center justify-center gap-2">
+          {isLoading ? <Spinner /> : <>Create Account <ArrowRight size={17} /></>}
+        </button>
+      </form>
 
-            {/* Password */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold ml-1">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  className="fn-input pl-11 pr-11" 
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 hover:text-[var(--pink)] transition-colors focus:outline-none"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            {/* School */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold ml-1">Nursing School</label>
-              <div className="relative">
-                <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
-                <input 
-                  type="text" 
-                  className="fn-input pl-11" 
-                  placeholder="University or College name"
-                  value={school}
-                  onChange={(e) => setSchool(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Year Level */}
-            <div className="space-y-2 relative z-20">
-              <label className="text-sm font-semibold ml-1">Year Level</label>
-              <div 
-                className="relative cursor-pointer"
-                onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-              >
-                <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 z-10" size={18} />
-                <div className={`fn-input pl-11 flex items-center bg-[var(--card)] ${!yearLevel ? 'text-[var(--text-secondary)]/70' : 'text-[var(--text)]'}`}>
-                  {yearLevel ? [
-                    { value: '1st Year', label: '1st Year' },
-                    { value: '2nd Year', label: '2nd Year' },
-                    { value: '3rd Year', label: '3rd Year' },
-                    { value: '4th Year', label: '4th Year' },
-                    { value: 'RN', label: 'Registered Nurse' }
-                  ].find(o => o.value === yearLevel)?.label : "Select year level"}
-                </div>
-                <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} size={18} />
-              </div>
-              
-              {isYearDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsYearDropdownOpen(false)}></div>
-                  <motion.div 
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute z-50 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden"
-                  >
-                    {[
-                      { value: '1st Year', label: '1st Year' },
-                      { value: '2nd Year', label: '2nd Year' },
-                      { value: '3rd Year', label: '3rd Year' },
-                      { value: '4th Year', label: '4th Year' },
-                      { value: 'RN', label: 'Registered Nurse' }
-                    ].map(option => (
-                      <div
-                        key={option.value}
-                        className={`px-4 py-3 hover:bg-[var(--secondary-bg)] cursor-pointer text-sm transition-colors ${yearLevel === option.value ? 'bg-[var(--pink)]/10 text-[var(--pink)] font-medium' : 'text-[var(--text)]'}`}
-                        onClick={() => {
-                          setYearLevel(option.value)
-                          setIsYearDropdownOpen(false)
-                        }}
-                      >
-                        {option.label}
-                      </div>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </div>
-
-            <button 
-              type="submit" 
-              className="btn-primary w-full flex items-center justify-center gap-2 mt-4"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  Create Account <ArrowRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
-        </>
-      )}
-    </div>
-
-        <p className="text-center mt-8 text-sm text-[var(--text-secondary)]">
-          Already have an account? <Link to="/login" className="text-[var(--pink)] font-semibold hover:underline">Log in</Link>
-        </p>
-      </motion.div>
-    </div>
+      <p className="mt-6 text-center text-[13px] text-[var(--text-secondary)]">
+        Already have an account?{' '}
+        <Link to="/login" className="font-medium text-[var(--pink)] hover:underline">Sign in →</Link>
+      </p>
+    </AuthLayout>
   )
 }

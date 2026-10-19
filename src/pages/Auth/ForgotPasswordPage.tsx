@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Envelope as Mail, ArrowRight, ArrowLeft } from '@phosphor-icons/react'
+import { Envelope, ArrowRight, ArrowLeft, EnvelopeSimpleOpen } from '@phosphor-icons/react'
 import { useAuthStore } from '@/stores/authStore'
+import AuthLayout from '@/components/auth/AuthLayout'
+import { AuthField, AuthError, AuthStatus, Spinner } from '@/components/auth/AuthFields'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -21,85 +22,43 @@ export default function ForgotPasswordPage() {
     }
   }
 
+  if (isSent) {
+    return (
+      <AuthLayout footerNote="You got this! ♡">
+        <AuthStatus icon={EnvelopeSimpleOpen} title="Check Your Email">
+          <p>We've sent a password reset link to<br /><strong className="text-[var(--text)]">{email}</strong></p>
+          <p className="text-xs">Click the link in your inbox to reset your password. If you don't see it, check your spam folder.</p>
+        </AuthStatus>
+        <div className="mt-7 flex flex-col items-center gap-3">
+          <Link to="/login" className="btn-primary w-full py-3 flex items-center justify-center gap-2">
+            Back to Sign In <ArrowRight size={17} />
+          </Link>
+          <button type="button" onClick={() => setIsSent(false)} className="text-xs font-medium text-[var(--pink)] hover:underline">
+            Didn't get it? Send again
+          </button>
+        </div>
+      </AuthLayout>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background blobs */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[var(--secondary-bg)]/30 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[var(--pink)]/10 blur-[120px] pointer-events-none" />
+    <AuthLayout footerNote="It happens. Reset and keep going ♡">
+      <Link to="/login" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--pink)] mb-5">
+        <ArrowLeft size={14} /> Back to Sign In
+      </Link>
+      <h1 className="text-[28px] font-semibold tracking-tight">Forgot Your Password?</h1>
+      <p className="mt-1.5 mb-7 text-sm text-[var(--text-secondary)]">
+        No worries! Enter your email and we'll send you a link to get back into your account.
+      </p>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md z-10"
-      >
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-[var(--card)] rounded-3xl border border-[var(--border)] shadow-fn flex items-center justify-center mx-auto mb-4 p-3.5">
-            <img src="/france-notes-square-logo.png" alt="France Notes Logo" className="w-full h-full object-cover scale-[1.16]" />
-          </div>
-          <h1 className="font-logo text-4xl font-bold gradient-text mb-2">Reset Password</h1>
-          <p className="text-[var(--text-secondary)] font-body">Retrieve your nurse companion account 🩺✨</p>
-        </div>
+      <AuthError message={error} />
 
-        <div className="fn-card p-8 bg-[var(--card)]/80 backdrop-blur-md">
-          {isSent ? (
-            <div className="text-center space-y-4 py-4">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-500 rounded-2xl flex items-center justify-center mx-auto">
-                <Mail size={24} />
-              </div>
-              <h2 className="text-lg font-semibold">Check your email</h2>
-              <p className="text-sm text-[var(--text-secondary)]">
-                We sent a password reset link to <strong className="text-[var(--text)]">{email}</strong>.
-              </p>
-              <div className="pt-4">
-                <Link to="/login" className="btn-primary inline-flex items-center gap-2">
-                  <ArrowLeft size={16} /> Back to Login
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold ml-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/50" size={18} />
-                  <input 
-                    type="email" 
-                    className="fn-input pl-11" 
-                    placeholder="name@nursing.edu"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <p className="text-xs text-red-400 text-center">{error}</p>
-              )}
-
-              <button 
-                type="submit" 
-                className="btn-primary w-full flex items-center justify-center gap-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    Send Reset Link <ArrowRight size={18} />
-                  </>
-                )}
-              </button>
-
-              <div className="text-center pt-2">
-                <Link to="/login" className="inline-flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--pink)] hover:underline">
-                  <ArrowLeft size={14} /> Back to Sign In
-                </Link>
-              </div>
-            </form>
-          )}
-        </div>
-      </motion.div>
-    </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <AuthField label="Email Address" icon={Envelope} type="email" autoComplete="email" placeholder="Enter your email address" value={email} onChange={e => setEmail(e.target.value)} required />
+        <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 flex items-center justify-center gap-2">
+          {isLoading ? <Spinner /> : <>Send Reset Link <ArrowRight size={17} /></>}
+        </button>
+      </form>
+    </AuthLayout>
   )
 }

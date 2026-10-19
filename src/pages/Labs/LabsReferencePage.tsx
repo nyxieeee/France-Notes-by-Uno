@@ -470,7 +470,7 @@ export default function LabsReferencePage() {
         >
           <FlaskConical size={32} />
         </motion.div>
-        <h1 className="text-4xl font-black mb-2 font-heading">Normal Labs 🧪</h1>
+        <h1 className="text-4xl font-black mb-2 font-heading">Reference Lab Charts 🧪</h1>
         <p className="text-[var(--text-secondary)] text-sm max-w-lg">
           Quick-reference normal ranges with low/high clinical implications. Star your essential labs to sync with your account!
         </p>

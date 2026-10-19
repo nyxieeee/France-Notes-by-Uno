@@ -4,8 +4,8 @@ export default function ParisIllustration({ className }: { className?: string })
     <svg viewBox="0 0 320 200" className={className} aria-hidden="true" preserveAspectRatio="xMaxYMax slice">
       <defs>
         <linearGradient id="paris-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="var(--rose-soft)" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.45" />
         </linearGradient>
         <linearGradient id="paris-tower" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--pink)" stopOpacity="0.75" />
