@@ -34,6 +34,10 @@ interface StudyBoxState {
   saveKnowledge: (result: KnowledgeSearchResult) => Promise<void>
   removeKnowledge: (id: string) => Promise<void>
   addTopic: (title: string, description: string, color: string) => Topic
+  fetchFolders: () => Promise<void>
+  createFolder: (title: string, color?: string, description?: string) => Promise<Topic>
+  deleteFolder: (id: string) => Promise<void>
+  moveItems: (ids: string[], topicId: string | null) => Promise<void>
   addGeneratedItem: (title: string, content: string, type: 'case-study' | 'pathophysiology') => Promise<void>
   getFilteredItems: () => StudyBoxItem[]
   getFavorites: () => StudyBoxItem[]
@@ -66,9 +70,39 @@ const DEFAULT_TOPICS: Topic[] = [
   { id: 'topic-appraisal', user_id: 'user-1', title: 'Nursing Competency Appraisal', description: 'High-yield comprehensive review and exam preparations for the Philippine Nurse Licensure Exam (PNLE).', color: '#FFC1CC', created_at: new Date().toISOString() }
 ]
 
+export const REFERENCES_TOPIC_ID = 'topic-references'
+export const UNSORTED_TOPIC_ID = '__unsorted'
+
+const REFERENCES_TOPIC: Topic = {
+  id: REFERENCES_TOPIC_ID, user_id: 'user-1', title: 'References',
+  description: 'Study articles written from references you saved to the Knowledge Garden.',
+  color: '#E7B7C2', created_at: new Date().toISOString(),
+}
+
+const BUILT_IN_TOPICS = [...DEFAULT_TOPICS, REFERENCES_TOPIC]
+export const isCustomFolder = (id: string) => !BUILT_IN_TOPICS.some(t => t.id === id)
+
+const FOLDER_COLORS = ['#F2B8C6', '#F6CBA8', '#B9DCC4', '#B8C9EE', '#D7C2EE', '#F3DFA2', '#AFDCE0']
+const foldersCacheKey = (userId: string) => `fn-study-folders-${userId}`
+
+const referenceTitle = (result: { title: string; source: string }) => {
+  const title = result.title.trim()
+  // URL-ish or bare-domain titles make poor file names
+  return title.toLowerCase().startsWith('http') || /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(title)
+    ? `${result.source} Clinical Reference`
+    : title
+}
+export const referenceFileName = (result: { title: string; source: string }) => `[Reference] ${referenceTitle(result)}.txt`
+
+// The Study Box article generated when a reference was saved to the Knowledge Garden
+export function findReferenceArticle(items: StudyBoxItem[], ref: { title: string; source: string }) {
+  const name = referenceFileName(ref)
+  return items.find(i => i.file_name === name && i.tags?.includes('knowledge-garden'))
+}
+
 export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
   items: [],
-  topics: DEFAULT_TOPICS,
+  topics: BUILT_IN_TOPICS,
   isUploading: false,
   isProcessing: false,
   isLoading: false,
@@ -76,7 +110,7 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
   selectedTopic: null,
   selectedItemIds: [],
   savedKnowledge: [],
-  allTopics: DEFAULT_TOPICS,
+  allTopics: BUILT_IN_TOPICS,
 
   fetchItems: async () => {
     set({ isLoading: true })
@@ -92,7 +126,15 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       .order("created_at", { ascending: false })
       
     if (!error && data) {
-      set({ items: data as StudyBoxItem[], isLoading: false })
+      const items = data as StudyBoxItem[]
+      // References saved before the References folder existed
+      const stray = items.filter(i => i.tags?.includes('knowledge-garden') && !i.topic_id)
+      for (const i of stray) i.topic_id = REFERENCES_TOPIC_ID
+      set({ items, isLoading: false })
+      if (stray.length > 0) {
+        await supabase.from('study_materials').update({ topic_id: REFERENCES_TOPIC_ID }).in('id', stray.map(i => i.id))
+      }
+      get().fetchFolders()
     } else {
       set({ isLoading: false })
     }
@@ -132,8 +174,9 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
     if (!assignedTopicId && extractedText.trim() && !extractedText.startsWith('[SYSTEM MESSAGE')) {
       try {
         const prompt = `
-          Based on the following document text, classify it into a broad nursing subject category (e.g., "Fundamentals", "Pharmacology", "Medical-Surgical", "Anatomy", "Maternal-Child", "Psychiatric", "Pediatrics").
-          Keep the title short (max 3 words). Provide a short description.
+          Based on the following document text, classify it into a broad nursing subject category.
+          Existing folders: ${get().topics.filter(t => t.id !== REFERENCES_TOPIC_ID).map(t => `"${t.title}"`).join(', ')}.
+          If one of the existing folders fits, return its title exactly as written. Only invent a new title (max 3 words) when none fit. Provide a short description.
           Return a hex color code that fits a soft, pastel, cozy feminine theme (e.g., "#FFB6C1", "#A8D8B9", "#B8C5F7").
           
           Text snippet:
@@ -149,15 +192,11 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
         if (existingTopic) {
           assignedTopicId = existingTopic.id
         } else {
-          const newTopic = {
-            id: `topic-${Math.random().toString(36).substring(7)}`,
-            user_id: 'user-1',
-            title: category.title || 'General Notes',
-            description: category.description || 'Automatically categorized notes',
-            color: category.color || '#F7A8B8',
-            created_at: new Date().toISOString()
-          }
-          set((state) => ({ topics: [...state.topics, newTopic] }))
+          const newTopic = await get().createFolder(
+            category.title || 'General Notes',
+            category.color,
+            category.description || 'Automatically categorized notes'
+          )
           assignedTopicId = newTopic.id
         }
       } catch (err) {
@@ -358,22 +397,13 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) throw new Error("No active session found")
 
-    let cleanTitle = result.title.trim()
-    // If title contains a URL or is a pure domain name format
-    if (
-      cleanTitle.toLowerCase().startsWith('http') ||
-      /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(cleanTitle)
-    ) {
-      cleanTitle = `${result.source} Clinical Reference`
-    }
-
     const newItem = {
-      file_name: `[Reference] ${cleanTitle}.txt`,
+      file_name: referenceFileName(result),
       file_type: 'txt',
       file_size: 0,
       extracted_text: fullArticleText,
       preview_image: null,
-      topic_id: null,
+      topic_id: REFERENCES_TOPIC_ID,
       is_favorite: true,
       tags: ['knowledge-garden', result.category],
       summary: undefined,
@@ -402,13 +432,15 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
 
   removeKnowledge: async (id: string) => {
     const target = get().savedKnowledge.find(k => k.id === id)
+    // Only the article generated for this reference, never her own uploads with a similar name
+    const article = target ? findReferenceArticle(get().items, target) : undefined
     set((state) => ({
       savedKnowledge: state.savedKnowledge.filter(k => k.id !== id),
-      items: target ? state.items.filter(item => !item.file_name.includes(target.title)) : state.items
+      items: article ? state.items.filter(item => item.id !== article.id) : state.items
     }))
     await supabase.from('saved_knowledge').delete().eq('id', id)
-    if (target) {
-      await supabase.from('study_materials').delete().filter('file_name', 'like', `%${target.title}%`)
+    if (article) {
+      await supabase.from('study_materials').delete().eq('id', article.id)
     }
   },
 
@@ -464,13 +496,77 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
     return topic
   },
 
+  fetchFolders: async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
+    const userId = session.user.id
+    let custom: Topic[]
+    const { data, error } = await supabase.from('study_folders').select('*').eq('user_id', userId).order('created_at')
+    if (!error && data) {
+      custom = data as Topic[]
+      localStorage.setItem(foldersCacheKey(userId), JSON.stringify(custom))
+    } else {
+      // study_folders table not created yet: keep folders on this device
+      try { custom = JSON.parse(localStorage.getItem(foldersCacheKey(userId)) || '[]') } catch { custom = [] }
+    }
+    const all = [...BUILT_IN_TOPICS, ...custom.filter(c => !BUILT_IN_TOPICS.some(b => b.id === c.id))]
+    set({ topics: all, allTopics: all })
+  },
+
+  createFolder: async (title: string, color?: string, description = '') => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const userId = session?.user?.id || 'guest'
+    const existing = get().topics.find(t => t.title.toLowerCase() === title.trim().toLowerCase())
+    if (existing) return existing
+    const folder: Topic = {
+      id: `folder-${crypto.randomUUID()}`,
+      user_id: userId,
+      title: title.trim(),
+      description,
+      color: color && /^#[0-9a-f]{6}$/i.test(color) ? color : FOLDER_COLORS[get().topics.length % FOLDER_COLORS.length],
+      created_at: new Date().toISOString(),
+    }
+    set((state) => ({ topics: [...state.topics, folder], allTopics: [...state.topics, folder] }))
+    localStorage.setItem(foldersCacheKey(userId), JSON.stringify(get().topics.filter(t => isCustomFolder(t.id))))
+    if (session?.user) {
+      const { error } = await supabase.from('study_folders').insert([folder])
+      if (error) console.warn('Folder saved on this device only:', error.message)
+    }
+    return folder
+  },
+
+  deleteFolder: async (id: string) => {
+    if (!isCustomFolder(id)) return
+    const { data: { session } } = await supabase.auth.getSession()
+    const userId = session?.user?.id || 'guest'
+    // Files in the folder are kept and become unsorted
+    set((state) => ({
+      topics: state.topics.filter(t => t.id !== id),
+      allTopics: state.topics.filter(t => t.id !== id),
+      items: state.items.map(i => i.topic_id === id ? { ...i, topic_id: null } : i),
+      selectedTopic: state.selectedTopic === id ? null : state.selectedTopic,
+    }))
+    localStorage.setItem(foldersCacheKey(userId), JSON.stringify(get().topics.filter(t => isCustomFolder(t.id))))
+    if (session?.user) {
+      await supabase.from('study_materials').update({ topic_id: null }).eq('user_id', userId).eq('topic_id', id)
+      await supabase.from('study_folders').delete().eq('id', id)
+    }
+  },
+
+  moveItems: async (ids: string[], topicId: string | null) => {
+    if (ids.length === 0) return
+    set((state) => ({ items: state.items.map(i => ids.includes(i.id) ? { ...i, topic_id: topicId } : i) }))
+    await supabase.from('study_materials').update({ topic_id: topicId }).in('id', ids)
+  },
+
   getFilteredItems: () => {
-    const { items, searchQuery, selectedTopic } = get()
+    const { items, searchQuery, selectedTopic, topics } = get()
     return items.filter((item) => {
       const matchesSearch = !searchQuery ||
         item.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-      const matchesTopic = !selectedTopic || item.topic_id === selectedTopic
+      const matchesTopic = !selectedTopic
+        || (selectedTopic === UNSORTED_TOPIC_ID ? !topics.some(t => t.id === item.topic_id) : item.topic_id === selectedTopic)
       return matchesSearch && matchesTopic
     })
   },

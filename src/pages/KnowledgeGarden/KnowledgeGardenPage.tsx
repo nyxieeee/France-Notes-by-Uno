@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Leaf, MagnifyingGlass, ArrowSquareOut, BookOpen, Trash, Plus, ShieldCheck } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, findReferenceArticle } from '@/stores/studyBoxStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import { tintFor } from '@/lib/tints'
@@ -11,7 +11,7 @@ import { tintFor } from '@/lib/tints'
 
 type SavedRef = { id: string; title: string; description: string; source: string; url: string; category: string; date_saved?: string }
 
-// Saved references from Search → Trusted Sources. Each one also lives in the Study Box as a full article.
+// Saved references from Search → Trusted Sources. Each one also lives in the Study Box References folder as a full article.
 export default function KnowledgeGardenPage() {
   const navigate = useNavigate()
   const { savedKnowledge, items, removeKnowledge } = useStudyBoxStore()
@@ -23,7 +23,7 @@ export default function KnowledgeGardenPage() {
   const visible = refs.filter(r => category === 'all' || r.category === category)
 
   const openArticle = (ref: SavedRef) => {
-    const article = items.find(i => i.file_name.includes(ref.title))
+    const article = findReferenceArticle(items, ref)
     if (article) navigate('/study-box', { state: { openItemId: article.id } })
     else window.open(ref.url, '_blank', 'noreferrer')
   }

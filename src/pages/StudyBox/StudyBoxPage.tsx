@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, REFERENCES_TOPIC_ID, UNSORTED_TOPIC_ID, isCustomFolder } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { StudyBoxItem, Topic } from '@/types'
@@ -8,6 +8,7 @@ import {
   Image as ImageIcon, Sparkle as Sparkles, Brain as BrainCircuit, BookOpen,
   CircleNotch as Loader2, DownloadSimple as Download, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink,
   Globe, X, Archive as ArchiveIcon, Folder, CaretRight, Printer, PresentationChart, Books, Check,
+  FolderSimplePlus, FolderOpen, Tray,
 } from '@phosphor-icons/react'
 import type { IconProps } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
@@ -51,8 +52,15 @@ export default function StudyBoxPage() {
     selectedItemIds,
     toggleItemSelection,
     clearSelection,
-    addGeneratedItem
+    addGeneratedItem,
+    createFolder,
+    deleteFolder,
+    moveItems,
   } = useStudyBoxStore()
+
+  // Files waiting for a destination folder (from a card, the selection bar or the detail view)
+  const [moveIds, setMoveIds] = useState<string[] | null>(null)
+  const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const filteredItems = getFilteredItems()
@@ -78,6 +86,8 @@ export default function StudyBoxPage() {
   // Compute displayed items applying local filters on top of store filters
   const displayedItems = (() => {
     let list = [...filteredItems]
+    // Saved-reference articles live in the References folder; they only appear at the top level when searching
+    if (!selectedTopic && !searchQuery.trim()) list = list.filter(i => i.topic_id !== REFERENCES_TOPIC_ID)
     if (showFavorites) list = list.filter(i => i.is_favorite)
     if (fileTypeFilter !== 'all') list = list.filter(i => i.file_type === fileTypeFilter)
     if (sortBy === 'newest') list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -144,14 +154,19 @@ export default function StudyBoxPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const topicTitle = (id: string | null) => topics.find(t => t.id === id)?.title || 'General'
-  const activeTopic = topics.find(t => t.id === selectedTopic) || null
+  const topicTitle = (id: string | null) => topics.find(t => t.id === id)?.title || 'Unsorted'
+  const UNSORTED: Topic = { id: UNSORTED_TOPIC_ID, user_id: '', title: 'Unsorted', description: '', color: '#C9BCC0', created_at: '' }
+  const activeTopic = selectedTopic === UNSORTED_TOPIC_ID ? UNSORTED : topics.find(t => t.id === selectedTopic) || null
   // Topic folders only show on the top-level view, not while searching or inside a topic
   const showFolders = !selectedTopic && !searchQuery.trim() && items.length > 0
-  const topicFolders = topics
-    .map(t => ({ topic: t, count: items.filter(i => i.topic_id === t.id).length }))
-    .filter(f => f.count > 0)
-    .sort((a, b) => b.count - a.count)
+  const unsortedCount = items.filter(i => !topics.some(t => t.id === i.topic_id)).length
+  // Folders with files first, then her own empty folders so she can fill them
+  const topicFolders = [
+    ...topics.map(t => ({ topic: t, count: items.filter(i => i.topic_id === t.id).length })),
+    ...(unsortedCount > 0 ? [{ topic: UNSORTED, count: unsortedCount }] : []),
+  ]
+    .filter(f => f.count > 0 || isCustomFolder(f.topic.id))
+    .sort((a, b) => (b.topic.id === REFERENCES_TOPIC_ID ? 1 : 0) - (a.topic.id === REFERENCES_TOPIC_ID ? 1 : 0) || b.count - a.count)
   const busy = isUploading || isProcessing
 
   return (
@@ -245,17 +260,25 @@ export default function StudyBoxPage() {
       {/* Breadcrumb when inside a topic */}
       {activeTopic && (
         <div className="flex items-center gap-1.5 text-sm mb-4">
-          <button onClick={() => setSelectedTopic(null)} className="text-[var(--text-secondary)] hover:text-[var(--pink)]">All topics</button>
+          <button onClick={() => setSelectedTopic(null)} className="text-[var(--text-secondary)] hover:text-[var(--pink)]">All folders</button>
           <CaretRight size={13} className="text-[var(--text-secondary)]" />
           <span className="font-semibold text-[var(--text)]">{activeTopic.title}</span>
           <span className="text-[var(--text-secondary)]">· {displayedItems.length} material{displayedItems.length === 1 ? '' : 's'}</span>
+          {isCustomFolder(activeTopic.id) && activeTopic.id !== UNSORTED_TOPIC_ID && (
+            <button
+              onClick={() => { if (confirm(`Delete the folder “${activeTopic.title}”? Its files are kept and moved to Unsorted.`)) deleteFolder(activeTopic.id) }}
+              className="ml-auto text-[12.5px] text-[var(--text-secondary)] hover:text-[var(--error)] flex items-center gap-1"
+            >
+              <Trash2 size={14} /> Delete folder
+            </button>
+          )}
         </div>
       )}
 
       {/* Topic folders */}
-      {showFolders && topicFolders.length > 0 && (
+      {showFolders && (
         <section className="mb-7">
-          <h2 className="text-[15px] font-heading font-semibold mb-3 flex items-center gap-2"><Folder size={16} className="text-[var(--pink)]" /> Topics</h2>
+          <h2 className="text-[15px] font-heading font-semibold mb-3 flex items-center gap-2"><Folder size={16} className="text-[var(--pink)]" /> Folders</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {topicFolders.map(({ topic, count }) => (
               <button
@@ -264,14 +287,23 @@ export default function StudyBoxPage() {
                 className="fn-card overflow-hidden text-left group hover:border-[var(--accent)]"
               >
                 <div className={`h-16 bg-gradient-to-br ${tintFor(topic.id)} flex items-center justify-center`}>
-                  <Folder size={26} weight="duotone" className="text-th-pink/70 group-hover:scale-110 transition-transform" />
+                  {topic.id === REFERENCES_TOPIC_ID ? <Globe size={26} weight="duotone" className="text-th-pink/70 group-hover:scale-110 transition-transform" />
+                    : topic.id === UNSORTED_TOPIC_ID ? <Tray size={26} weight="duotone" className="text-th-pink/70 group-hover:scale-110 transition-transform" />
+                    : <Folder size={26} weight="duotone" className="text-th-pink/70 group-hover:scale-110 transition-transform" />}
                 </div>
                 <div className="px-3 py-2.5">
                   <p className="text-[13px] font-semibold line-clamp-1">{topic.title}</p>
-                  <p className="text-[11px] text-[var(--text-secondary)]">{count} material{count === 1 ? '' : 's'}</p>
+                  <p className="text-[11px] text-[var(--text-secondary)]">{count === 0 ? 'Empty' : `${count} material${count === 1 ? '' : 's'}`}</p>
                 </div>
               </button>
             ))}
+            <button
+              onClick={() => setIsNewFolderOpen(true)}
+              className="rounded-2xl border-2 border-dashed border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-[var(--rose-soft)] flex flex-col items-center justify-center gap-1.5 min-h-[112px] transition-colors"
+            >
+              <FolderSimplePlus size={24} />
+              <span className="text-[13px] font-medium">New folder</span>
+            </button>
           </div>
         </section>
       )}
@@ -331,6 +363,14 @@ export default function StudyBoxPage() {
                         {!activeTopic && <>{topicTitle(item.topic_id)} · </>}{formatRelativeDate(item.created_at)}
                       </p>
                       <button
+                        onClick={(e) => { e.stopPropagation(); setMoveIds([item.id]) }}
+                        className="p-1 ml-auto rounded-lg text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-[var(--rose-soft)] sm:opacity-0 group-hover:opacity-100 transition-all"
+                        aria-label="Move to folder"
+                        title="Move to folder"
+                      >
+                        <FolderOpen size={14} />
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); if (confirm(`Delete “${displayName(item)}”?`)) removeItem(item.id) }}
                         className="p-1 -mr-1 rounded-lg text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-th-error/10 sm:opacity-0 group-hover:opacity-100 transition-all"
                         aria-label="Delete"
@@ -344,7 +384,7 @@ export default function StudyBoxPage() {
             })}
           </div>
         </section>
-      ) : (
+      ) : showFolders && activeFilterCount === 0 ? null : (
         <div className="fn-card flex flex-col items-center justify-center py-16 px-6 text-center">
           <div className="w-16 h-16 rounded-2xl bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center mb-4">
             <ArchiveIcon size={30} weight="duotone" />
@@ -357,8 +397,12 @@ export default function StudyBoxPage() {
             </>
           ) : (
             <>
-              <h3 className="font-heading font-semibold">Nothing matches</h3>
-              <p className="text-sm text-[var(--text-secondary)] mt-1">Try a different search, topic or filter.</p>
+              <h3 className="font-heading font-semibold">{activeTopic && !searchQuery.trim() && activeFilterCount === 0 ? 'This folder is empty' : 'Nothing matches'}</h3>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">
+                {activeTopic && !searchQuery.trim() && activeFilterCount === 0
+                  ? 'Upload here, or use Move on any file to put it in this folder.'
+                  : 'Try a different search, folder or filter.'}
+              </p>
             </>
           )}
         </div>
@@ -379,6 +423,13 @@ export default function StudyBoxPage() {
                 <p className="text-sm font-semibold leading-tight">selected</p>
                 <button onClick={clearSelection} className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--pink)]">Clear</button>
               </div>
+              <button
+                onClick={() => setMoveIds(selectedItemIds)}
+                className="btn-secondary px-3 sm:px-4 py-2 text-xs flex items-center gap-1.5"
+                aria-label="Move to folder"
+              >
+                <FolderOpen size={14} /> <span className="hidden sm:inline">Move</span>
+              </button>
               <button
                 onClick={() => { navigate('/quiz', { state: { selectedItemIds } }); clearSelection() }}
                 className="btn-secondary px-3 sm:px-4 py-2 text-xs flex items-center gap-1.5"
@@ -429,10 +480,151 @@ export default function StudyBoxPage() {
             topics={topics}
             removeItem={removeItem}
             navigate={navigate}
+            onMove={() => setMoveIds([selectedItem.id])}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {moveIds && (
+          <MoveToFolderDialog
+            count={moveIds.length}
+            currentTopicId={moveIds.length === 1 ? items.find(i => i.id === moveIds[0])?.topic_id ?? null : undefined}
+            topics={topics}
+            onCreate={createFolder}
+            onClose={() => setMoveIds(null)}
+            onMove={async (topicId) => {
+              await moveItems(moveIds, topicId)
+              if (selectedItem && moveIds.includes(selectedItem.id)) setSelectedItem({ ...selectedItem, topic_id: topicId })
+              if (moveIds.length > 1) clearSelection()
+              setMoveIds(null)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isNewFolderOpen && (
+          <NewFolderDialog
+            onClose={() => setIsNewFolderOpen(false)}
+            onCreate={async (title) => { const folder = await createFolder(title); setIsNewFolderOpen(false); setSelectedTopic(folder.id) }}
           />
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+function DialogShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center sm:p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        className="relative z-10 w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-fn-lg flex flex-col max-h-[80vh]"
+      >
+        <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-[var(--border)]">
+          <h2 className="font-heading font-semibold text-[17px]">{title}</h2>
+          <button onClick={onClose} className="btn-icon p-2 -mr-1" aria-label="Close"><X size={18} /></button>
+        </div>
+        {children}
+      </motion.div>
+    </div>
+  )
+}
+
+function NewFolderDialog({ onCreate, onClose }: { onCreate: (title: string) => Promise<void>; onClose: () => void }) {
+  const [title, setTitle] = useState('')
+  const [saving, setSaving] = useState(false)
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || saving) return
+    setSaving(true)
+    await onCreate(title)
+  }
+  return (
+    <DialogShell title="New folder" onClose={onClose}>
+      <form onSubmit={submit} className="p-6 space-y-4">
+        <input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Midterms, Clinical rotation, NCM 112" maxLength={60} className="fn-input rounded-xl bg-[var(--card)] py-2.5 text-sm" />
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="btn-secondary px-5 py-2.5 text-sm">Cancel</button>
+          <button type="submit" disabled={!title.trim() || saving} className="btn-primary px-5 py-2.5 text-sm disabled:opacity-50">Create folder</button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function MoveToFolderDialog({ count, currentTopicId, topics, onMove, onCreate, onClose }: {
+  count: number
+  currentTopicId: string | null | undefined
+  topics: Topic[]
+  onMove: (topicId: string | null) => Promise<void>
+  onCreate: (title: string) => Promise<Topic>
+  onClose: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const [busy, setBusy] = useState(false)
+  const q = query.trim().toLowerCase()
+  const mine = topics.filter(t => isCustomFolder(t.id))
+  const builtIn = topics.filter(t => !isCustomFolder(t.id))
+  const match = (t: Topic) => !q || t.title.toLowerCase().includes(q)
+  const exact = topics.some(t => t.title.toLowerCase() === q)
+
+  const go = async (topicId: string | null) => {
+    if (busy) return
+    setBusy(true)
+    await onMove(topicId)
+  }
+
+  const Row = ({ topic }: { topic: Topic }) => (
+    <button
+      onClick={() => go(topic.id)}
+      disabled={busy}
+      className={cn('w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-[13.5px] transition-colors hover:bg-[var(--rose-soft)]', currentTopicId === topic.id && 'bg-[var(--rose-soft)] text-[var(--pink)] font-medium')}
+    >
+      {topic.id === REFERENCES_TOPIC_ID ? <Globe size={17} className="text-[var(--pink)] shrink-0" /> : <Folder size={17} weight="fill" className="shrink-0" style={{ color: topic.color }} />}
+      <span className="flex-1 truncate">{topic.title}</span>
+      {currentTopicId === topic.id && <Check size={15} weight="bold" />}
+    </button>
+  )
+
+  return (
+    <DialogShell title={count === 1 ? 'Move to folder' : `Move ${count} files`} onClose={onClose}>
+      <div className="px-4 pt-4">
+        <div className="flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2">
+          <Search size={15} className="text-[var(--text-secondary)]" />
+          <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Find or create a folder" className="bg-transparent outline-none text-sm w-full" />
+        </div>
+      </div>
+      <div className="p-2 overflow-y-auto custom-scrollbar flex-1">
+        {q && !exact && (
+          <button
+            onClick={async () => { setBusy(true); const f = await onCreate(query); await onMove(f.id) }}
+            disabled={busy}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-[13.5px] text-[var(--pink)] font-medium hover:bg-[var(--rose-soft)]"
+          >
+            <FolderSimplePlus size={17} className="shrink-0" /> Create “{query.trim()}”
+          </button>
+        )}
+        {mine.filter(match).length > 0 && <p className="px-3 pt-2 pb-1 text-[11.5px] font-medium text-[var(--text-secondary)]">Your folders</p>}
+        {mine.filter(match).map(t => <Row key={t.id} topic={t} />)}
+        {builtIn.filter(match).length > 0 && <p className="px-3 pt-3 pb-1 text-[11.5px] font-medium text-[var(--text-secondary)]">Subjects</p>}
+        {builtIn.filter(match).map(t => <Row key={t.id} topic={t} />)}
+        {!q && (
+          <button
+            onClick={() => go(null)}
+            disabled={busy}
+            className={cn('w-full flex items-center gap-3 px-3 py-2.5 mt-1 rounded-xl text-left text-[13.5px] text-[var(--text-secondary)] hover:bg-[var(--rose-soft)] border-t border-[var(--border)]', currentTopicId === null && 'text-[var(--pink)]')}
+          >
+            <Tray size={17} className="shrink-0" /> <span className="flex-1">Unsorted (no folder)</span>
+            {currentTopicId === null && <Check size={15} weight="bold" />}
+          </button>
+        )}
+      </div>
+    </DialogShell>
   )
 }
 
@@ -463,11 +655,12 @@ function FilterGroup({ label, options, value, onChange }: {
   )
 }
 
-function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
+function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate, onMove }: {
   item: StudyBoxItem,
   onClose: () => void,
   topics: Topic[],
   removeItem: (id: string) => void,
+  onMove: () => void,
   navigate: any
 }) {
   const storeItem = useStudyBoxStore(state => state.items.find(i => i.id === item.id))
@@ -545,8 +738,8 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate }: {
   }
 
   const getTopicTitle = (topicId: string | null) => {
-    if (!topicId) return 'General'
-    return topics.find(t => t.id === topicId)?.title || 'General'
+    if (!topicId) return 'Unsorted'
+    return topics.find(t => t.id === topicId)?.title || 'Unsorted'
   }
 
   const handleDelete = () => {
@@ -984,6 +1177,7 @@ body {
           <button onClick={() => { if (confirm('Delete this material?')) handleDelete() }} className="btn-icon p-2 hover:text-[var(--error)] shrink-0" title="Delete" aria-label="Delete">
             <Trash2 size={18} />
           </button>
+          <button onClick={onMove} className="btn-icon p-2 shrink-0" title="Move to folder" aria-label="Move to folder"><FolderOpen size={18} /></button>
           <button onClick={handlePrint} className="btn-icon p-2 shrink-0" title="Print" aria-label="Print"><Printer size={18} /></button>
           <button onClick={handleDownloadFullPDF} className="btn-icon p-2 shrink-0" title="Download as PDF" aria-label="Download as PDF"><Download size={18} /></button>
           <div className="flex-1" />

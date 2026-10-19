@@ -185,6 +185,16 @@ create table if not exists public.saved_labs (
   unique (user_id, lab_name)
 );
 
+-- ── Study Box folders she creates (built-in subject folders live in the app) ─
+create table if not exists public.study_folders (
+  id text primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  title text not null,
+  description text not null default '',
+  color text not null default '#F2B8C6',
+  created_at timestamptz not null default now()
+);
+
 -- ── Indexes for the per-user, newest-first lists the app loads ──────────────
 create index if not exists study_materials_user_created_idx on public.study_materials (user_id, created_at desc);
 create index if not exists saved_knowledge_user_saved_idx on public.saved_knowledge (user_id, date_saved desc);
@@ -198,6 +208,7 @@ create index if not exists simulation_sessions_user_created_idx on public.simula
 create index if not exists chat_messages_user_created_idx on public.chat_messages (user_id, created_at);
 create index if not exists podcast_episodes_user_created_idx on public.podcast_episodes (user_id, created_at desc);
 create index if not exists dosage_calculations_user_created_idx on public.dosage_calculations (user_id, created_at desc);
+create index if not exists study_folders_user_created_idx on public.study_folders (user_id, created_at);
 
 -- ── Row Level Security: each user only sees their own rows ──────────────────
 do $$
@@ -207,7 +218,7 @@ begin
   foreach t in array array[
     'study_materials', 'saved_knowledge', 'reviewers', 'quizzes', 'reminders', 'notes',
     'retdem_procedures', 'retdem_upload_history', 'simulation_sessions', 'chat_messages',
-    'podcast_episodes', 'dosage_calculations', 'saved_labs'
+    'podcast_episodes', 'dosage_calculations', 'saved_labs', 'study_folders'
   ]
   loop
     execute format('alter table public.%I enable row level security', t);
