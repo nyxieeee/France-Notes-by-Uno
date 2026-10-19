@@ -559,7 +559,7 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
   const [checkedMaterials, setCheckedMaterials] = useState<string[]>([])
   const [revealedSteps, setRevealedSteps] = useState<number[]>([])
   const { startSession } = useSimulationStore()
-  const { uploadedFiles } = useRetDemStore()
+  const { uploadedFiles, toggleProcedureFavorite } = useRetDemStore()
   const { isFrance, greetingName, aiAssistantName } = usePersonalization()
 
   const isCIMode = mode === 'clinical_instructor'
@@ -623,8 +623,11 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
             )}
          </div>
          <div className="flex gap-2 shrink-0">
-            <button className="btn-secondary px-6 py-3 flex items-center gap-2">
-               <Heart size={18} /> Save
+            <button 
+              onClick={() => toggleProcedureFavorite(procedure.id)}
+              className="btn-secondary px-6 py-3 flex items-center gap-2"
+            >
+               <Heart size={18} className={procedure.is_favorite ? 'fill-[var(--pink)] text-[var(--pink)]' : ''} /> {procedure.is_favorite ? 'Saved' : 'Save'}
             </button>
             <button 
               onClick={() => startSession('retdem', procedure.title, mode as any, buildProcedureSourceText(), sourceName)}

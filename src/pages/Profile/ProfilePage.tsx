@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Cropper, { Area, Point } from 'react-easy-crop'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -33,6 +34,7 @@ import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function ProfilePage() {
   const { user, logout, updateProfile } = useAuthStore()
+  const navigate = useNavigate()
   const { theme, toggleTheme } = useThemeStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -508,21 +510,17 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     
-                    <button className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--border)] hover:border-[var(--pink)] hover:bg-[var(--pink)]/5 transition-colors text-left group">
+                    <button 
+                      onClick={() => navigate('/update-password')}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--border)] hover:border-[var(--pink)] hover:bg-[var(--pink)]/5 transition-colors text-left group"
+                    >
                       <div>
                         <p className="font-bold text-sm group-hover:text-[var(--pink)]">Change Password</p>
                         <p className="text-xs text-[var(--text-secondary)]">Update your account credentials</p>
                       </div>
                       <ChevronRight size={18} className="text-[var(--text-secondary)] group-hover:text-[var(--pink)]" />
                     </button>
-                    
-                    <button className="w-full flex items-center justify-between p-4 rounded-xl border border-[var(--border)] hover:border-[var(--error)]/40 hover:bg-[var(--error)]/5 transition-colors text-left group">
-                      <div>
-                        <p className="font-bold text-sm text-[var(--error)]">Clear Local Cache</p>
-                        <p className="text-xs text-[var(--text-secondary)]">Free up space (does not delete data)</p>
-                      </div>
-                      <ChevronRight size={18} className="text-[var(--text-secondary)]" />
-                    </button>
+
                   </div>
                 )}
 

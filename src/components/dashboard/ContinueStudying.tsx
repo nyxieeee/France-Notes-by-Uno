@@ -1,9 +1,10 @@
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { Play, Clock } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function ContinueStudying() {
-  const { reviewers } = useReviewerStore()
+  const { reviewers, setSelectedReviewer } = useReviewerStore()
+  const navigate = useNavigate()
   const recent = reviewers.slice(0, 2)
 
   return (
@@ -17,7 +18,10 @@ export default function ContinueStudying() {
 
       <div className="grid grid-cols-1 gap-3">
         {recent.map((reviewer) => (
-          <div key={reviewer.id} className="p-4 rounded-2xl bg-gradient-to-br from-[var(--bg)] to-[var(--secondary-bg)]/30 border border-[var(--border)] group hover:shadow-fn transition-all cursor-pointer">
+          <div 
+            key={reviewer.id} 
+            onClick={() => { setSelectedReviewer(reviewer); navigate('/reviewer-library') }}
+            className="p-4 rounded-2xl bg-gradient-to-br from-[var(--bg)] to-[var(--secondary-bg)]/30 border border-[var(--border)] group hover:shadow-fn transition-all cursor-pointer">
             <div className="flex justify-between items-start mb-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--pink)] px-2 py-0.5 bg-white/80 rounded-full">Reviewer</span>
               <Clock size={14} className="text-[var(--text-secondary)]" />

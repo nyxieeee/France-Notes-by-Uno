@@ -233,6 +233,12 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
     const { activeQuiz, questions, answers } = get()
     if (!activeQuiz) return
 
+    // Generation failed — the placeholder question isn't a real attempt, so don't record a score
+    if (questions.some(q => q.id === 'error-q')) {
+      get().resetQuiz()
+      return
+    }
+
     const score = get().getScore()
     const { data: { session } } = await supabase.auth.getSession()
     
