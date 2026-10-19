@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Microphone as Mic2, Play, Pause, ArrowCounterClockwise as RotateCcw, CaretDown as ChevronDown, CircleNotch as Loader2, MagnifyingGlass as Search, Sparkle as Sparkles, SpeakerHigh as Volume2, Clock, BookOpen, FileText, BookmarkSimple as Bookmark, ClockCounterClockwise as History, Trash as Trash2, BookmarkSimple as BookmarkCheck } from '@phosphor-icons/react'
+import { Microphone as Mic2, Play, Pause, ArrowCounterClockwise as RotateCcw, CaretDown as ChevronDown, CircleNotch as Loader2, Sparkle as Sparkles, Clock, ChatsCircle, FileText, BookmarkSimple as Bookmark, Folder, PencilSimple, Trash as Trash2, Headphones, WarningCircle } from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/ai'
@@ -24,19 +25,23 @@ export interface PodcastEpisode {
   source_type: string
 }
 
+const HOSTS = {
+  DOC_UNO: { name: 'Doc Uno', avatar: '/doc-uno-avatar.jpg' },
+  NURSE_FLORENCE: { name: 'Nurse Florence', avatar: '/nurse-florence-avatar.jpg' },
+} as const
 
 // ─── Animated Waveform ────────────────────────────────────────────────────────
 function Waveform({ playing }: { playing: boolean }) {
-  const bars = [4, 8, 12, 16, 14, 10, 6, 12, 16, 10, 8, 14, 6, 10, 16]
+  const bars = [4, 8, 12, 16, 14, 10, 6, 12, 16, 10, 8, 14, 6, 10, 16, 12, 8, 14, 10, 6]
   return (
-    <div className="flex items-center gap-0.5 h-8">
+    <div className="flex items-center gap-[3px] h-8">
       {bars.map((h, i) => (
         <motion.div
           key={i}
-          className="w-1 rounded-full bg-white/70"
+          className="w-[3px] rounded-full bg-[var(--pink)]"
           animate={playing
             ? { height: [h * 0.5, h, h * 0.3, h * 0.8, h * 0.5], opacity: [0.6, 1, 0.7, 1, 0.6] }
-            : { height: 3, opacity: 0.4 }
+            : { height: 3, opacity: 0.35 }
           }
           transition={playing
             ? { duration: 0.8 + (i % 5) * 0.12, repeat: Infinity, ease: 'easeInOut', delay: i * 0.06 }
@@ -49,28 +54,21 @@ function Waveform({ playing }: { playing: boolean }) {
   )
 }
 
-// ─── Speaker Avatar ───────────────────────────────────────────────────────────
-function SpeakerAvatar({ speaker, active }: { speaker: 'DOC_UNO' | 'NURSE_FLORENCE'; active: boolean }) {
-  const isUno = speaker === 'DOC_UNO'
+function HostAvatar({ speaker, size = 36, active = true }: { speaker: DialogueLine['speaker']; size?: number; active?: boolean }) {
   return (
-    <motion.div
-      animate={active ? { scale: 1.08, boxShadow: '0 0 0 4px rgba(247,168,184,0.5)' } : { scale: 1, boxShadow: 'none' }}
-      transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-      className={cn(
-        'w-10 h-10 rounded-full flex items-center justify-center text-xl border-2 shrink-0 transition-all',
-        active
-          ? 'border-[var(--pink)] bg-th-pink/20'
-          : 'border-[var(--border)] bg-th-secondary-bg/30 opacity-50'
-      )}
-    >
-      {isUno ? '' : ''}
-    </motion.div>
+    <img
+      src={HOSTS[speaker].avatar}
+      alt={HOSTS[speaker].name}
+      width={size}
+      height={size}
+      className={cn('rounded-full object-cover shrink-0 border-2 border-[var(--card)] transition-opacity', !active && 'opacity-60')}
+      style={{ width: size, height: size }}
+    />
   )
 }
 
 // ─── Transcript Line ──────────────────────────────────────────────────────────
-function TranscriptLine({ line, active, index }: { line: DialogueLine; active: boolean; index: number }) {
-  const isUno = line.speaker === 'DOC_UNO'
+function TranscriptLine({ line, active }: { line: DialogueLine; active: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -80,29 +78,80 @@ function TranscriptLine({ line, active, index }: { line: DialogueLine; active: b
   }, [active])
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.25 }}
       className={cn(
-        'flex gap-3 items-start p-3 rounded-2xl transition-all duration-300',
-        active ? 'bg-th-pink/10 border border-th-pink/20' : 'hover:bg-th-secondary-bg/30'
+        'flex gap-3 items-start px-3 py-2.5 rounded-xl transition-colors duration-300',
+        active ? 'bg-[var(--rose-soft)]' : ''
       )}
     >
-      <SpeakerAvatar speaker={line.speaker} active={active} />
+      <HostAvatar speaker={line.speaker} size={32} active={active} />
       <div className="flex-1 min-w-0">
-        <p className={cn(
-          'text-[11px] font-bold mb-1',
-          active ? 'text-[var(--pink)]' : 'text-[var(--text-secondary)]'
-        )}>
-          {isUno ? 'Doc Uno' : 'Nurse Florence'}
+        <p className={cn('text-[12px] font-semibold mb-0.5', active ? 'text-[var(--pink)]' : 'text-[var(--text)]')}>
+          {HOSTS[line.speaker].name}
         </p>
-        <p className={cn('text-sm leading-relaxed', active ? 'text-[var(--text)] font-medium' : 'text-[var(--text-secondary)]')}>
+        <p className={cn('text-[13.5px] leading-relaxed', active ? 'text-[var(--text)]' : 'text-[var(--text-secondary)]')}>
           {line.text}
         </p>
       </div>
-    </motion.div>
+    </div>
+  )
+}
+
+// ─── Source dropdown ──────────────────────────────────────────────────────────
+function OptionDropdown({ icon: OptionIcon, placeholder, value, options, onSelect }: {
+  icon: Icon
+  placeholder: string
+  value: string
+  options: { id: string; label: string; color?: string }[]
+  onSelect: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const current = options.find(o => o.id === value)
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(p => !p)}
+        className="w-full flex items-center justify-between gap-2 bg-[var(--card)] border border-[var(--border)] rounded-xl px-3.5 py-2.5 text-sm text-left hover:border-[var(--accent)] transition-colors"
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          {current?.color
+            ? <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: current.color }} />
+            : <OptionIcon size={16} className="text-[var(--pink)] shrink-0" />}
+          <span className={cn('truncate', !current && 'text-[var(--text-secondary)]')}>{current?.label || placeholder}</span>
+        </span>
+        <ChevronDown size={15} className={cn('text-[var(--text-secondary)] transition-transform shrink-0', open && 'rotate-180')} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-fn-lg max-h-56 overflow-y-auto custom-scrollbar p-1.5"
+          >
+            {options.map(o => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => { onSelect(o.id); setOpen(false) }}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-left transition-colors hover:bg-[var(--rose-soft)]',
+                  value === o.id ? 'bg-[var(--rose-soft)] text-[var(--pink)] font-medium' : 'text-[var(--text)]'
+                )}
+              >
+                {o.color
+                  ? <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: o.color }} />
+                  : <OptionIcon size={14} className="text-[var(--pink)] shrink-0" />}
+                <span className="truncate">{o.label}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
@@ -174,7 +223,6 @@ export default function PodcastReviewPage() {
   const [selectedTopicId, setSelectedTopicId] = useState(topics[0]?.id || '')
   const [selectedItemId, setSelectedItemId] = useState(items[0]?.id || '')
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState(savedKnowledge[0]?.id || '')
-  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   // Episode state
   const [isGenerating, setIsGenerating] = useState(false)
@@ -184,7 +232,7 @@ export default function PodcastReviewPage() {
 
   // Saved episodes / History
   const [savedEpisodes, setSavedEpisodes] = useState<PodcastEpisode[]>([])
-  const [showHistoryView, setShowHistoryView] = useState(false)
+  const [genError, setGenError] = useState<string | null>(null)
 
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false)
@@ -307,6 +355,7 @@ export default function PodcastReviewPage() {
     if (!sourceDetails.title) return
 
     setIsGenerating(true)
+    setGenError(null)
     stopAllPlayback()
     setIsPlaying(false)
     setCurrentLine(-1)
@@ -353,6 +402,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
     try {
       const raw = await generateCompletion(prompt, systemPrompt, 'reviewer')
       const lines = parseScript(raw)
+      if (lines.length === 0) throw new Error('Empty script')
       const episodeId = `ep-${Date.now()}`
       setScript(lines)
       setEpisodeTitle(sourceDetails.title)
@@ -369,6 +419,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
       await saveEpisodeToHistory(newEp)
     } catch (err) {
       console.error('[Podcast] Generation failed:', err)
+      setGenError('The episode could not be written. Check your connection and try again.')
     } finally {
       setIsGenerating(false)
     }
@@ -382,7 +433,6 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
     setScript(ep.script)
     setEpisodeTitle(ep.title)
     setActiveEpisodeId(ep.id)
-    setShowHistoryView(false)
   }
 
   // ─── Playback Engine (Google Cloud TTS Neural2 + WebSpeech Fallback) ──────
@@ -457,463 +507,217 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
     }, 150)
   }
 
-  const selectedTopicObj = topics.find(t => t.id === selectedTopicId)
-  const selectedItemObj = items.find(i => i.id === selectedItemId)
-  const selectedKnowledgeObj = savedKnowledge.find(k => k.id === selectedKnowledgeId)
-
   const hasScript = script.length > 0
-  const estimatedDuration = hasScript ? Math.round(script.reduce((acc, l) => acc + l.text.split(' ').length, 0) / 130) : 0
+  const estimatedDuration = hasScript ? Math.max(1, Math.round(script.reduce((acc, l) => acc + l.text.split(' ').length, 0) / 130)) : 0
+  const canGenerate = !isGenerating && !((inputMode === 'type' && !freeText.trim()) || (inputMode === 'topic' && topics.length === 0) || (inputMode === 'file' && items.length === 0) || (inputMode === 'knowledge' && savedKnowledge.length === 0))
+  const activeSpeaker = currentLine >= 0 ? script[currentLine]?.speaker : null
+
+  const SOURCES: { id: SourceMode; label: string; icon: Icon }[] = [
+    { id: 'type', label: 'Topic', icon: PencilSimple },
+    { id: 'topic', label: 'Folder', icon: Folder },
+    { id: 'file', label: 'File', icon: FileText },
+    { id: 'knowledge', label: 'Saved ref', icon: Bookmark },
+  ]
 
   return (
-    <div className="page-container">
+    <div className="page-container max-w-6xl">
       <PageHeader
         icon={Mic2}
         title="Nursepod"
-        subtitle={isFrance ? 'Listen to Doc Uno & Nurse Florence break down your nursing topics, babe!' : 'Doc Uno & Nurse Florence bring your nursing topics to life as a podcast.'}
-        actions={
-          <button
-            onClick={() => setShowHistoryView(p => !p)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border",
-              showHistoryView
-                ? "bg-[var(--pink)] text-white border-[var(--pink)] shadow-md"
-                : "bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-th-pink/50"
-            )}
-          >
-            <History size={15} />
-            Podcast History ({savedEpisodes.length})
-          </button>
-        }
+        subtitle={isFrance ? 'Listen to Doc Uno and Nurse Florence talk through your topics, babe.' : 'Doc Uno and Nurse Florence talk through your nursing topics as a podcast.'}
       />
 
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* HISTORY VIEW */}
-        {showHistoryView ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fn-card p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <History size={20} className="text-[var(--pink)]" /> Saved Episodes & History
-              </h3>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] gap-5 items-start">
+        {/* New episode */}
+        <section className="fn-card p-5 lg:col-start-2 lg:row-start-1">
+          <h2 className="font-heading font-semibold text-[15px] mb-3">New episode</h2>
+
+          <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-[var(--bg)] border border-[var(--border)] mb-3">
+            {SOURCES.map(m => (
               <button
-                onClick={() => setShowHistoryView(false)}
-                className="text-xs font-bold text-[var(--pink)] hover:underline"
+                key={m.id}
+                onClick={() => setInputMode(m.id)}
+                className={cn(
+                  'py-1.5 rounded-lg text-[11.5px] font-medium flex flex-col items-center gap-0.5 transition-colors',
+                  inputMode === m.id ? 'bg-[var(--card)] text-[var(--pink)] shadow-fn' : 'text-[var(--text-secondary)] hover:text-[var(--text)]'
+                )}
               >
-                + New Episode
+                <m.icon size={16} weight={inputMode === m.id ? 'fill' : 'regular'} />
+                {m.label}
               </button>
-            </div>
-
-            {savedEpisodes.length === 0 ? (
-              <div className="text-center py-10 text-[var(--text-secondary)]">
-                <Mic2 size={36} className="mx-auto mb-2 opacity-30" />
-                <p className="font-bold text-sm">No saved episodes yet</p>
-                <p className="text-xs opacity-70 mt-1">Generated podcasts automatically save to Supabase so you can replay them anytime!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {savedEpisodes.map(ep => (
-                  <div
-                    key={ep.id}
-                    className={cn(
-                      "p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer",
-                      activeEpisodeId === ep.id
-                        ? "bg-th-pink/10 border-[var(--pink)]"
-                        : "bg-[var(--bg)] border-[var(--border)] hover:border-th-pink/40"
-                    )}
-                    onClick={() => loadSavedEpisode(ep)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-th-pink/20 text-[var(--pink)] flex items-center justify-center font-semibold shrink-0">
-
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-sm truncate">{ep.title}</h4>
-                        <div className="flex items-center gap-2 text-[10px] text-[var(--text-secondary)] font-semibold mt-0.5">
-                          <span className="bg-[var(--secondary-bg)] px-2 py-0.5 rounded-full">{ep.source_type || 'Podcast'}</span>
-                          <span>•</span>
-                          <span>{ep.script.length} lines</span>
-                          <span>•</span>
-                          <span>{new Date(ep.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => loadSavedEpisode(ep)}
-                        className="px-3 py-1.5 bg-[var(--pink)] text-white text-xs font-bold rounded-xl flex items-center gap-1 hover:scale-105 transition-all shadow-sm"
-                      >
-                        <Play size={12} fill="white" /> Play
-                      </button>
-                      <button
-                        onClick={() => deleteEpisodeFromHistory(ep.id)}
-                        className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors"
-                        title="Delete Episode"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        ) : (
-          /* GENERATOR & TOPIC SELECTOR VIEW */
-          <div className="fn-card p-6">
-            <p className="text-[11px] font-bold text-[var(--text-secondary)] mb-4">Select Source Material</p>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-1.5 mb-4">
-              {([
-                { id: 'type' as SourceMode, label: 'Free Text' },
-                { id: 'topic' as SourceMode, label: 'Topics' },
-                { id: 'file' as SourceMode, label: 'Files' },
-                { id: 'knowledge' as SourceMode, label: 'Saved Refs' },
-              ]).map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => setInputMode(m.id)}
-                  className={cn(
-                    'py-2 rounded-[1.2rem] text-xs font-bold transition-all text-center truncate px-2',
-                    inputMode === m.id
-                      ? 'bg-[var(--pink)] text-white shadow-md'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text)]'
-                  )}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-
-            {inputMode === 'type' && (
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={16} />
-                <input
-                  type="text"
-                  value={freeText}
-                  onChange={e => setFreeText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && !isGenerating && generatePodcast()}
-                  placeholder="e.g. Hypovolemic Shock, Sepsis, Heart Failure..."
-                  className="fn-input pl-10"
-                />
-              </div>
-            )}
-
-            {inputMode === 'topic' && (
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(p => !p)}
-                  className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-th-pink/50 transition-all"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedTopicObj?.color || 'var(--pink)' }} />
-                    <span className="truncate">{selectedTopicObj?.title || 'Select a Topic'}</span>
-                  </div>
-                  <ChevronDown size={16} className={cn('text-[var(--text-secondary)] transition-transform', dropdownOpen && 'rotate-180')} />
-                </button>
-                <AnimatePresence>
-                  {dropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 right-0 z-50 mt-2 bg-[var(--card)] border border-[var(--border)] rounded-[1.5rem] shadow-fn-lg max-h-52 overflow-y-auto custom-scrollbar p-2"
-                    >
-                      {topics.map(t => (
-                        <button
-                          key={t.id}
-                          onClick={() => { setSelectedTopicId(t.id); setDropdownOpen(false) }}
-                          className={cn(
-                            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5',
-                            selectedTopicId === t.id ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text)]'
-                          )}
-                        >
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
-                          <span className="truncate">{t.title}</span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
-            {inputMode === 'file' && (
-              items.length > 0 ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setDropdownOpen(p => !p)}
-                    className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-th-pink/50 transition-all"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <FileText size={16} className="text-[var(--pink)] shrink-0" />
-                      <span className="truncate">{selectedItemObj?.file_name || 'Select an Uploaded File'}</span>
-                    </div>
-                    <ChevronDown size={16} className={cn('text-[var(--text-secondary)] transition-transform', dropdownOpen && 'rotate-180')} />
-                  </button>
-                  <AnimatePresence>
-                    {dropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 right-0 z-50 mt-2 bg-[var(--card)] border border-[var(--border)] rounded-[1.5rem] shadow-fn-lg max-h-52 overflow-y-auto custom-scrollbar p-2"
-                      >
-                        {items.map(item => (
-                          <button
-                            key={item.id}
-                            onClick={() => { setSelectedItemId(item.id); setDropdownOpen(false) }}
-                            className={cn(
-                              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5',
-                              selectedItemId === item.id ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text)]'
-                            )}
-                          >
-                            <FileText size={14} className="text-[var(--pink)] shrink-0" />
-                            <span className="truncate">{item.file_name}</span>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ) : (
-                <div className="p-4 bg-[var(--bg)] border border-[var(--border)] rounded-2xl text-center text-xs text-[var(--text-secondary)]">
-                  No files uploaded in Study Box yet. Upload a PDF/document in Study Box to use it as a podcast source!
-                </div>
-              )
-            )}
-
-            {inputMode === 'knowledge' && (
-              savedKnowledge.length > 0 ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setDropdownOpen(p => !p)}
-                    className="w-full flex items-center justify-between bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-semibold text-left hover:border-th-pink/50 transition-all"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <Bookmark size={16} className="text-[var(--pink)] shrink-0" />
-                      <span className="truncate">{selectedKnowledgeObj?.title || 'Select a Saved Reference'}</span>
-                    </div>
-                    <ChevronDown size={16} className={cn('text-[var(--text-secondary)] transition-transform', dropdownOpen && 'rotate-180')} />
-                  </button>
-                  <AnimatePresence>
-                    {dropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 right-0 z-50 mt-2 bg-[var(--card)] border border-[var(--border)] rounded-[1.5rem] shadow-fn-lg max-h-52 overflow-y-auto custom-scrollbar p-2"
-                      >
-                        {savedKnowledge.map(k => (
-                          <button
-                            key={k.id}
-                            onClick={() => { setSelectedKnowledgeId(k.id); setDropdownOpen(false) }}
-                            className={cn(
-                              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all hover:bg-th-pink/5',
-                              selectedKnowledgeId === k.id ? 'bg-th-pink/10 text-[var(--pink)]' : 'text-[var(--text)]'
-                            )}
-                          >
-                            <Bookmark size={14} className="text-[var(--pink)] shrink-0" />
-                            <span className="truncate">{k.title}</span>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ) : (
-                <div className="p-4 bg-[var(--bg)] border border-[var(--border)] rounded-2xl text-center text-xs text-[var(--text-secondary)]">
-                  No references saved in Knowledge Garden yet. Search & save topics in Knowledge Garden to generate podcasts from them!
-                </div>
-              )
-            )}
-
-            <button
-              onClick={generatePodcast}
-              disabled={isGenerating || (inputMode === 'type' && !freeText.trim()) || (inputMode === 'file' && items.length === 0) || (inputMode === 'knowledge' && savedKnowledge.length === 0)}
-              className="btn-primary w-full mt-4 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <><Loader2 size={16} className="animate-spin" /> Generating Full Podcast Episode...</>
-              ) : (
-                <><Sparkles size={16} /> Generate Episode</>
-              )}
-            </button>
+            ))}
           </div>
-        )}
 
-        {/* Generating State */}
-        <AnimatePresence>
-          {isGenerating && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="fn-card p-8 flex flex-col items-center text-center"
-            >
-              <div className="relative mb-5">
-                <div className="absolute inset-0 bg-th-pink/20 blur-xl rounded-full scale-150 animate-pulse" />
-                <div className="w-20 h-20 bg-gradient-to-br from-[var(--pink)] to-[#FF7FA3] rounded-full flex items-center justify-center relative shadow-lg">
-                  <Mic2 size={36} className="text-white animate-bounce" />
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Writing full podcast episode...</h3>
-              <p className="text-sm text-[var(--text-secondary)] max-w-md">
-                Doc Uno & Nurse Florence are developing an extensive professional episode with clinical case breakdowns and board exam strategies!
-              </p>
-              <div className="flex gap-1.5 mt-4">
-                {[0, 150, 300].map(d => (
-                  <span key={d} className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce" style={{ animationDelay: `${d}ms` }} />
-                ))}
-              </div>
-            </motion.div>
+          {inputMode === 'type' && (
+            <input
+              type="text"
+              value={freeText}
+              onChange={e => setFreeText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && canGenerate && generatePodcast()}
+              placeholder="e.g. Hypovolemic shock, sepsis"
+              className="fn-input rounded-xl bg-[var(--card)] py-2.5 text-sm"
+            />
           )}
-        </AnimatePresence>
+          {inputMode === 'topic' && (topics.length > 0
+            ? <OptionDropdown icon={Folder} placeholder="Choose a Study Box folder" value={selectedTopicId} onSelect={setSelectedTopicId} options={topics.map(t => ({ id: t.id, label: t.title, color: t.color }))} />
+            : <EmptySource text="No Study Box folders yet." />)}
+          {inputMode === 'file' && (items.length > 0
+            ? <OptionDropdown icon={FileText} placeholder="Choose an uploaded file" value={selectedItemId} onSelect={setSelectedItemId} options={items.map(i => ({ id: i.id, label: i.file_name }))} />
+            : <EmptySource text="Upload a PDF or document in Study Box to use it here." />)}
+          {inputMode === 'knowledge' && (savedKnowledge.length > 0
+            ? <OptionDropdown icon={Bookmark} placeholder="Choose a saved reference" value={selectedKnowledgeId} onSelect={setSelectedKnowledgeId} options={savedKnowledge.map(k => ({ id: k.id, label: k.title }))} />
+            : <EmptySource text="Save references in Knowledge Garden to use them here." />)}
 
-        {/* Podcast Player */}
-        <AnimatePresence>
-          {hasScript && !isGenerating && !showHistoryView && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="space-y-4"
-            >
+          <button onClick={generatePodcast} disabled={!canGenerate} className="btn-primary w-full mt-3 py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+            {isGenerating ? <><Loader2 size={16} className="animate-spin" /> Writing episode</> : <><Sparkles size={16} /> Generate episode</>}
+          </button>
+          {genError && (
+            <p className="mt-2.5 text-[12.5px] text-[var(--error)] flex items-start gap-1.5"><WarningCircle size={15} className="shrink-0 mt-px" /> {genError}</p>
+          )}
+        </section>
+
+        {/* Player */}
+        <section className="lg:col-start-1 lg:row-start-1 lg:row-span-2 space-y-4 min-w-0">
+          {isGenerating ? (
+            <div className="fn-card p-10 flex flex-col items-center text-center">
+              <div className="flex -space-x-3 mb-5">
+                <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 1.2, repeat: Infinity }}><HostAvatar speaker="DOC_UNO" size={64} /></motion.div>
+                <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.6 }}><HostAvatar speaker="NURSE_FLORENCE" size={64} /></motion.div>
+              </div>
+              <h3 className="font-heading font-semibold text-lg">Writing your episode</h3>
+              <p className="text-sm text-[var(--text-secondary)] max-w-sm mt-1">
+                Doc Uno and Nurse Florence are outlining the pathophysiology, nursing priorities and a board-style question. This takes about a minute.
+              </p>
+              <div className="flex gap-1.5 mt-5">
+                {[0, 150, 300].map(d => <span key={d} className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
+              </div>
+            </div>
+          ) : hasScript ? (
+            <>
               <div className="fn-card overflow-hidden">
-                <div className="bg-gradient-to-br from-[#F7A8B8] via-[#FF7FA3] to-[#FF5A87] p-6 md:p-8 relative">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
-                  <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full translate-y-6 -translate-x-4" />
-
-                  <div className="relative z-10 flex items-start gap-4">
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 flex items-center justify-center text-3xl shrink-0 shadow-lg">
-
+                <div className="p-5 sm:p-6 bg-gradient-to-br from-[var(--rose-soft)] to-transparent">
+                  <div className="flex items-start gap-4">
+                    <div className="relative w-[84px] h-[84px] shrink-0">
+                      <div className="absolute top-0 left-0"><HostAvatar speaker="DOC_UNO" size={56} active={!activeSpeaker || activeSpeaker === 'DOC_UNO'} /></div>
+                      <div className="absolute bottom-0 right-0"><HostAvatar speaker="NURSE_FLORENCE" size={56} active={!activeSpeaker || activeSpeaker === 'NURSE_FLORENCE'} /></div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-white/70 text-[11px] font-bold mb-1">Now Playing</p>
-                        <span className="text-[10px] font-bold text-white/90 bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <BookmarkCheck size={10} /> Google Neural AI Voice
-                        </span>
-                      </div>
-                      <h2 className="text-white font-semibold text-lg leading-tight truncate">{episodeTitle}</h2>
-                      <p className="text-white/80 text-xs font-semibold mt-1 flex items-center gap-2">
-                        <span className="flex items-center gap-1"><span></span> Doc Uno</span>
-                        <span className="text-white/50">×</span>
-                        <span className="flex items-center gap-1"><span></span> Nurse Florence</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11.5px] font-medium text-[var(--pink)]">{isPlaying ? 'Now playing' : 'Episode'}</p>
+                      <h2 className="font-heading font-semibold text-lg sm:text-xl leading-snug line-clamp-2">{episodeTitle}</h2>
+                      <p className="text-[12.5px] text-[var(--text-secondary)] mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                        <span>Doc Uno &amp; Nurse Florence</span>
+                        <span className="flex items-center gap-1"><Clock size={12} /> about {estimatedDuration} min</span>
+                        <span className="flex items-center gap-1"><ChatsCircle size={12} /> {script.length} lines</span>
                       </p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="flex items-center gap-1 text-white/60 text-[10px] font-bold">
-                          <Clock size={10} /> ~{estimatedDuration} min
-                        </span>
-                        <span className="flex items-center gap-1 text-white/60 text-[10px] font-bold">
-                          <BookOpen size={10} /> {script.length} lines
-                        </span>
-                      </div>
                     </div>
                   </div>
 
-                  {/* Waveform */}
-                  <div className="mt-5 flex items-center gap-3 relative z-10">
+                  <div className="mt-5 flex items-center gap-3 h-8">
                     <Waveform playing={isPlaying} />
-                    {isPlaying && currentLine >= 0 && (
-                      <motion.p
-                        key={currentLine}
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="text-white/80 text-xs font-semibold truncate flex-1"
-                      >
-                        {script[currentLine]?.speaker === 'DOC_UNO' ? 'Doc Uno speaking...' : 'Nurse Florence speaking...'}
+                    {isPlaying && activeSpeaker && (
+                      <motion.p key={currentLine} initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} className="text-[12.5px] text-[var(--text-secondary)] truncate">
+                        {HOSTS[activeSpeaker].name} is speaking
                       </motion.p>
                     )}
                   </div>
 
-                  {/* Progress Bar */}
-                  <div className="mt-4 h-1.5 bg-white/20 rounded-full overflow-hidden relative z-10">
-                    <motion.div
-                      className="h-full bg-white/80 rounded-full"
-                      animate={{ width: `${progress * 100}%` }}
-                      transition={{ duration: 0.3 }}
-                    />
+                  <div className="mt-3 h-1.5 bg-th-pink/15 rounded-full overflow-hidden">
+                    <motion.div className="h-full bg-[var(--pink)] rounded-full" animate={{ width: `${progress * 100}%` }} transition={{ duration: 0.3 }} />
                   </div>
                 </div>
 
-                {/* Player Controls */}
-                <div className="p-5 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <Volume2 size={14} className="text-[var(--text-secondary)]" />
-                    <div className="flex gap-1">
-                      {SPEEDS.map(s => (
-                        <button
-                          key={s}
-                          onClick={() => setSpeed(s)}
-                          className={cn(
-                            'px-2 py-1 rounded-lg text-[10px] font-semibold transition-all',
-                            speed === s
-                              ? 'bg-[var(--pink)] text-white'
-                              : 'bg-[var(--bg)] text-[var(--text-secondary)] hover:bg-[var(--secondary-bg)]'
-                          )}
-                        >
-                          {s}x
-                        </button>
-                      ))}
-                    </div>
+                <div className="px-5 py-4 flex items-center justify-between gap-3 border-t border-[var(--border)]">
+                  <div className="flex gap-1">
+                    {SPEEDS.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setSpeed(s)}
+                        className={cn('px-2 py-1 rounded-lg text-[11.5px] font-medium transition-colors', speed === s ? 'bg-[var(--pink)] text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]')}
+                      >
+                        {s}x
+                      </button>
+                    ))}
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleRestart}
-                      className="w-10 h-10 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] hover:border-th-pink/50 hover:text-[var(--pink)] transition-all"
-                      title="Restart episode"
-                    >
+                  <div className="flex items-center gap-2.5">
+                    <button onClick={handleRestart} className="btn-icon w-10 h-10 border border-[var(--border)] rounded-full flex items-center justify-center" aria-label="Restart episode">
                       <RotateCcw size={16} />
                     </button>
                     <button
                       onClick={handlePlay}
-                      className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--pink)] to-[#FF7FA3] flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all"
+                      aria-label={isPlaying ? 'Pause' : 'Play'}
+                      className="w-12 h-12 rounded-full bg-[var(--pink)] flex items-center justify-center text-white shadow-fn hover:brightness-105 active:scale-95 transition-all"
                     >
-                      {isPlaying ? <Pause size={24} fill="white" /> : <Play size={24} fill="white" className="translate-x-0.5" />}
+                      {isPlaying ? <Pause size={22} weight="fill" /> : <Play size={22} weight="fill" className="translate-x-px" />}
                     </button>
                   </div>
-                  <div className="w-[88px]" />
                 </div>
               </div>
 
-              {/* Transcript */}
               <div className="fn-card">
-                <div className="p-4 border-b border-[var(--border)] flex items-center gap-2">
-                  <p className="text-[11px] font-bold text-[var(--text-secondary)]">Episode Transcript</p>
+                <div className="px-5 py-3.5 border-b border-[var(--border)] flex items-center justify-between">
+                  <h3 className="font-heading font-semibold text-[15px]">Transcript</h3>
+                  {currentLine >= 0 && <span className="text-[12px] text-[var(--text-secondary)]">Line {currentLine + 1} of {script.length}</span>}
                 </div>
-                <div className="p-4 space-y-2 max-h-[480px] overflow-y-auto custom-scrollbar">
-                  {script.map((line, i) => (
-                    <TranscriptLine key={i} line={line} active={currentLine === i} index={i} />
-                  ))}
+                <div className="p-2 sm:p-3 space-y-0.5 max-h-[520px] overflow-y-auto custom-scrollbar">
+                  {script.map((line, i) => <TranscriptLine key={i} line={line} active={currentLine === i} />)}
                 </div>
               </div>
-            </motion.div>
+            </>
+          ) : (
+            <div className="fn-card p-8 sm:p-12 flex flex-col items-center text-center">
+              <div className="flex -space-x-3 mb-5">
+                <HostAvatar speaker="DOC_UNO" size={64} />
+                <HostAvatar speaker="NURSE_FLORENCE" size={64} />
+              </div>
+              <h3 className="font-heading font-semibold text-lg">Learn by listening</h3>
+              <p className="text-sm text-[var(--text-secondary)] max-w-md mt-1">
+                Pick a topic, a Study Box folder, a file or a saved reference. Doc Uno and Nurse Florence will turn it into a conversation covering pathophysiology, assessment, meds, nursing priorities and a board-style question.
+              </p>
+            </div>
           )}
-        </AnimatePresence>
+        </section>
 
-        {/* Empty State */}
-        {!hasScript && !isGenerating && !showHistoryView && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fn-card p-10 flex flex-col items-center text-center border-dashed"
-          >
-            <div className="text-5xl mb-4"></div>
-            <p className="text-lg font-bold mb-2">No episode yet</p>
-            <p className="text-sm text-[var(--text-secondary)]">
-              Select a source above (Custom Topic, Study Box, Uploaded Files, or Knowledge References) and click <span className="font-bold text-[var(--pink)]">Generate Episode</span>!
-            </p>
-          </motion.div>
-        )}
+        {/* Library */}
+        <section className="fn-card p-5 lg:col-start-2 lg:row-start-2">
+          <h2 className="font-heading font-semibold text-[15px] mb-3 flex items-center justify-between">
+            Your episodes <span className="text-[12px] font-normal text-[var(--text-secondary)]">{savedEpisodes.length}</span>
+          </h2>
+          {savedEpisodes.length === 0 ? (
+            <p className="text-[13px] text-[var(--text-secondary)] py-2">Episodes you generate are saved here so you can replay them.</p>
+          ) : (
+            <div className="space-y-1 -mx-2 max-h-[420px] overflow-y-auto custom-scrollbar">
+              {savedEpisodes.map(ep => (
+                <div
+                  key={ep.id}
+                  onClick={() => loadSavedEpisode(ep)}
+                  className={cn('group flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer transition-colors', activeEpisodeId === ep.id ? 'bg-[var(--rose-soft)]' : 'hover:bg-[var(--rose-soft)]')}
+                >
+                  <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', activeEpisodeId === ep.id ? 'bg-[var(--pink)] text-white' : 'bg-th-pink/10 text-[var(--pink)]')}>
+                    {activeEpisodeId === ep.id && isPlaying ? <Headphones size={17} weight="fill" /> : <Play size={15} weight="fill" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium truncate">{ep.title}</p>
+                    <p className="text-[11.5px] text-[var(--text-secondary)] truncate">
+                      {ep.source_type || 'Episode'} · {new Date(ep.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={e => { e.stopPropagation(); deleteEpisodeFromHistory(ep.id) }}
+                    className="btn-icon p-1.5 hover:text-[var(--error)] sm:opacity-0 group-hover:opacity-100"
+                    aria-label={`Delete ${ep.title}`}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   )
+}
+
+function EmptySource({ text }: { text: string }) {
+  return <p className="px-3.5 py-3 rounded-xl border border-dashed border-[var(--accent)] text-[12.5px] text-[var(--text-secondary)]">{text}</p>
 }
