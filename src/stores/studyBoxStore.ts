@@ -119,7 +119,7 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
     try {
       extractedText = await extractTextFromFile(file)
       if (!extractedText.trim()) {
-        extractedText = `[SYSTEM MESSAGE: The uploaded document '${file.name}' did not contain any readable text. It might be a scanned image-based PDF without OCR text.]`
+        extractedText = `[SYSTEM MESSAGE: The uploaded document '${file.name}' did not contain any readable text. Scanned pages could not be read — try a clearer scan or upload the pages as photos.]`
       }
     } catch (error) {
       console.error('Failed to extract text', error)

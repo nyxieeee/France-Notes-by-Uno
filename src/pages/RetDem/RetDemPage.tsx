@@ -30,6 +30,7 @@ import type { RetDemProcedure } from '@/types'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { SimulationEngine } from '@/components/shared/SimulationEngine'
 import { visionExtractText } from '@/lib/groq'
+import { extractTextFromFile } from '@/lib/extractor'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 export default function RetDemPage() {
@@ -76,11 +77,8 @@ export default function RetDemPage() {
           })
           extractedText = await visionExtractText(base64)
         } else {
-          extractedText = await new Promise<string>((resolve) => {
-            const reader = new FileReader()
-            reader.onload = (e) => resolve(e.target?.result as string)
-            reader.readAsText(file)
-          })
+          // PDFs (including scanned ones) and DOCX need real parsing, not readAsText
+          extractedText = await extractTextFromFile(file)
         }
         addUploadedFile(file.name, extractedText)
       } catch (e) {
