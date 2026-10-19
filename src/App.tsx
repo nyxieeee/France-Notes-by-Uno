@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/authStore'
 import AppShell from '@/components/layout/AppShell'
 import { PersonalizationProvider } from '@/context/PersonalizationContext'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import FeedbackLayer from '@/components/shared/FeedbackLayer'
 
 // Pages
 import LoginPage from '@/pages/Auth/LoginPage'
@@ -112,6 +113,7 @@ function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
+        <FeedbackLayer />
       </Router>
       </ErrorBoundary>
     </PersonalizationProvider>
