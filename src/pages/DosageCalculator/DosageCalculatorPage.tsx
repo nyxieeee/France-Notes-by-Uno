@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Calculator, Droplets, Pill, RotateCcw, AlertCircle, CheckCircle2, History, Trash2 } from 'lucide-react'
+import { Calculator, Drop as Droplets, Pill, ArrowCounterClockwise as RotateCcw, WarningCircle as AlertCircle, CheckCircle as CheckCircle2, ClockCounterClockwise as History, Trash as Trash2 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useAuthStore } from '@/stores/authStore'

@@ -30,7 +30,7 @@ export default function AppShell() {
       <XboxAchievementNotifier />
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:w-72 md:flex-col">
+      <div className="hidden md:flex md:w-64 md:flex-col shrink-0">
         <DesktopSidebar />
       </div>
 

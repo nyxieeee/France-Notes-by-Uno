@@ -1,23 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useChatStore, ChatSession } from '@/stores/chatStore'
 import { useAuthStore } from '@/stores/authStore'
-import { 
-  Send, 
-  Sparkles, 
-  User, 
-  Trash2, 
-  MessageCircle, 
-  HelpCircle,
-  Lightbulb,
-  Zap,
-  Menu,
-  X,
-  Plus,
-  MessageSquare,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal
-} from 'lucide-react'
+import { PaperPlaneRight as Send, Sparkle as Sparkles, User, Trash as Trash2, ChatCircleDots as MessageCircle, Question as HelpCircle, Lightbulb, Lightning as Zap, List as Menu, X, Plus, ChatText as MessageSquare, CaretLeft as ChevronLeft, CaretRight as ChevronRight, DotsThree as MoreHorizontal } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatTime } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'

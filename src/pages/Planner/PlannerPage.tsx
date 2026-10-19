@@ -1,18 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useReminderStore } from '@/stores/reminderStore'
 import { Reminder } from '@/types'
-import { 
-  Calendar as CalendarIcon, 
-  Plus, 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  Trash2,
-  CheckCircle2,
-  Sparkles,
-  BookOpen,
-  ChevronUp
-} from 'lucide-react'
+import { Calendar as CalendarIcon, Plus, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Clock, Trash as Trash2, CheckCircle as CheckCircle2, Sparkle as Sparkles, BookOpen, CaretUp as ChevronUp } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate, getReminderTypeColor, getReminderTypeLabel } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'

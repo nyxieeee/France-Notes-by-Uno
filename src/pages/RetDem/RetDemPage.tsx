@@ -1,27 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRetDemStore } from '@/stores/retDemStore'
-import { 
-  Stethoscope, 
-  ChevronRight, 
-  Clock, 
-  CheckSquare, 
-  ArrowLeft,
-  Play,
-  Heart,
-  Search,
-  BookOpen,
-  Info,
-  ListChecks,
-  Sparkles,
-  Upload,
-  X,
-  FileText,
-  Image,
-  Loader2,
-  CheckCircle2,
-  Trash2,
-  History
-} from 'lucide-react'
+import { Stethoscope, CaretRight as ChevronRight, Clock, CheckSquare, ArrowLeft, Play, Heart, MagnifyingGlass as Search, BookOpen, Info, ListChecks, Sparkle as Sparkles, UploadSimple as Upload, X, FileText, Image, CircleNotch as Loader2, CheckCircle as CheckCircle2, Trash as Trash2, ClockCounterClockwise as History } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -625,13 +604,13 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
               onClick={() => toggleProcedureFavorite(procedure.id)}
               className="btn-secondary px-6 py-3 flex items-center gap-2"
             >
-               <Heart size={18} className={procedure.is_favorite ? 'fill-[var(--pink)] text-[var(--pink)]' : ''} /> {procedure.is_favorite ? 'Saved' : 'Save'}
+               <Heart size={18} weight={procedure.is_favorite ? 'fill' : 'regular'} className={procedure.is_favorite ? 'text-[var(--pink)]' : ''} /> {procedure.is_favorite ? 'Saved' : 'Save'}
             </button>
             <button 
               onClick={() => startSession('retdem', procedure.title, mode as any, buildProcedureSourceText(), sourceName)}
               className="btn-primary px-8 py-3 flex items-center gap-2 shadow-fn-md"
             >
-               <Play size={18} fill="currentColor" /> Start Practice
+               <Play size={18} weight="fill" /> Start Practice
                {uploadedFiles.length > 0 && <span className="text-[10px] font-bold opacity-75 bg-white/20 px-2 py-0.5 rounded-full">+ {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''}</span>}
             </button>
          </div>

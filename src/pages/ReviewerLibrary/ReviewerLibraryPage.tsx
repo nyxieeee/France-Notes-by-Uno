@@ -3,25 +3,7 @@ import { useReviewerStore } from '@/stores/reviewerStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useNavigate } from 'react-router-dom'
 import { usePersonalization } from '@/hooks/usePersonalization'
-import { 
-  Library, 
-  Search, 
-  Heart, 
-  Play, 
-  ChevronRight, 
-  ChevronUp,
-  Sparkles,
-  BookOpen,
-  Zap,
-  RotateCcw,
-  X,
-  FileText,
-  Clock,
-  Download,
-  Printer,
-  Share2,
-  Trash2
-} from 'lucide-react'
+import { Books as Library, MagnifyingGlass as Search, Heart, Play, CaretRight as ChevronRight, CaretUp as ChevronUp, Sparkle as Sparkles, BookOpen, Lightning as Zap, ArrowCounterClockwise as RotateCcw, X, FileText, Clock, DownloadSimple as Download, Printer, ShareNetwork as Share2, Trash as Trash2 } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
@@ -190,7 +172,7 @@ export default function ReviewerLibraryPage() {
                      )}
                      title={reviewer.is_favorite ? "Remove from favorites" : "Add to favorites"}
                    >
-                     <Heart size={18} fill={reviewer.is_favorite ? "currentColor" : "none"} />
+                     <Heart size={18} weight={reviewer.is_favorite ? "fill" : "regular"} />
                    </button>
                    <button 
                      onClick={(e) => {
@@ -216,7 +198,7 @@ export default function ReviewerLibraryPage() {
                       className="btn-primary p-2 sm:p-2.5 rounded-xl flex items-center justify-center"
                       title="Start quiz from this reviewer"
                     >
-                      <Play size={18} fill="currentColor" />
+                      <Play size={18} weight="fill" />
                     </button>
                 </div>
               </div>
@@ -497,7 +479,7 @@ export default function ReviewerLibraryPage() {
                             : "border-[var(--border)] bg-white"
                         )}
                       >
-                        <Play size={24} fill={reviewerType === 'slides' ? "currentColor" : "none"} className={reviewerType === 'slides' ? "text-[var(--pink)]" : "text-[var(--text-secondary)]"} />
+                        <Play size={24} weight={reviewerType === 'slides' ? "fill" : "regular"} className={reviewerType === 'slides' ? "text-[var(--pink)]" : "text-[var(--text-secondary)]"} />
                         <span className="text-xs font-bold mt-2">Slide Deck</span>
                         <span className="text-[10px] text-[var(--text-secondary)] mt-0.5">PowerPoint Presentation</span>
                       </button>
@@ -801,7 +783,7 @@ function ReviewerDetail({ reviewer, onClose, getTopicColor, getTopicTitle, navig
                 }}
                 className="btn-primary px-3 md:px-6 py-1.5 md:py-2 text-[10px] md:text-sm flex items-center gap-1 md:gap-1.5"
               >
-                <Play size={11} fill="currentColor" /> Quiz
+                <Play size={11} weight="fill" /> Quiz
               </button>
            </div>
         </div>
@@ -850,7 +832,7 @@ function SlideViewer({ slides }: { slides: any[] }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4 gap-3">
         <h3 className="text-lg md:text-xl font-bold flex items-center gap-2">
-          <Play className="text-[var(--pink)]" size={20} fill="currentColor" />
+          <Play className="text-[var(--pink)]" size={20} weight="fill" />
           Slide Deck
         </h3>
         <span className="text-[10px] md:text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest bg-[var(--secondary-bg)]/20 px-2 md:px-3 py-1 rounded-full border border-[var(--border)] shrink-0">

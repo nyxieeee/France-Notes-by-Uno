@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Sparkles, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Sparkle as Sparkles, Envelope as Mail, Lock, ArrowRight, Eye, EyeSlash as EyeOff } from '@phosphor-icons/react'
 import { useAuthStore } from '@/stores/authStore'
 import { motion } from 'framer-motion'
 

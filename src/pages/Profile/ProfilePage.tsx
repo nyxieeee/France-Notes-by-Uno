@@ -8,26 +8,7 @@ import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
-import { 
-  User, 
-  Settings, 
-  LogOut, 
-  Moon, 
-  Sun, 
-  Award, 
-  Calendar, 
-  GraduationCap,
-  ChevronRight,
-  ChevronDown,
-  Shield,
-  Bell,
-  Palette,
-  Camera,
-  X,
-  Save,
-  Heart,
-  Lock
-} from 'lucide-react'
+import { User, Gear as Settings, SignOut as LogOut, Moon, Sun, Medal as Award, Calendar, GraduationCap, CaretRight as ChevronRight, CaretDown as ChevronDown, Shield, Bell, Palette, Camera, X, FloppyDisk as Save, Heart, Lock } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatDate } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'

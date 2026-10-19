@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Camera, RefreshCcw, Check } from 'lucide-react'
+import { X, Camera, ArrowsCounterClockwise as RefreshCcw, Check } from '@phosphor-icons/react'
 
 interface CameraModalProps {
   onCapture: (base64Image: string) => void

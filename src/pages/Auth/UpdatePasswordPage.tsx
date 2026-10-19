@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Lock, ArrowRight, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { Lock, ArrowRight, CheckCircle, Eye, EyeSlash as EyeOff } from '@phosphor-icons/react'
 import { useAuthStore } from '@/stores/authStore'
 
 export default function UpdatePasswordPage() {

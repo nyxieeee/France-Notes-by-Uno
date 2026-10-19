@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Envelope as Mail, ArrowRight, ArrowLeft } from '@phosphor-icons/react'
 import { useAuthStore } from '@/stores/authStore'
 
 export default function ForgotPasswordPage() {

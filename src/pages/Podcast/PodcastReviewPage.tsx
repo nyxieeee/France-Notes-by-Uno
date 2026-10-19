@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Mic2, Play, Pause, RotateCcw, ChevronDown, Loader2,
-  Search, Sparkles, Volume2, Clock, BookOpen, FileText, Bookmark, History, Trash2, BookmarkCheck
-} from 'lucide-react'
+import { Microphone as Mic2, Play, Pause, ArrowCounterClockwise as RotateCcw, CaretDown as ChevronDown, CircleNotch as Loader2, MagnifyingGlass as Search, Sparkle as Sparkles, SpeakerHigh as Volume2, Clock, BookOpen, FileText, BookmarkSimple as Bookmark, ClockCounterClockwise as History, Trash as Trash2, BookmarkSimple as BookmarkCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/ai'
 import { synthesizeSpeechElevenLabs } from '@/lib/elevenLabsTts'

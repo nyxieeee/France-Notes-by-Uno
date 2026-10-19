@@ -4,28 +4,7 @@ import { useReviewerStore } from '@/stores/reviewerStore'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { jsPDF } from 'jspdf'
 import type { StudyBoxItem, Topic } from '@/types'
-import { 
-  Upload, 
-  FileText, 
-  Search, 
-  Filter, 
-  Trash2, 
-  Heart, 
-  MoreVertical,
-  Camera,
-  Image as ImageIcon,
-  Sparkles,
-  CheckCircle2,
-  BrainCircuit,
-  ArrowRight,
-  BookOpen,
-  Loader2,
-  Download,
-  RefreshCw,
-  ExternalLink,
-  Globe,
-  X
-} from 'lucide-react'
+import { UploadSimple as Upload, FileText, MagnifyingGlass as Search, Funnel as Filter, Trash as Trash2, Heart, DotsThreeVertical as MoreVertical, Camera, Image as ImageIcon, Sparkle as Sparkles, CheckCircle as CheckCircle2, Brain as BrainCircuit, ArrowRight, BookOpen, CircleNotch as Loader2, DownloadSimple as Download, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink, Globe, X } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getFileIcon, formatRelativeDate, cn } from '@/lib/utils'
 import CameraModal from '@/components/shared/CameraModal'
@@ -426,7 +405,7 @@ export default function StudyBoxPage() {
                     )}
                     title={item.is_favorite ? "Remove from favorites" : "Add to favorites"}
                   >
-                    <Heart size={12} fill={item.is_favorite ? "currentColor" : "none"} />
+                    <Heart size={12} weight={item.is_favorite ? "fill" : "regular"} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between mt-3">

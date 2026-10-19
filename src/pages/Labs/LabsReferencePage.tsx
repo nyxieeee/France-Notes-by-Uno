@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FlaskConical, Search, ChevronDown, TrendingUp, TrendingDown, AlertTriangle, Star, Copy, Check } from 'lucide-react'
+import { Flask as FlaskConical, MagnifyingGlass as Search, CaretDown as ChevronDown, TrendUp as TrendingUp, TrendDown as TrendingDown, Warning as AlertTriangle, Star, Copy, Check } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
@@ -290,7 +290,7 @@ function LabCard({ lab, isSaved, onToggleSave }: { lab: LabValue; isSaved: boole
           )}
           title={isSaved ? "Unbookmark Lab" : "Bookmark Lab"}
         >
-          <Star size={18} fill={isSaved ? "currentColor" : "none"} />
+          <Star size={18} weight={isSaved ? "fill" : "regular"} />
         </button>
 
         <div className="flex-1 min-w-0">
@@ -502,7 +502,7 @@ export default function LabsReferencePage() {
                 : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-secondary)] hover:border-amber-400'
             )}
           >
-            <Star size={14} fill={activeTab === 'saved' ? 'currentColor' : 'none'} className="text-amber-300" />
+            <Star size={14} weight={activeTab === 'saved' ? "fill" : "regular"} className="text-amber-300" />
             <span>Saved Labs ({savedLabs.length})</span>
           </button>
 

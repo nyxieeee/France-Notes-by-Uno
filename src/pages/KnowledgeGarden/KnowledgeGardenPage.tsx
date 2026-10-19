@@ -1,19 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Search, 
-  Leaf, 
-  ExternalLink, 
-  BookOpen, 
-  ShieldCheck, 
-  ArrowRight,
-  Sparkles,
-  CheckCircle2
-} from 'lucide-react'
+import { MagnifyingGlass as Search, Leaf, ArrowSquareOut as ExternalLink, BookOpen, ShieldCheck, ArrowRight, Sparkle as Sparkles, CheckCircle as CheckCircle2, Check, Heart, CircleNotch as Loader2 } from '@phosphor-icons/react'
 import { cn, generateId } from '@/lib/utils'
 import type { KnowledgeSearchResult } from '@/types'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
-import { Check, Heart, Loader2 } from 'lucide-react'
 import { callGeminiGroundedSearch, generateJSON } from '@/lib/ai'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
@@ -27,6 +18,17 @@ export default function KnowledgeGardenPage() {
   const [savedToast, setSavedToast] = useState<{ title: string; action: 'saved' | 'removed' } | null>(null)
   
   const { isFrance, aiAssistantName, greetingName, knowledgeGardenName } = usePersonalization()
+
+  // Run a search passed in from the top bar search box
+  const location = useLocation()
+  const incomingQuery = (location.state as { query?: string } | null)?.query
+  useEffect(() => {
+    if (!incomingQuery) return
+    setQuery(incomingQuery)
+    handleSearch(undefined, false, incomingQuery)
+    window.history.replaceState({}, '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingQuery])
 
   const showToast = (title: string, action: 'saved' | 'removed') => {
     setSavedToast({ title, action })
@@ -54,9 +56,10 @@ export default function KnowledgeGardenPage() {
     }
   }
  
-  const handleSearch = async (e?: React.FormEvent, isLoadMore = false) => {
+  const handleSearch = async (e?: React.FormEvent, isLoadMore = false, overrideQuery?: string) => {
     if (e) e.preventDefault()
-    if (!query.trim()) return
+    const q = overrideQuery ?? query
+    if (!q.trim()) return
 
     setIsSearching(true)
     const currentPage = isLoadMore ? page + 1 : 1
@@ -70,7 +73,7 @@ export default function KnowledgeGardenPage() {
 
     try {
       // Primary: Gemini with Google Search grounding — real web results with real URLs
-      const groundedResults = await callGeminiGroundedSearch(query, systemPrompt, currentPage)
+      const groundedResults = await callGeminiGroundedSearch(q, systemPrompt, currentPage)
 
       if (groundedResults.length > 0) {
         const newResults = groundedResults.map(r => ({ ...r, id: generateId() })) as KnowledgeSearchResult[]
@@ -87,7 +90,7 @@ export default function KnowledgeGardenPage() {
       // Fallback: plain AI JSON if Gemini grounding returns nothing
       console.warn('[Knowledge Garden] Falling back to AI JSON generation')
       const prompt = `
-        Search query: ${query} — Page ${currentPage}
+        Search query: ${q} — Page ${currentPage}
         Generate 8-10 evidence-based nursing references for ${greetingName}.
         Output strictly as JSON:
         { results: [{ title: ..., description: ..., source: ..., url: ..., search_url: ..., category: nursing, is_trusted: true }] }

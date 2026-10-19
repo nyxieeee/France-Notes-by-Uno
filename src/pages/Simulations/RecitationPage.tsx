@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Mic, FileText, BookOpen, Globe, CheckCircle2, X, ChevronUp } from 'lucide-react'
+import { Microphone as Mic, FileText, BookOpen, Globe, CheckCircle as CheckCircle2, X, CaretUp as ChevronUp } from '@phosphor-icons/react'
 import { useSimulationStore, DifficultyMode } from '@/stores/simulationStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { cn } from '@/lib/utils'

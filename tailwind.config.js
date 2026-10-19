@@ -37,7 +37,8 @@ export default {
       },
       fontFamily: {
         heading: ['Poppins', 'sans-serif'],
-        body: ['Nunito', 'sans-serif'],
+        body: ['"DM Sans"', 'sans-serif'],
+        script: ['Caveat', 'cursive'],
         logo: ['"Baloo 2"', 'cursive'],
       },
       borderRadius: {
@@ -47,9 +48,9 @@ export default {
         '4xl': '2rem',
       },
       boxShadow: {
-        'fn': '0 4px 24px 0 rgba(247, 168, 184, 0.13)',
-        'fn-md': '0 8px 32px 0 rgba(247, 168, 184, 0.18)',
-        'fn-lg': '0 16px 48px 0 rgba(247, 168, 184, 0.22)',
+        'fn': '0 2px 14px 0 rgba(var(--shadow-rgb), 0.07)',
+        'fn-md': '0 8px 28px 0 rgba(var(--shadow-rgb), 0.12)',
+        'fn-lg': '0 16px 44px 0 rgba(var(--shadow-rgb), 0.16)',
         'fn-dark': '0 4px 24px 0 rgba(0,0,0,0.35)',
       },
       animation: {

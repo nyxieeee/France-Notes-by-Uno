@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Mic, MicOff, Send, User, BrainCircuit, Loader2, ShieldAlert, Activity, Volume2, Headphones } from 'lucide-react'
+import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, Brain as BrainCircuit, CircleNotch as Loader2, ShieldWarning as ShieldAlert, Pulse as Activity, SpeakerHigh as Volume2, Headphones } from '@phosphor-icons/react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { generateChatCompletion, generateJSON } from '@/lib/ai'

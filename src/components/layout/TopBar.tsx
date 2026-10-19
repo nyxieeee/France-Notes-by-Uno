@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bell, Moon, Sun, Search } from 'lucide-react'
+import { Bell, Moon, Sun, MagnifyingGlass as Search } from '@phosphor-icons/react'
 import { useThemeStore } from '@/stores/themeStore'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
@@ -113,6 +113,7 @@ export default function TopBar() {
   const { reminders } = useReminderStore()
 
   const [isOpen, setIsOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [hasNotification, setHasNotification] = useState(false)
   const [activeFact, setActiveFact] = useState<{ title: string; content: string } | null>(null)
   const [emptyMessage, setEmptyMessage] = useState("")
@@ -171,27 +172,37 @@ export default function TopBar() {
   }
 
   return (
-    <header className="h-16 border-b border-[var(--border)] bg-[var(--card)]/50 backdrop-blur-sm flex items-center justify-between px-4 md:px-6 sticky top-0 z-40">
+    <header className="h-16 border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur-md flex items-center justify-between gap-4 px-4 md:px-8 sticky top-0 z-40">
       <div className="flex items-center gap-4 flex-1">
         <div 
           className="md:hidden flex items-center cursor-pointer"
           onClick={() => navigate('/home')}
         >
           <img 
-            src="/france-notes-horizontal-logo.png" 
+            src="/france-notes-horizontal-logo-trim.png" 
             alt={`${appName} Logo`} 
-            className="h-10 w-auto object-contain" 
+            className="h-9 w-auto object-contain" 
           />
         </div>
         
-        <div className="hidden sm:flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded-2xl px-3 py-1.5 w-full max-w-xs transition-all focus-within:ring-2 focus-within:ring-[var(--pink)]">
-          <Search size={18} className="text-[var(--text-secondary)]" />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!searchQuery.trim()) return
+            navigate('/knowledge-garden', { state: { query: searchQuery.trim() } })
+            setSearchQuery('')
+          }}
+          className="hidden sm:flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded-full px-4 py-2 w-full max-w-md transition-all focus-within:ring-2 focus-within:ring-[var(--pink)]/30 focus-within:border-[var(--pink)]/40"
+        >
+          <Search size={16} className="text-[var(--text-secondary)] shrink-0" />
           <input 
             type="text" 
-            placeholder="Search notes, quizzes..." 
-            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-[var(--text-secondary)]/50"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search nursing topics, drugs, or anything..." 
+            className="bg-transparent border-none outline-none text-[13px] w-full placeholder:text-[var(--text-secondary)]/60"
           />
-        </div>
+        </form>
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">

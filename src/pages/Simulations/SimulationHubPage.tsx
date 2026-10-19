@@ -1,4 +1,4 @@
-import { Mic, Stethoscope, ChevronRight } from 'lucide-react'
+import { Microphone as Mic, Stethoscope, CaretRight as ChevronRight } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { usePersonalization } from '@/hooks/usePersonalization'
