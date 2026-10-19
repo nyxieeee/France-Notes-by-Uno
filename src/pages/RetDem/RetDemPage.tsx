@@ -1,22 +1,26 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRetDemStore } from '@/stores/retDemStore'
-import { Stethoscope, CaretRight as ChevronRight, Clock, CheckSquare, ArrowLeft, Play, Heart, MagnifyingGlass as Search, BookOpen, Info, ListChecks, Sparkle as Sparkles, UploadSimple as Upload, X, FileText, Image, CircleNotch as Loader2, CheckCircle as CheckCircle2, Trash as Trash2, ClockCounterClockwise as History } from '@phosphor-icons/react'
+import type { HistoryFile } from '@/stores/retDemStore'
+import { Stethoscope, CaretRight as ChevronRight, Clock, Check, ArrowLeft, Play, Heart, MagnifyingGlass as Search, Info, ListChecks, Sparkle as Sparkles, UploadSimple as Upload, X, FileText, CircleNotch as Loader2, CheckCircle as CheckCircle2, Trash as Trash2, ClockCounterClockwise as History, WarningCircle, Eye, Microphone, ChalkboardTeacher, HandHeart, UserCircle } from '@phosphor-icons/react'
+import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { tintFor } from '@/lib/tints'
 import MarkdownText from '@/components/shared/MarkdownText'
-import type { RetDemProcedure } from '@/types'
+import type { RetDemProcedure, RecitationMode } from '@/types'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { SimulationEngine } from '@/components/shared/SimulationEngine'
 import { visionExtractText } from '@/lib/ai'
 import { extractTextFromFile } from '@/lib/extractor'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
+const SUGGESTED_PROCEDURES = ['Foley Catheter', 'IV Insertion', 'Wound Dressing', 'NG Tube Insertion', 'Blood Transfusion', 'Nasogastric Suction']
+
 export default function RetDemPage() {
-  const { isFrance, greetingName, aiAssistantName, retdemName } = usePersonalization()
-  const { 
-    procedures, activeProcedure, setActiveProcedure, 
+  const { isFrance, aiAssistantName, retdemName } = usePersonalization()
+  const {
+    procedures, activeProcedure, setActiveProcedure,
     recitationMode, setRecitationMode,
     uploadedFiles, addUploadedFile, removeUploadedFile, clearUploadedFiles,
     generateProcedureFromUpload, isGenerating, deleteProcedure,
@@ -79,8 +83,17 @@ export default function RetDemPage() {
 
   if ((isActive || isEvaluating) && activeMode === 'retdem') return <SimulationEngine />
 
-  const filtered = procedures.filter(p => 
-    p.title.toLowerCase().includes(search.toLowerCase()) || 
+  const connectionError = isFrance
+    ? "Babe, nagka-error sa pagkonek kay Doc Uno. Please try again!"
+    : `Nagka-error sa pagkonek kay ${aiAssistantName}. Please try again!`
+
+  const openGenerateModal = () => {
+    setShowGenerateModal(true)
+    setTimeout(() => generateInputRef.current?.focus(), 50)
+  }
+
+  const filtered = procedures.filter(p =>
+    p.title.toLowerCase().includes(search.toLowerCase()) ||
     p.category.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -90,24 +103,24 @@ export default function RetDemPage() {
   )
 
   return (
-    <div className="page-container">
+    <div className="page-container max-w-6xl">
       <AnimatePresence mode="wait">
         {activeProcedure ? (
-          <motion.div 
+          <motion.div
             key="active"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
           >
-            <RetDemDetail 
-              procedure={activeProcedure} 
+            <RetDemDetail
+              procedure={activeProcedure}
               onBack={() => setActiveProcedure(null)}
               mode={recitationMode}
               onModeChange={setRecitationMode}
             />
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             key="list"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -117,56 +130,191 @@ export default function RetDemPage() {
               icon={Stethoscope}
               title={retdemName}
               subtitle={isFrance ? 'Master your nursing procedures with step-by-step guides and rationales, babe!' : 'Master your nursing procedures with step-by-step guides and rationales.'}
+              actions={
+                <button onClick={openGenerateModal} disabled={isGenerating} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-60">
+                  {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {isGenerating ? 'Generating' : 'Generate procedure'}
+                </button>
+              }
             />
 
-            <div className="mb-6 flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-th-text-secondary/50" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Search procedures (e.g., wound care, IV, injections)..." 
-                  className="fn-input pl-11"
+            {/* Upload reference material */}
+            <section className="fn-card p-5 mb-6">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.txt,.pdf,.docx"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              <div className="flex flex-col md:flex-row gap-4 md:items-stretch">
+                <div className="md:w-60 shrink-0">
+                  <h2 className="font-heading font-semibold text-[15px]">Practice from your own guide</h2>
+                  <p className="text-[13px] text-[var(--text-secondary)] mt-1">
+                    Upload your school's RetDem checklist and {isFrance ? 'Doc Uno' : aiAssistantName} will turn it into a practice procedure.
+                  </p>
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-2.5">
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={onDrop}
+                    onClick={() => !isExtracting && fileInputRef.current?.click()}
+                    className={cn(
+                      'rounded-xl border-2 border-dashed px-4 py-4 flex items-center gap-3.5 cursor-pointer transition-colors',
+                      isDragging ? 'border-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--accent)] hover:bg-[var(--rose-soft)]'
+                    )}
+                  >
+                    <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', isDragging ? 'bg-[var(--pink)] text-white' : 'bg-th-pink/10 text-[var(--pink)]')}>
+                      {isExtracting ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13.5px] font-medium">
+                        {isExtracting
+                          ? `Reading ${extractingCount} file${extractingCount > 1 ? 's' : ''}`
+                          : uploadedFiles.length > 0 ? 'Add more files' : 'Drop files here or browse'}
+                      </p>
+                      <p className="text-[12px] text-[var(--text-secondary)]">
+                        {isExtracting
+                          ? (isFrance ? 'Doc Uno is reading your files' : `${aiAssistantName} is reading your files`)
+                          : 'Photos, PDF, DOCX or TXT. You can select several at once.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {uploadedFiles.length > 0 && (
+                    <>
+                      <div className="flex flex-wrap gap-1.5">
+                        {uploadedFiles.map((f) => (
+                          <span key={f.id} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-full bg-th-success/10 text-[12px] font-medium max-w-full">
+                            <CheckCircle2 size={13} weight="fill" className="text-[var(--success)] shrink-0" />
+                            <span className="truncate">{f.name}</span>
+                            <button onClick={() => removeUploadedFile(f.id)} className="w-5 h-5 rounded-full flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-th-error/10 shrink-0" aria-label={`Remove ${f.name}`}>
+                              <X size={11} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            try {
+                              setGenerateError(null)
+                              await generateProcedureFromUpload()
+                              setActiveTab('library')
+                            } catch (e) {
+                              console.error(e)
+                              setGenerateError(connectionError)
+                            }
+                          }}
+                          disabled={isGenerating}
+                          className="flex-1 btn-primary py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                        >
+                          {isGenerating
+                            ? <><Loader2 size={15} className="animate-spin" /> Generating from {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''}</>
+                            : <><Sparkles size={15} /> Generate practice from {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''}</>}
+                        </button>
+                        <button onClick={clearUploadedFiles} className="btn-secondary px-4 py-2.5 text-sm">Clear</button>
+                      </div>
+                    </>
+                  )}
+
+                  {generateError && (
+                    <p className="text-[12.5px] text-[var(--error)] flex items-start gap-1.5"><WarningCircle size={15} className="shrink-0 mt-px" /> {generateError}</p>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+              <div className="flex p-1 rounded-full bg-[var(--card)] border border-[var(--border)] w-max">
+                {([['library', `Procedures · ${procedures.length}`, Stethoscope], ['history', `Uploads · ${uploadHistory.length}`, History]] as const).map(([id, label, TabIcon]) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={cn('px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center gap-1.5 transition-colors', activeTab === id ? 'bg-[var(--pink)] text-white' : 'text-[var(--text-secondary)]')}
+                  >
+                    <TabIcon size={15} /> {label}
+                  </button>
+                ))}
+              </div>
+              <div className="relative flex-1 sm:max-w-sm sm:ml-auto">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={16} />
+                <input
+                  type="text"
+                  placeholder={activeTab === 'library' ? 'Search procedures' : 'Search uploads'}
+                  className="fn-input rounded-full bg-[var(--card)] pl-10 py-2.5 text-sm"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <button 
-                onClick={() => { setShowGenerateModal(true); setTimeout(() => generateInputRef.current?.focus(), 50) }}
-                className="btn-primary whitespace-nowrap flex items-center gap-2"
-                disabled={isGenerating}
-              >
-                <Sparkles size={18} />
-                {isGenerating ? 'Generating...' : 'AI Generate'}
-              </button>
             </div>
 
-            {/* AI Generate Modal */}
+            {activeTab === 'library' ? (
+              filtered.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filtered.map((proc) => (
+                    <ProcedureCard
+                      key={proc.id}
+                      proc={proc}
+                      onOpen={() => setActiveProcedure(proc)}
+                      onDelete={() => deleteProcedure(proc.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Stethoscope}
+                  title={search ? 'No matching procedures' : 'No procedures yet'}
+                  text={search ? 'Try a different name or category.' : 'Generate a procedure by name, or upload your own RetDem guide above.'}
+                  action={!search && <button onClick={openGenerateModal} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"><Sparkles size={16} /> Generate procedure</button>}
+                />
+              )
+            ) : (
+              filteredHistory.length > 0 ? (
+                <div className="fn-card divide-y divide-[var(--border)]">
+                  {filteredHistory.map((file) => (
+                    <HistoryFileRow
+                      key={file.id}
+                      file={file}
+                      onDelete={() => deleteHistoryFile(file.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={History}
+                  title={search ? 'No matching uploads' : 'No uploads yet'}
+                  text={search ? 'Try a different file name or phrase.' : 'Files you upload for RetDem practice are kept here so you can review the extracted text.'}
+                />
+              )
+            )}
+
+            {/* Generate modal */}
             <AnimatePresence>
               {showGenerateModal && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-                  onClick={() => setShowGenerateModal(false)}
-                >
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowGenerateModal(false)} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.92, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.92, y: 10 }}
-                    className="bg-[var(--card)] w-full max-w-lg rounded-2xl shadow-2xl border border-[var(--border)] p-8"
-                    onClick={(e) => e.stopPropagation()}
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 24 }}
+                    className="relative z-10 w-full max-w-lg bg-[var(--card)] border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-fn-lg"
                   >
-                    <div className="w-14 h-14 bg-[var(--pink)] rounded-[1.2rem] flex items-center justify-center text-white mb-6 shadow-fn">
-                      <Sparkles size={26} />
+                    <div className="px-6 pt-6 pb-4 flex items-start justify-between gap-4 border-b border-[var(--border)]">
+                      <div>
+                        <h2 className="font-heading font-semibold text-[17px]">Generate a procedure</h2>
+                        <p className="text-[13px] text-[var(--text-secondary)] mt-0.5">
+                          {isFrance
+                            ? 'Anong procedure ang kailangan mo? Doc Uno will write the steps with rationales.'
+                            : `Which procedure do you need? ${aiAssistantName} will write the steps with rationales.`}
+                        </p>
+                      </div>
+                      <button onClick={() => setShowGenerateModal(false)} className="btn-icon p-2 -mr-1" aria-label="Close"><X size={18} /></button>
                     </div>
-                    <h2 className="text-2xl font-bold tracking-tight mb-1">AI Generate Procedure</h2>
-                    <p className="text-sm text-[var(--text-secondary)] font-medium mb-6">
-                      {isFrance 
-                        ? 'Anong procedure ang kailangan mo? Doc Uno will generate a complete step-by-step guide with rationales.'
-                        : `Which clinical procedure do you need? ${aiAssistantName} will generate a complete step-by-step guide with professional rationales.`
-                      }
-                    </p>
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault()
@@ -179,268 +327,55 @@ export default function RetDemPage() {
                           setActiveTab('library')
                         } catch (err) {
                           console.error(err)
-                          setGenerateError(isFrance 
-                            ? "Babe, nagka-error sa pagkonek kay Doc Uno. Please try again!"
-                            : `Nagka-error sa pagkonek kay ${aiAssistantName}. Please try again!`
-                          )
+                          setGenerateError(connectionError)
                         }
                       }}
-                      className="space-y-4"
+                      className="p-6 space-y-4"
                     >
                       <input
                         ref={generateInputRef}
                         type="text"
                         value={generateTopic}
                         onChange={(e) => setGenerateTopic(e.target.value)}
-                        placeholder="e.g. Foley Catheter Insertion, Wound Dressing Change, IV Insertion..."
-                        className="fn-input w-full"
+                        placeholder="e.g. Foley catheter insertion"
+                        className="fn-input rounded-xl bg-[var(--card)] py-2.5 text-sm"
                         autoComplete="off"
                       />
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setShowGenerateModal(false)}
-                          className="btn-secondary flex-1 py-3"
-                        >Cancel</button>
-                        <button
-                          type="submit"
-                          disabled={!generateTopic.trim() || isGenerating}
-                          className="btn-primary flex-1 py-3 flex items-center justify-center gap-2"
-                        >
-                          {isGenerating
-                            ? <><Loader2 size={16} className="animate-spin" /> Generating...</>
-                            : <><Sparkles size={16} /> Generate Procedure</>
-                          }
+                      <div className="flex flex-wrap gap-1.5">
+                        {SUGGESTED_PROCEDURES.map(s => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setGenerateTopic(s)}
+                            className={cn('px-3 py-1.5 rounded-full text-[12.5px] font-medium border transition-colors', generateTopic === s ? 'border-[var(--pink)] bg-[var(--rose-soft)] text-[var(--pink)]' : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]')}
+                          >{s}</button>
+                        ))}
+                      </div>
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button type="button" onClick={() => setShowGenerateModal(false)} className="btn-secondary px-5 py-2.5 text-sm">Cancel</button>
+                        <button type="submit" disabled={!generateTopic.trim() || isGenerating} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-50">
+                          {isGenerating ? <><Loader2 size={16} className="animate-spin" /> Generating</> : <><Sparkles size={16} /> Generate</>}
                         </button>
                       </div>
                     </form>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {['Foley Catheter', 'IV Insertion', 'Wound Dressing', 'NG Tube Insertion', 'Blood Transfusion', 'Nasogastric Suction'].map(s => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setGenerateTopic(s)}
-                          className="text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--secondary-bg)] hover:bg-[var(--pink)] hover:text-white transition-all border border-[var(--border)] hover:border-[var(--pink)]"
-                        >{s}</button>
-                      ))}
-                    </div>
                   </motion.div>
-                </motion.div>
+                </div>
               )}
             </AnimatePresence>
-
-            {/* Upload Reference Material */}
-            <div className="mb-8">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,.txt,.pdf,.docx"
-                multiple
-                className="hidden"
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-
-              {/* Files already uploaded */}
-              {uploadedFiles.length > 0 && (
-                <div className="mb-3 space-y-2">
-                  {uploadedFiles.map((f, i) => (
-                    <motion.div
-                      key={f.id}
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className="flex items-center gap-3 px-4 py-2.5 fn-card bg-gradient-to-r from-th-success/5 to-transparent border-th-success/30"
-                    >
-                      <CheckCircle2 size={14} className="text-[var(--success)] shrink-0" />
-                      <span className="text-xs font-bold text-[var(--success)] shrink-0">#{i + 1}</span>
-                      <span className="text-sm font-semibold truncate flex-1">{f.name}</span>
-                      <span className="text-xs text-[var(--text-secondary)] shrink-0">{f.text.length} chars</span>
-                      <button
-                        onClick={() => removeUploadedFile(f.id)}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-th-error/10 text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors shrink-0"
-                      ><X size={13} /></button>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-
-              {/* Drop zone / Add More */}
-              <motion.div
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={onDrop}
-                onClick={() => !isExtracting && fileInputRef.current?.click()}
-                className={cn(
-                  "fn-card border-2 border-dashed p-5 flex items-center gap-4 cursor-pointer transition-all",
-                  isDragging ? "border-[var(--pink)] bg-th-pink/5 scale-[1.01]" : "border-[var(--border)] hover:border-th-pink/50 hover:bg-th-secondary-bg/50"
-                )}
-              >
-                <div className={cn(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-colors",
-                  isDragging ? "bg-[var(--pink)] text-white" : "bg-[var(--secondary-bg)] text-[var(--pink)]"
-                )}>
-                  {isExtracting ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-sm">
-                    {isExtracting
-                      ? `Reading ${extractingCount} file${extractingCount > 1 ? 's' : ''}...`
-                      : uploadedFiles.length > 0 ? 'Add more files' : 'Upload your RetDem reference material'}
-                  </p>
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    {isExtracting 
-                      ? (isFrance ? 'Doc Uno is reading your files' : `${aiAssistantName} is reading your files`) 
-                      : 'Drag & drop or click — images, TXT, PDF • Select multiple at once'
-                    }
-                  </p>
-                </div>
-                <div className="flex gap-1.5 shrink-0">
-                  <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--secondary-bg)] text-xs font-bold text-[var(--text-secondary)]">
-                    <Image size={11} /> Image
-                  </span>
-                  <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--secondary-bg)] text-xs font-bold text-[var(--text-secondary)]">
-                    <FileText size={11} /> TXT
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* Generate + Clear row */}
-              {uploadedFiles.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-3 flex gap-3"
-                >
-                  <button
-                    onClick={async () => {
-                      try {
-                        setGenerateError(null)
-                        await generateProcedureFromUpload()
-                        setActiveTab('library')
-                      } catch (e) {
-                        console.error(e)
-                        setGenerateError(isFrance 
-                          ? "Babe, nagka-error sa pagkonek kay Doc Uno. Please try again!"
-                          : `Nagka-error sa pagkonek kay ${aiAssistantName}. Please try again!`
-                        )
-                      }
-                    }}
-                    disabled={isGenerating}
-                    className="flex-1 btn-primary py-3 flex items-center justify-center gap-2 rounded-2xl"
-                  >
-                    {isGenerating
-                      ? <><Loader2 size={15} className="animate-spin" /> Generating from {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''}...</>
-                      : <><Sparkles size={15} /> Generate RetDem Practice ({uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''})</>
-                    }
-                  </button>
-                  <button
-                    onClick={clearUploadedFiles}
-                    className="px-4 py-3 rounded-2xl border border-[var(--border)] text-xs font-bold text-[var(--text-secondary)] hover:border-th-error/40 hover:text-[var(--error)] transition-colors"
-                  >Clear all</button>
-                </motion.div>
-              )}
-
-              {generateError && (
-                <div className="mt-3 p-3 rounded-2xl bg-th-error/10 border border-th-error/20 text-xs font-semibold text-[var(--error)] text-center">
-                  {generateError}
-                </div>
-              )}
-            </div>
-
-            {/* Premium Tab Bar */}
-            <div className="mb-8 flex border-b border-[var(--border)] relative">
-              <button
-                onClick={() => setActiveTab('library')}
-                className={cn(
-                  "px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 relative",
-                  activeTab === 'library' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-th-pink/80"
-                )}
-              >
-                <BookOpen size={16} />
-                Procedures Library
-                <span className="px-2 py-0.5 text-[10px] rounded-full bg-th-pink/10 text-[var(--pink)] font-bold">
-                  {procedures.length}
-                </span>
-                {activeTab === 'library' && (
-                  <motion.div 
-                    layoutId="activeRetDemTab" 
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--pink)]" 
-                  />
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className={cn(
-                  "px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 relative",
-                  activeTab === 'history' ? "text-[var(--pink)]" : "text-[var(--text-secondary)] hover:text-th-pink/80"
-                )}
-              >
-                <History size={16} />
-                Upload History
-                <span className="px-2 py-0.5 text-[10px] rounded-full bg-th-pink/10 text-[var(--pink)] font-bold">
-                  {uploadHistory.length}
-                </span>
-                {activeTab === 'history' && (
-                  <motion.div 
-                    layoutId="activeRetDemTab" 
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--pink)]" 
-                  />
-                )}
-              </button>
-            </div>
-
-            {activeTab === 'library' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filtered.length > 0 ? (
-                  filtered.map((proc) => (
-                    <ProcedureCard
-                      key={proc.id}
-                      proc={proc}
-                      onOpen={() => setActiveProcedure(proc)}
-                      onDelete={() => deleteProcedure(proc.id)}
-                    />
-                  ))
-                ) : (
-                  <div className="md:col-span-2 flex flex-col items-center justify-center py-20 text-center fn-card border-dashed">
-                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
-                      <Stethoscope size={40} />
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">No procedures found</h3>
-                    <p className="text-[var(--text-secondary)] max-w-xs mb-8">
-                      Master your RetDem by uploading your clinical procedure guides to the Study Box.
-                    </p>
-                    <Link to="/study-box" className="btn-secondary px-8">
-                      Upload Guides
-                    </Link>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredHistory.length > 0 ? (
-                  filteredHistory.map((file) => (
-                    <HistoryFileCard
-                      key={file.id}
-                      file={file}
-                      onDelete={() => deleteHistoryFile(file.id)}
-                    />
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center fn-card border-dashed">
-                    <div className="w-20 h-20 bg-[var(--secondary-bg)] rounded-2xl flex items-center justify-center text-[var(--pink)] mb-6 shadow-sm">
-                      <History size={40} />
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">No upload history yet</h3>
-                    <p className="text-[var(--text-secondary)] max-w-xs mb-8">
-                      Upload your clinical guidelines above and generate custom RetDem practice steps!
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+function EmptyState({ icon: EmptyIcon, title, text, action }: { icon: Icon; title: string; text: string; action?: React.ReactNode }) {
+  return (
+    <div className="fn-card p-10 flex flex-col items-center text-center">
+      <div className="w-14 h-14 rounded-2xl bg-[var(--rose-soft)] text-[var(--pink)] flex items-center justify-center mb-3"><EmptyIcon size={26} weight="duotone" /></div>
+      <p className="font-medium">{title}</p>
+      <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-sm">{text}</p>
+      {action && <div className="mt-5">{action}</div>}
     </div>
   )
 }
@@ -454,89 +389,73 @@ function ProcedureCard({ proc, onOpen, onDelete }: {
 
   return (
     <div
-      className="fn-card p-6 group hover:border-[var(--pink)] transition-all cursor-pointer relative overflow-hidden"
+      className="fn-card overflow-hidden group cursor-pointer hover:shadow-fn-md transition-shadow flex flex-col"
       onClick={() => { if (!confirmDelete) onOpen() }}
     >
-      {/* Background decor */}
-      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all">
-        <Stethoscope size={64} />
-      </div>
-
-      {/* Delete button — top-right corner */}
-      <div
-        className="absolute top-3 right-3 z-20"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {confirmDelete ? (
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-th-error/30 rounded-xl px-2 py-1 shadow-sm">
-            <span className="text-[10px] font-bold text-[var(--error)]">Delete?</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete() }}
-              className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[var(--error)] text-white hover:opacity-90"
-            >Yes</button>
-            <button
-              onClick={(e) => { e.stopPropagation(); setConfirmDelete(false) }}
-              className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[var(--secondary-bg)] text-[var(--text-secondary)] hover:bg-[var(--border)]"
-            >No</button>
-          </div>
-        ) : (
-          <button
-            onClick={(e) => { e.stopPropagation(); setConfirmDelete(true) }}
-            className="w-8 h-8 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-th-error/40 transition-all"
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
-      </div>
-
-      <div className="relative z-10">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-[11px] font-bold px-2.5 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
-            {proc.category}
-          </span>
-          {(proc as any).is_generated && (
-            <span className="text-[11px] font-bold px-2 py-1 bg-[var(--pink)] text-white rounded-full flex items-center gap-1 shadow-sm shrink-0">
-              <Sparkles size={10} /> AI
-            </span>
-          )}
-          <span className="text-[10px] text-[var(--text-secondary)] font-medium flex items-center gap-1">
-            <Clock size={12} /> {proc.duration}
-          </span>
+      <div className={`h-20 bg-gradient-to-br ${tintFor(proc.id)} relative flex items-center px-5`}>
+        <div className="w-11 h-11 rounded-xl bg-white/70 dark:bg-white/10 text-[var(--pink)] flex items-center justify-center shadow-sm">
+          <Stethoscope size={22} weight="duotone" />
         </div>
-        <h3 className="text-xl font-bold mb-2 group-hover:text-[var(--pink)] transition-colors pr-8">{proc.title}</h3>
-        <p className="text-sm text-[var(--text-secondary)] line-clamp-2 mb-6 max-w-[80%]">
-          {proc.description}
-        </p>
+        {proc.is_favorite && <Heart size={16} weight="fill" className="absolute top-3 right-12 text-[var(--pink)]" />}
+        <div className="absolute top-2.5 right-2.5" onClick={(e) => e.stopPropagation()}>
+          {confirmDelete ? (
+            <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--border)] rounded-full pl-2.5 pr-1 py-1 shadow-sm">
+              <span className="text-[11.5px] font-medium text-[var(--error)]">Delete?</span>
+              <button onClick={onDelete} className="text-[11.5px] font-medium px-2 py-0.5 rounded-full bg-[var(--error)] text-white">Yes</button>
+              <button onClick={() => setConfirmDelete(false)} className="text-[11.5px] font-medium px-2 py-0.5 rounded-full text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]">No</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/70 dark:bg-white/10 text-[var(--text-secondary)] hover:text-[var(--error)] sm:opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label={`Delete ${proc.title}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      </div>
 
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-[var(--text-secondary)]">
-            {proc.steps.length} step{proc.steps.length === 1 ? '' : 's'} · {proc.materials.length} material{proc.materials.length === 1 ? '' : 's'}
-          </p>
-          <button className="btn-primary p-3 rounded-2xl flex items-center justify-center shadow-fn">
-            <ChevronRight size={20} />
-          </button>
+      <div className="p-5 flex-1 flex flex-col">
+        <div className="flex items-center gap-2 mb-2 text-[11.5px]">
+          <span className="font-medium px-2 py-0.5 rounded-full bg-th-pink/10 text-[var(--pink)]">{proc.category}</span>
+          <span className="text-[var(--text-secondary)] flex items-center gap-1"><Clock size={12} /> {proc.duration}</span>
+        </div>
+        <h3 className="font-heading font-semibold text-[16px] leading-snug group-hover:text-[var(--pink)] transition-colors">{proc.title}</h3>
+        <p className="text-[13px] text-[var(--text-secondary)] line-clamp-2 mt-1">{proc.description}</p>
+        <div className="flex items-center justify-between mt-auto pt-4 text-[12px] text-[var(--text-secondary)]">
+          <span>{proc.steps.length} step{proc.steps.length === 1 ? '' : 's'} · {proc.materials.length} material{proc.materials.length === 1 ? '' : 's'}</span>
+          <span className="flex items-center gap-0.5 font-medium text-[var(--pink)]">Open <ChevronRight size={13} /></span>
         </div>
       </div>
     </div>
   )
 }
 
-function RetDemDetail({ procedure, onBack, mode, onModeChange }: { 
-  procedure: RetDemProcedure, 
+const PRACTICE_MODES: { id: RecitationMode; label: string; desc: string; icon: Icon; franceOnly?: boolean }[] = [
+  { id: 'gentle', label: 'Gentle', desc: 'Supportive, corrects you kindly', icon: HandHeart },
+  { id: 'clinical_instructor', label: 'Clinical instructor', desc: 'Strict, asks why, rationales hidden', icon: ChalkboardTeacher },
+  { id: 'doc_uno', label: 'Doc Uno', desc: 'Playful but challenging', icon: UserCircle, franceOnly: true },
+]
+
+function RetDemDetail({ procedure, onBack, mode: storedMode, onModeChange }: {
+  procedure: RetDemProcedure,
   onBack: () => void,
-  mode: string,
-  onModeChange: (m: any) => void
+  mode: RecitationMode,
+  onModeChange: (m: RecitationMode) => void
 }) {
   const [checkedMaterials, setCheckedMaterials] = useState<string[]>([])
   const [revealedSteps, setRevealedSteps] = useState<number[]>([])
   const { startSession } = useSimulationStore()
   const { uploadedFiles, toggleProcedureFavorite } = useRetDemStore()
-  const { isFrance, greetingName, aiAssistantName } = usePersonalization()
+  const { isFrance, aiAssistantName } = usePersonalization()
+  // Doc Uno mode is France-only; everyone else falls back to Gentle
+  const mode: RecitationMode = !isFrance && storedMode === 'doc_uno' ? 'gentle' : storedMode
 
   const isCIMode = mode === 'clinical_instructor'
 
   const toggleMaterial = (m: string) => {
-    setCheckedMaterials(prev => 
+    setCheckedMaterials(prev =>
       prev.includes(m) ? prev.filter(item => item !== m) : [...prev, m]
     )
   }
@@ -559,206 +478,152 @@ function RetDemDetail({ procedure, onBack, mode, onModeChange }: {
     ? `${procedure.title} + ${uploadedFiles.length} uploaded file${uploadedFiles.length > 1 ? 's' : ''}`
     : procedure.title
 
+  const modes = PRACTICE_MODES.filter(m => !m.franceOnly || isFrance)
+
   return (
-    <div className="max-w-4xl mx-auto pb-20">
-      <button 
+    <div className="pb-20">
+      <button
         onClick={onBack}
-        className="flex items-center gap-2 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--pink)] transition-colors mb-4"
       >
-        <ArrowLeft size={18} /> Back to procedures
+        <ArrowLeft size={16} /> All procedures
       </button>
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-         <div className="flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[11px] font-bold px-3 py-1 bg-[var(--secondary-bg)] text-[var(--pink)] rounded-full">
-                {procedure.category}
+      {/* Hero */}
+      <section className="fn-card overflow-hidden mb-5">
+        <div className={`bg-gradient-to-br ${tintFor(procedure.id)} px-5 sm:px-7 py-6`}>
+          <div className="flex items-center gap-2 mb-2 text-[12px]">
+            <span className="font-medium px-2.5 py-0.5 rounded-full bg-white/70 dark:bg-white/10 text-[var(--pink)]">{procedure.category}</span>
+            <span className="text-[var(--text-secondary)] flex items-center gap-1"><Clock size={13} /> {procedure.duration}</span>
+          </div>
+          <h1 className="font-heading font-semibold text-2xl sm:text-[28px] leading-tight">{procedure.title}</h1>
+          <p className="text-[14px] text-[var(--text-secondary)] mt-1.5 max-w-2xl leading-relaxed">{procedure.description}</p>
+        </div>
+        <div className="px-5 sm:px-7 py-4 flex flex-col sm:flex-row sm:items-center gap-3 border-t border-[var(--border)]">
+          <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+            {uploadedFiles.length > 0 ? uploadedFiles.map(f => (
+              <span key={f.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-th-success/10 text-[12px] font-medium max-w-full">
+                <FileText size={12} className="text-[var(--success)] shrink-0" /><span className="truncate">{f.name}</span>
               </span>
-              <span className="text-[10px] text-[var(--text-secondary)] font-medium flex items-center gap-1">
-                <Clock size={12} /> {procedure.duration}
-              </span>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">{procedure.title}</h1>
-            <p className="text-[var(--text-secondary)] font-medium leading-relaxed max-w-2xl">
-              {procedure.description}
-            </p>
-            {uploadedFiles.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {uploadedFiles.map((f, i) => (
-                  <div key={f.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-th-success/10 text-[var(--success)] text-xs font-bold border border-th-success/20">
-                    <CheckCircle2 size={11} />
-                    #{i + 1} {f.name}
-                  </div>
-                ))}
-              </div>
+            )) : (
+              <span className="text-[12.5px] text-[var(--text-secondary)]">{procedure.steps.length} steps · {procedure.materials.length} materials</span>
             )}
-         </div>
-         <div className="flex gap-2 shrink-0">
-            <button 
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
               onClick={() => toggleProcedureFavorite(procedure.id)}
-              className="btn-secondary px-6 py-3 flex items-center gap-2"
+              className="btn-secondary px-4 py-2.5 text-sm flex items-center gap-2"
             >
-               <Heart size={18} weight={procedure.is_favorite ? 'fill' : 'regular'} className={procedure.is_favorite ? 'text-[var(--pink)]' : ''} /> {procedure.is_favorite ? 'Saved' : 'Save'}
+              <Heart size={16} weight={procedure.is_favorite ? 'fill' : 'regular'} className={procedure.is_favorite ? 'text-[var(--pink)]' : ''} /> {procedure.is_favorite ? 'Saved' : 'Save'}
             </button>
-            <button 
-              onClick={() => startSession('retdem', procedure.title, mode as any, buildProcedureSourceText(), sourceName)}
-              className="btn-primary px-8 py-3 flex items-center gap-2 shadow-fn-md"
+            <button
+              onClick={() => startSession('retdem', procedure.title, mode, buildProcedureSourceText(), sourceName)}
+              className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"
             >
-               <Play size={18} weight="fill" /> Start Practice
-               {uploadedFiles.length > 0 && <span className="text-[10px] font-bold opacity-75 bg-white/20 px-2 py-0.5 rounded-full">+ {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''}</span>}
+              <Play size={16} weight="fill" /> Start practice
             </button>
-         </div>
-      </div>
+          </div>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Checklist & Info */}
-        <div className="space-y-6">
-           <div className="fn-card p-6 bg-gradient-to-br from-th-pink/10 to-th-secondary-bg/20">
-              <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
-                 <ListChecks className="text-[var(--pink)]" size={20} />
-                 Materials Checklist
-              </h3>
-              <div className="space-y-3">
-                 {procedure.materials.map(m => (
-                   <label 
-                     key={m} 
-                     className={cn(
-                       "flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer group",
-                       checkedMaterials.includes(m) 
-                         ? "bg-white border-th-pink/30 text-[var(--text-secondary)]" 
-                         : "bg-white/50 border-[var(--border)] hover:border-th-pink/50"
-                     )}
-                   >
-                     <div 
-                        onClick={() => toggleMaterial(m)}
-                        className={cn(
-                          "w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all",
-                          checkedMaterials.includes(m) ? "bg-[var(--pink)] border-[var(--pink)] text-white" : "border-[var(--border)] group-hover:border-[var(--pink)]"
-                        )}
-                     >
-                        {checkedMaterials.includes(m) && <CheckSquare size={14} />}
-                     </div>
-                     <span className={cn("text-xs font-bold leading-tight", checkedMaterials.includes(m) && "line-through opacity-50")}>
-                        {m}
-                     </span>
-                   </label>
-                 ))}
-              </div>
-           </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
+        {/* Side column (first on phones) */}
+        <div className="space-y-5 lg:order-2 lg:sticky lg:top-4">
+          <section className="fn-card p-5">
+            <h3 className="font-heading font-semibold text-[15px] flex items-center gap-2"><Microphone size={17} className="text-[var(--pink)]" /> Practice mode</h3>
+            <p className="text-[12.5px] text-[var(--text-secondary)] mt-0.5 mb-3">
+              {isFrance ? 'Doc Uno will guide you through verbalizing steps and rationales, babe!' : `${aiAssistantName} will guide you through verbalizing steps and rationales.`}
+            </p>
+            <div className="space-y-1.5">
+              {modes.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => onModeChange(m.id)}
+                  className={cn('w-full flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors', mode === m.id ? 'border-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]')}
+                >
+                  <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', mode === m.id ? 'bg-[var(--pink)] text-white' : 'bg-th-pink/10 text-[var(--pink)]')}><m.icon size={16} /></div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium">{m.label}</p>
+                    <p className="text-[11.5px] text-[var(--text-secondary)]">{m.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
 
-           <div className="fn-card p-6">
-              <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
-                 <Info className="text-[var(--pink)]" size={20} />
-                 Key Rationale
-              </h3>
-              <div className="text-xs text-[var(--text-secondary)] leading-relaxed italic font-medium">
-                 <MarkdownText content={procedure.rationale} />
+          <section className="fn-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-heading font-semibold text-[15px] flex items-center gap-2"><ListChecks size={17} className="text-[var(--pink)]" /> Materials</h3>
+              <span className="text-[12px] text-[var(--text-secondary)]">{checkedMaterials.length}/{procedure.materials.length} ready</span>
+            </div>
+            <div className="space-y-1">
+              {procedure.materials.map(m => {
+                const checked = checkedMaterials.includes(m)
+                return (
+                  <button key={m} onClick={() => toggleMaterial(m)} className="w-full flex items-start gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--rose-soft)] text-left">
+                    <span className={cn('w-[18px] h-[18px] mt-px rounded-md border-2 flex items-center justify-center shrink-0 transition-colors', checked ? 'bg-[var(--pink)] border-[var(--pink)] text-white' : 'border-[var(--accent)]')}>
+                      {checked && <Check size={11} weight="bold" />}
+                    </span>
+                    <span className={cn('text-[13px] leading-snug', checked && 'line-through text-[var(--text-secondary)]')}>{m}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+
+          {procedure.rationale && (
+            <section className="fn-card p-5">
+              <h3 className="font-heading font-semibold text-[15px] flex items-center gap-2 mb-2"><Info size={17} className="text-[var(--pink)]" /> Key rationale</h3>
+              <div className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+                <MarkdownText content={procedure.rationale} />
               </div>
-           </div>
-           
-           <div className="fn-card p-6 bg-[var(--pink)] text-white">
-              <h3 className="font-heading font-bold text-lg mb-2 flex items-center gap-2">
-                 <Sparkles size={20} />
-                 Recitation Mode
-              </h3>
-              <p className="text-xs opacity-90 mb-4 font-medium">{isFrance 
-                   ? 'Doc Uno will guide you through verbalizing steps and rationales, babe!'
-                   : `${aiAssistantName} will guide you through verbalizing steps and rationales.`
-                 }</p>
-              <div className="space-y-2">
-                 {[
-                   { id: 'gentle', label: 'Gentle Mode' },
-                   { id: 'clinical_instructor', label: 'CI Mode' },
-                   ...(isFrance ? [{ id: 'doc_uno', label: 'Doc Uno Mode' }] : []),
-                 ].map(m => (
-                   <button
-                     key={m.id}
-                     onClick={() => onModeChange(m.id)}
-                     className={cn(
-                       "w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all border text-left",
-                       mode === m.id 
-                         ? "bg-white text-[var(--pink)] border-white shadow-sm" 
-                         : "bg-white/10 border-white/20 hover:bg-white/20"
-                     )}
-                   >
-                     {m.label}
-                   </button>
-                 ))}
-              </div>
-           </div>
+            </section>
+          )}
         </div>
 
-        {/* Right Column: Steps */}
-        <div className="lg:col-span-2 space-y-4">
-           <div className="flex items-center justify-between mb-2">
-              <h3 className="font-heading font-bold text-xl flex items-center gap-2">
-                 <BookOpen className="text-[var(--pink)]" size={24} />
-                 Step-by-Step Procedure
-              </h3>
-              <span className="text-xs font-bold text-[var(--text-secondary)]">
-                 {procedure.steps.length} Steps Total
-              </span>
-           </div>
+        {/* Steps */}
+        <section className="fn-card p-5 sm:p-6 lg:order-1 min-w-0">
+          <div className="flex items-baseline justify-between mb-4">
+            <h3 className="font-heading font-semibold text-[16px]">Procedure steps</h3>
+            <span className="text-[12px] text-[var(--text-secondary)]">{procedure.steps.length} steps{isCIMode && ' · rationales hidden'}</span>
+          </div>
 
-           {procedure.steps.map((step, i) => {
+          <ol className="relative">
+            {procedure.steps.map((step, i) => {
               const isRevealed = revealedSteps.includes(step.step) || !isCIMode
-
+              const isLast = i === procedure.steps.length - 1
               return (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className={cn(
-                    "fn-card p-6 group hover:shadow-fn transition-all border-l-4",
-                    isRevealed ? "border-l-[var(--pink)]" : "border-l-th-text-secondary/30"
-                  )}
-                >
-                   <div className="flex gap-6">
-                      <div className={cn(
-                        "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 font-bold text-lg shadow-sm transition-colors",
-                        isRevealed ? "bg-[var(--secondary-bg)] text-[var(--pink)]" : "bg-[var(--border)] text-[var(--text-secondary)]"
-                      )}>
-                         {step.step}
+                <li key={i} className="relative flex gap-4 pb-5 last:pb-0">
+                  {!isLast && <span className="absolute left-[15px] top-9 bottom-0 w-px bg-[var(--border)]" />}
+                  <span className="w-8 h-8 rounded-full bg-th-pink/10 text-[var(--pink)] text-[13px] font-semibold flex items-center justify-center shrink-0 relative">{step.step}</span>
+                  <div className="flex-1 min-w-0 pt-1">
+                    <p className="text-[14.5px] font-medium leading-snug">{step.action}</p>
+                    {isRevealed ? (
+                      <div className="mt-2 px-3.5 py-2.5 rounded-xl bg-[var(--rose-soft)] text-[13px] text-[var(--text-secondary)] leading-relaxed">
+                        <span className="block text-[11.5px] font-semibold text-[var(--pink)] mb-0.5">Rationale</span>
+                        <MarkdownText content={step.rationale} />
                       </div>
-                      <div className="space-y-4 flex-1">
-                         <div>
-                           <p className="text-[11px] font-bold text-[var(--pink)] mb-1">Action</p>
-                           <p className="font-bold text-base leading-snug">{step.action}</p>
-                         </div>
-                         
-                         {isRevealed ? (
-                            <motion.div 
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              className="p-4 bg-[var(--bg)] rounded-2xl border border-[var(--border)] group-hover:border-th-pink/30 transition-all"
-                            >
-                              <p className="text-[11px] font-bold text-[var(--pink)] mb-1">Rationale</p>
-                              <div className="text-sm text-[var(--text-secondary)] font-medium italic leading-relaxed">
-                                 <MarkdownText content={step.rationale} />
-                              </div>
-                            </motion.div>
-                         ) : (
-                            <button 
-                              onClick={() => setRevealedSteps(prev => [...prev, step.step])}
-                              className="w-full p-4 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-th-pink/50 text-[var(--text-secondary)] text-xs font-bold transition-all flex items-center justify-center gap-2"
-                            >
-                              <Sparkles size={14} /> Reveal Rationale (CI Mode)
-                            </button>
-                         )}
-                      </div>
-                   </div>
-                </motion.div>
+                    ) : (
+                      <button
+                        onClick={() => setRevealedSteps(prev => [...prev, step.step])}
+                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-dashed border-[var(--accent)] text-[12.5px] font-medium text-[var(--text-secondary)] hover:text-[var(--pink)] hover:bg-[var(--rose-soft)]"
+                      >
+                        <Eye size={14} /> Reveal rationale
+                      </button>
+                    )}
+                  </div>
+                </li>
               )
             })}
-        </div>
+          </ol>
+        </section>
       </div>
     </div>
   )
 }
 
-function HistoryFileCard({ file, onDelete }: {
-  file: any
+function HistoryFileRow({ file, onDelete }: {
+  file: HistoryFile
   onDelete: () => void
 }) {
   const [showConfirm, setShowConfirm] = useState(false)
@@ -774,108 +639,63 @@ function HistoryFileCard({ file, onDelete }: {
         hour: '2-digit',
         minute: '2-digit'
       })
-    } catch (_) {
+    } catch {
       return dateStr
     }
   }
 
   return (
-    <div className="fn-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[var(--pink)] transition-all">
-      <div className="flex items-start gap-4 flex-1 min-w-0">
-        <div className="w-12 h-12 rounded-2xl bg-th-pink/10 text-[var(--pink)] flex items-center justify-center shrink-0">
-          <FileText size={22} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-base truncate mb-1">{file.name}</h4>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)] font-medium">
-            <span className="flex items-center gap-1">
-              <Clock size={12} /> {formatDate(file.uploaded_at)}
-            </span>
-            <span>•</span>
-            <span>{file.text.length.toLocaleString()} characters</span>
-          </div>
-          
-          <p className="text-xs text-[var(--text-secondary)] line-clamp-1 mt-2 bg-th-secondary-bg/40 px-3 py-1.5 rounded-xl border border-[var(--border)] italic font-semibold">
-            "{file.text.slice(0, 120)}..."
-          </p>
-        </div>
+    <div className="p-4 flex items-center gap-3.5">
+      <div className="w-10 h-10 rounded-xl bg-th-pink/10 text-[var(--pink)] flex items-center justify-center shrink-0">
+        <FileText size={19} />
       </div>
+      <button onClick={() => setShowPreview(true)} className="flex-1 min-w-0 text-left">
+        <p className="text-[13.5px] font-medium truncate">{file.name}</p>
+        <p className="text-[12px] text-[var(--text-secondary)] truncate">
+          {formatDate(file.uploaded_at)} · {file.text.length.toLocaleString()} characters
+        </p>
+      </button>
 
-      <div className="flex items-center gap-2 shrink-0 md:self-center self-end">
-        <button
-          onClick={() => setShowPreview(true)}
-          className="btn-secondary px-4 py-2 text-xs font-bold"
-        >
-          View Text
-        </button>
-
+      <div className="flex items-center gap-1 shrink-0">
         {showConfirm ? (
-          <div className="flex items-center gap-1 bg-[var(--card)] border border-th-error/30 rounded-xl px-2 py-1 shadow-sm">
-            <span className="text-[10px] font-bold text-[var(--error)]">Delete?</span>
-            <button
-              onClick={onDelete}
-              className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[var(--error)] text-white hover:opacity-90"
-            >Yes</button>
-            <button
-              onClick={() => setShowConfirm(false)}
-              className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[var(--secondary-bg)] text-[var(--text-secondary)] hover:bg-[var(--border)]"
-            >No</button>
+          <div className="flex items-center gap-1 border border-[var(--border)] rounded-full pl-2.5 pr-1 py-1">
+            <span className="text-[11.5px] font-medium text-[var(--error)]">Delete?</span>
+            <button onClick={onDelete} className="text-[11.5px] font-medium px-2 py-0.5 rounded-full bg-[var(--error)] text-white">Yes</button>
+            <button onClick={() => setShowConfirm(false)} className="text-[11.5px] font-medium px-2 py-0.5 rounded-full text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]">No</button>
           </div>
         ) : (
-          <button
-            onClick={() => setShowConfirm(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--error)] hover:border-th-error/40 transition-all"
-          >
-            <Trash2 size={14} />
-          </button>
+          <>
+            <button onClick={() => setShowPreview(true)} className="btn-icon p-2" aria-label={`View text of ${file.name}`}><Eye size={16} /></button>
+            <button onClick={() => setShowConfirm(true)} className="btn-icon p-2 hover:text-[var(--error)]" aria-label={`Delete ${file.name}`}><Trash2 size={16} /></button>
+          </>
         )}
       </div>
 
       <AnimatePresence>
         {showPreview && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowPreview(false)}
-          >
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPreview(false)} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 10 }}
-              className="bg-[var(--card)] w-full max-w-2xl rounded-2xl shadow-2xl border border-[var(--border)] p-8 max-h-[80vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+              className="relative z-10 w-full max-w-2xl bg-[var(--card)] border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-fn-lg max-h-[85vh] flex flex-col"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-bold truncate pr-4">{file.name}</h3>
-                  <p className="text-xs text-[var(--text-secondary)] mt-1 font-semibold">
-                    Extracted Reference Material Text
-                  </p>
+              <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-4 border-b border-[var(--border)]">
+                <div className="min-w-0">
+                  <h3 className="font-heading font-semibold text-[16px] truncate">{file.name}</h3>
+                  <p className="text-[12.5px] text-[var(--text-secondary)]">Extracted text</p>
                 </div>
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:bg-[var(--secondary-bg)] transition-colors"
-                >
-                  <X size={16} />
-                </button>
+                <button onClick={() => setShowPreview(false)} className="btn-icon p-2 -mr-1" aria-label="Close"><X size={18} /></button>
               </div>
-              <div className="flex-1 overflow-y-auto bg-th-secondary-bg/50 border border-[var(--border)] rounded-2xl p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 text-[13px] leading-relaxed whitespace-pre-wrap text-[var(--text-secondary)]">
                 {file.text}
               </div>
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className="btn-primary px-6"
-                >
-                  Close
-                </button>
-              </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
   )
 }
+
