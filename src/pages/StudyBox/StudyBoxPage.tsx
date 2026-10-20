@@ -20,8 +20,14 @@ import { generateCompletion } from '@/lib/ai'
 import { extractTextFromFile } from '@/lib/extractor'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { tintFor } from '@/lib/tints'
+import { confirmDialog, toast } from '@/stores/feedbackStore'
 
 const SORT_OPTIONS = [['newest', 'Newest first'], ['oldest', 'Oldest first'], ['az', 'Name A–Z']] as const
+// File types the text extractor can read (lib/extractor.ts)
+const UPLOAD_EXTENSIONS = ['pdf', 'docx', 'txt', 'md', 'csv', 'jpg', 'jpeg', 'png', 'webp']
+const UPLOAD_ACCEPT = UPLOAD_EXTENSIONS.map(e => `.${e}`).join(',')
+const errorMessage = (err: unknown, fallback: string) => (err instanceof Error && err.message ? err.message : fallback)
+
 const TYPE_OPTIONS = [['all', 'All types'], ['pdf', 'PDF'], ['docx', 'Word'], ['pptx', 'PowerPoint'], ['image', 'Images'], ['txt', 'Text']] as const
 
 const displayName = (item: StudyBoxItem) =>
@@ -107,31 +113,39 @@ export default function StudyBoxPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Auto-open item if navigated here from dashboard with openItemId state
+  // Auto-open item if navigated here (e.g. from Home or the Knowledge Garden) with openItemId state.
+  // Consumed once, then cleared through the router so later item updates don't reopen it.
   useEffect(() => {
-    const openItemId = (location.state as any)?.openItemId
-    if (openItemId) {
-      const target = items.find(i => i.id === openItemId)
-      if (target) {
-        setSelectedItem(target)
-        // Clear the state so re-visiting doesn't re-open
-        window.history.replaceState({}, '')
-      }
-    }
-  }, [location.state, items])
+    const openItemId = (location.state as { openItemId?: string } | null)?.openItemId
+    if (!openItemId) return
+    const target = items.find(i => i.id === openItemId)
+    if (!target) return
+    setSelectedItem(target)
+    navigate(location.pathname + location.search, { replace: true, state: null })
+  }, [location.state, location.pathname, location.search, items, navigate])
 
   const handleCapture = async (base64Image: string) => {
     setIsCameraOpen(false)
     const res = await fetch(base64Image)
     const blob = await res.blob()
     const file = new File([blob], `captured_note_${Date.now()}.jpg`, { type: 'image/jpeg' })
-    await addItem(file, selectedTopic || undefined)
+    try {
+      await addItem(file, selectedTopic || undefined)
+      toast('Photo added to your notes', 'success')
+    } catch (err) {
+      toast(errorMessage(err, "Couldn't add the photo. Please try again."), 'error')
+    }
   }
 
   const handleGeneratePresentation = async () => {
     if (selectedItemIds.length === 0) return
     const firstItem = items.find(i => i.id === selectedItemIds[0])
-    await generatePresentation(selectedItemIds, firstItem?.topic_id || undefined)
+    try {
+      await generatePresentation(selectedItemIds, firstItem?.topic_id || undefined)
+    } catch (err) {
+      toast(errorMessage(err, "Couldn't make the slides. Please try again."), 'error')
+      return
+    }
     clearSelection()
     navigate('/reviewer-library')
   }
@@ -139,7 +153,12 @@ export default function StudyBoxPage() {
   const handleGenerateReviewer = async () => {
     if (selectedItemIds.length === 0) return
     const firstItem = items.find(i => i.id === selectedItemIds[0])
-    await generateReviewer(selectedItemIds, firstItem?.topic_id || undefined)
+    try {
+      await generateReviewer(selectedItemIds, firstItem?.topic_id || undefined)
+    } catch (err) {
+      toast(errorMessage(err, "Couldn't make the reviewer. Please try again."), 'error')
+      return
+    }
     clearSelection()
     navigate('/reviewer-library')
   }
@@ -147,11 +166,24 @@ export default function StudyBoxPage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-    for (const file of Array.from(files)) {
-      await addItem(file, selectedTopic || undefined)
-    }
+    const all = Array.from(files)
     // reset so same files can be re-uploaded if needed
     if (fileInputRef.current) fileInputRef.current.value = ''
+    const supported = all.filter(f => UPLOAD_EXTENSIONS.includes(f.name.split('.').pop()?.toLowerCase() || ''))
+    const skipped = all.length - supported.length
+    if (skipped > 0) {
+      toast(`${skipped === 1 ? `“${all.find(f => !supported.includes(f))!.name}” isn't` : `${skipped} files aren't`} supported. Upload PDF, Word (.docx), text or image files.`, 'error')
+    }
+    let added = 0
+    for (const file of supported) {
+      try {
+        await addItem(file, selectedTopic || undefined)
+        added++
+      } catch (err) {
+        toast(errorMessage(err, `Couldn't upload “${file.name}”. Please try again.`), 'error')
+      }
+    }
+    if (added > 0) toast(added === 1 ? 'File added' : `${added} files added`, 'success')
   }
 
   const topicTitle = (id: string | null) => topics.find(t => t.id === id)?.title || 'Unsorted'
@@ -185,7 +217,7 @@ export default function StudyBoxPage() {
           <button onClick={() => fileInputRef.current?.click()} disabled={busy} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">
             <Upload size={16} weight="bold" /> Upload
           </button>
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" multiple />
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" multiple accept={UPLOAD_ACCEPT} />
         </>}
       />
 
@@ -266,7 +298,12 @@ export default function StudyBoxPage() {
           <span className="text-[var(--text-secondary)]">· {displayedItems.length} material{displayedItems.length === 1 ? '' : 's'}</span>
           {isCustomFolder(activeTopic.id) && activeTopic.id !== UNSORTED_TOPIC_ID && (
             <button
-              onClick={() => { if (confirm(`Delete the folder “${activeTopic.title}”? Its files are kept and moved to Unsorted.`)) deleteFolder(activeTopic.id) }}
+              onClick={async () => {
+                if (await confirmDialog({ title: `Delete “${activeTopic.title}”?`, message: 'The folder is removed. Its files are kept and moved to Unsorted.', confirmLabel: 'Delete folder', danger: true })) {
+                  deleteFolder(activeTopic.id)
+                  toast('Folder deleted', 'success')
+                }
+              }}
               className="ml-auto text-[12.5px] text-[var(--text-secondary)] hover:text-[var(--error)] flex items-center gap-1"
             >
               <Trash2 size={14} /> Delete folder
@@ -371,7 +408,13 @@ export default function StudyBoxPage() {
                         <FolderOpen size={14} />
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); if (confirm(`Delete “${displayName(item)}”?`)) removeItem(item.id) }}
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          if (await confirmDialog({ title: `Delete “${displayName(item)}”?`, message: 'This file and its study guide will be removed.', confirmLabel: 'Delete', danger: true })) {
+                            removeItem(item.id)
+                            toast('File deleted', 'success')
+                          }
+                        }}
                         className="p-1 -mr-1 rounded-lg text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-th-error/10 sm:opacity-0 group-hover:opacity-100 transition-all"
                         aria-label="Delete"
                       >
@@ -674,13 +717,23 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate, onMo
   const { generateReviewer, generatePresentation, isGeneratingReviewer, isGeneratingPresentation } = useReviewerStore()
 
   const handleModalGenerateReviewer = async () => {
-    await generateReviewer([currentItem.id], currentItem.topic_id || undefined)
+    try {
+      await generateReviewer([currentItem.id], currentItem.topic_id || undefined)
+    } catch (err) {
+      toast(errorMessage(err, "Couldn't make the reviewer. Please try again."), 'error')
+      return
+    }
     onClose()
     navigate('/reviewer-library')
   }
 
   const handleModalGeneratePresentation = async () => {
-    await generatePresentation([currentItem.id], currentItem.topic_id || undefined)
+    try {
+      await generatePresentation([currentItem.id], currentItem.topic_id || undefined)
+    } catch (err) {
+      toast(errorMessage(err, "Couldn't make the slides. Please try again."), 'error')
+      return
+    }
     onClose()
     navigate('/reviewer-library')
   }
@@ -908,15 +961,9 @@ body {
     const content = buildPrintContent()
     const assistantName = isFrance ? 'Doc Uno' : aiAssistantName
 
-    const containerId = 'pdf-capture-container'
-    let container = document.getElementById(containerId) as HTMLElement
-    if (!container) {
-      container = document.createElement('div')
-      container.id = containerId
-      document.body.appendChild(container)
-    }
-    container.style.cssText = `position:fixed;top:0;left:0;width:800px;background:#fef6f8;padding:24px 20px;z-index:999999;opacity:0;pointer-events:none;overflow:visible`
-    container.innerHTML = content
+    // Render from an HTML string: html2pdf lays it out in its own off-screen container.
+    // (Capturing a hidden opacity:0 element produced blank pages.)
+    const html = `<div style="width:800px;background:#fef6f8;padding:24px 20px">${content}</div>`
 
     const opt = {
       margin: [8, 8, 8, 8],
@@ -927,13 +974,9 @@ body {
     }
 
     const run = () => {
-      (window as any).html2pdf().from(container).set(opt).save().then(() => {
-        container!.style.display = 'none'
-        container!.innerHTML = ''
-      }).catch((err: any) => {
+      (window as any).html2pdf().from(html, 'string').set(opt).save().catch((err: unknown) => {
         console.error('PDF generation failed:', err)
-        container!.style.display = 'none'
-        container!.innerHTML = ''
+        toast("Couldn't create the PDF. Please try again.", 'error')
       })
     }
 
@@ -943,6 +986,7 @@ body {
       const script = document.createElement('script')
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
       script.onload = run
+      script.onerror = () => toast("Couldn't load the PDF maker. Check your connection and try again.", 'error')
       document.head.appendChild(script)
     }
   }
@@ -1174,7 +1218,7 @@ body {
 
         {/* Actions */}
         <div className="px-5 py-3.5 border-t border-[var(--border)] flex items-center gap-2 overflow-x-auto">
-          <button onClick={() => { if (confirm('Delete this material?')) handleDelete() }} className="btn-icon p-2 hover:text-[var(--error)] shrink-0" title="Delete" aria-label="Delete">
+          <button onClick={async () => { if (await confirmDialog({ title: 'Delete this material?', message: 'This file and its study guide will be removed.', confirmLabel: 'Delete', danger: true })) { handleDelete(); toast('File deleted', 'success') } }} className="btn-icon p-2 hover:text-[var(--error)] shrink-0" title="Delete" aria-label="Delete">
             <Trash2 size={18} />
           </button>
           <button onClick={onMove} className="btn-icon p-2 shrink-0" title="Move to folder" aria-label="Move to folder"><FolderOpen size={18} /></button>
@@ -1365,8 +1409,16 @@ Cite the specific source for each lab value, diagnostic criterion, medication, a
     setReferenceFiles(prev => prev.filter(f => f.name !== name))
   }
 
+  // A stray tap outside shouldn't throw away a half-written case study
+  const requestClose = async () => {
+    if (isGenerating) return
+    const hasDraft = topic.trim() || scenario.trim() || referenceFiles.length > 0
+    if (hasDraft && !(await confirmDialog({ title: 'Discard this draft?', message: 'Your topic, scenario and reference files will be cleared.', confirmLabel: 'Discard', danger: true }))) return
+    onClose()
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" onClick={() => !isGenerating && onClose()}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" onClick={requestClose}>
       <motion.div
         initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

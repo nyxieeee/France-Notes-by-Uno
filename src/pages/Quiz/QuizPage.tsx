@@ -4,19 +4,42 @@ import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { Brain as BrainCircuit, Target, Clock, ArrowRight, ArrowLeft, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Question as HelpCircle, Sparkle as Sparkles, ArrowCounterClockwise as RotateCcw, Layout, Check, Plus, CaretDown as ChevronDown, FileText, Stethoscope, ListNumbers as ListOrdered, ToggleLeft, MagnifyingGlass as Search, PencilSimple as Edit3, BookOpen, ClockCounterClockwise as History, Trash as Trash2, CloudArrowDown as DownloadCloud, FileArrowDown as FileDown, X } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { jsPDF } from 'jspdf'
 import { cn, getScoreColor, getScoreLabel, checkAnswerCorrectness, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import type { QuestionType, QuizSetupConfig, Quiz, Topic } from '@/types'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { confirmDialog } from '@/stores/feedbackStore'
+
+// router location keys of quiz handoffs already applied this session
+const handledHandoffs = new Set<string>()
 
 export default function QuizPage() {
   const { isFrance, greetingName, aiAssistantName } = usePersonalization()
-  const { activeQuiz, isGenerating, generationProgress, isFinished, quizzes, startQuiz, deleteQuiz } = useQuizStore()
+  const { activeQuiz, isGenerating, generationProgress, isFinished, quizzes, startQuiz, deleteQuiz, resetQuiz, generationError, lastConfig } = useQuizStore()
   const { topics } = useStudyBoxStore()
-  const [showHistory, setShowHistory] = useState(false)
+  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showHistory, setShowHistory] = useState(() => searchParams.get('view') === 'history')
+
+  // "Quiz me on this" from another page starts a fresh setup, even if an old quiz is still open.
+  // Each handoff is honored once, so coming back to this history entry later doesn't wipe a quiz.
+  useEffect(() => {
+    const state = location.state as { selectedItemIds?: string[]; preSelectedTopic?: string; preSelectedText?: string } | null
+    const isHandoff = !!(state?.selectedItemIds?.length || state?.preSelectedTopic || state?.preSelectedText)
+    if (!isHandoff || handledHandoffs.has(location.key)) return
+    handledHandoffs.add(location.key)
+    if (useQuizStore.getState().activeQuiz && !useQuizStore.getState().isGenerating) resetQuiz()
+  }, [location.key, location.state, resetQuiz])
+
+  // Dashboard "Quiz history" link: /quiz?view=history opens the history list (showHistory starts true)
+  useEffect(() => {
+    if (searchParams.get('view') !== 'history') return
+    if (useQuizStore.getState().isFinished) resetQuiz()
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams, resetQuiz])
 
   const completedQuizzes = quizzes.filter(q => q.completed)
 
@@ -115,7 +138,7 @@ export default function QuizPage() {
       await renderAndPlace(`
         <div style="background:#fdf2f8; border-top:1.5px solid #fbcfe8; padding:12px 22px; text-align:center;">
           <div style="font-size:8px; font-weight:800; color:#f9a8d4; letter-spacing:2px; text-transform:uppercase;">
-            ${isFrance ? 'Made with by Doc Uno for France' : `Made with by ${aiAssistantName}`}
+            ${isFrance ? 'Made with love by Doc Uno for France' : `Made by ${aiAssistantName}`}
           </div>
           <div style="font-size:8px; font-weight:700; color:#d1d5db; margin-top:3px; letter-spacing:1px; text-transform:uppercase;">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
         </div>
@@ -239,6 +262,22 @@ export default function QuizPage() {
         {isGenerating ? (
           <motion.div key="generating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <GeneratingState done={generationProgress.done} total={generationProgress.total} />
+          </motion.div>
+        ) : !activeQuiz && generationError ? (
+          <motion.div key="gen-error" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <div className="fn-card max-w-lg mx-auto mt-6 p-8 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-th-error/10 text-[var(--error)] flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={28} weight="duotone" />
+              </div>
+              <h2 className="font-heading font-semibold text-lg">Quiz couldn't be generated</h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-1.5">{generationError}</p>
+              <div className="flex justify-center gap-2 mt-6">
+                <button onClick={resetQuiz} className="btn-secondary px-5 py-2.5 text-sm flex items-center gap-2"><ArrowLeft size={15} /> Back to setup</button>
+                {lastConfig && (
+                  <button onClick={() => startQuiz(lastConfig)} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"><RotateCcw size={15} /> Try again</button>
+                )}
+              </div>
+            </div>
           </motion.div>
         ) : !activeQuiz ? (
           showHistory ? (
@@ -618,10 +657,15 @@ function QuizEngine() {
   })
 
   const [timesUp, setTimesUp] = useState(false)
+  // Mirrors timeLeft so the interval can count down without side effects inside a state updater
+  const timeRef = useRef(timeLeft)
+  // What to do when time runs out, refreshed every render so it never acts on stale answers
+  const onExpireRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     if (activeQuiz?.timer_type === 'per_question') {
-      setTimeLeft(activeQuiz.timer_value || 60)
+      timeRef.current = activeQuiz.timer_value || 60
+      setTimeLeft(timeRef.current)
       setTimesUp(false)
     }
   }, [currentIndex, activeQuiz])
@@ -629,23 +673,15 @@ function QuizEngine() {
   useEffect(() => {
     if (!activeQuiz || activeQuiz.timer_type === 'untimed') return
     if (showRationale && activeQuiz.timer_type === 'per_question') return
+    if (timeRef.current <= 0) return
 
     const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          if (activeQuiz.timer_type === 'total_quiz') {
-            setTimesUp(true)
-            setTimeout(() => {
-              finishQuiz()
-            }, 2500)
-          } else if (activeQuiz.timer_type === 'per_question') {
-            handleCheckAnswer()
-          }
-          return 0
-        }
-        return prev - 1
-      })
+      timeRef.current = Math.max(0, timeRef.current - 1)
+      setTimeLeft(timeRef.current)
+      if (timeRef.current === 0) {
+        clearInterval(interval)
+        onExpireRef.current()
+      }
     }, 1000)
 
     return () => clearInterval(interval)
@@ -656,6 +692,22 @@ function QuizEngine() {
     const secs = seconds % 60
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`
   }
+
+  useEffect(() => {
+    onExpireRef.current = () => {
+      if (activeQuiz?.timer_type === 'total_quiz') {
+        setTimesUp(true)
+        setTimeout(() => { finishQuiz() }, 2500)
+      } else if (activeQuiz?.timer_type === 'per_question') {
+        // Same as pressing Check, using whatever is selected at the moment time runs out
+        const { questions: qs, currentIndex: idx, answers: latest } = useQuizStore.getState()
+        const q = qs[idx]
+        if (!q) return
+        setIsCorrect(checkAnswerCorrectness(q.correct_answer, latest[q.id], q.question_type))
+        setShowRationale(true)
+      }
+    }
+  })
 
   const question = questions[currentIndex] || questions[0]
   if (!question) return null
@@ -678,12 +730,19 @@ function QuizEngine() {
   }
 
   const handleCheckAnswer = () => {
-    const userAnswer = answers[question?.id]
+    // Read from the store so a timer firing from an older render still sees the latest pick
+    const userAnswer = useQuizStore.getState().answers[question?.id]
     const correct = checkAnswerCorrectness(question?.correct_answer, userAnswer, question?.question_type)
     setIsCorrect(correct)
     setShowRationale(true)
     // Bring the rationale into view
     setTimeout(() => document.getElementById('quiz-rationale')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100)
+  }
+
+  const handleBack = () => {
+    setShowRationale(false)
+    setIsCorrect(null)
+    prevQuestion()
   }
 
   const handleNext = () => {
@@ -706,7 +765,7 @@ function QuizEngine() {
       {/* Quiz bar */}
       <div className="fn-card px-4 py-3 mb-5">
         <div className="flex items-center gap-3">
-          <button onClick={prevQuestion} disabled={currentIndex === 0} className="btn-icon p-2 disabled:opacity-30 shrink-0" aria-label="Previous question">
+          <button onClick={handleBack} disabled={currentIndex === 0} className="btn-icon p-2 disabled:opacity-30 shrink-0" aria-label="Previous question">
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0 flex-1">
@@ -793,7 +852,10 @@ function QuizEngine() {
               {(question.choices || []).map((choice, i) => {
                 const letter = String.fromCharCode(65 + i)
                 const isSelected = isSata ? (currentAnswer as string[]).includes(choice) : currentAnswer === choice
-                const isCorrectChoice = checkAnswerCorrectness(question.correct_answer, choice, question.question_type)
+                // For SATA each correct option is highlighted on its own
+                const isCorrectChoice = isSata
+                  ? (Array.isArray(question.correct_answer) ? question.correct_answer : [question.correct_answer]).some(c => checkAnswerCorrectness(c, choice))
+                  : checkAnswerCorrectness(question.correct_answer, choice, question.question_type)
                 const showRight = showRationale && isCorrectChoice
                 const showWrong = showRationale && isSelected && !isCorrectChoice
                 return (
@@ -1071,7 +1133,9 @@ function QuizHistory({ quizzes, onBack, onDownload, onExportAll, onDelete }: {
                   <FileDown size={14} /> <span className="hidden sm:inline">PDF</span>
                 </button>
                 <button
-                  onClick={() => { if (confirm('Delete this quiz?')) onDelete(quiz.id) }}
+                  onClick={async () => {
+                    if (await confirmDialog({ title: 'Delete this quiz?', message: `“${quiz.title}” and its score will be removed from your history.`, confirmLabel: 'Delete', danger: true })) onDelete(quiz.id)
+                  }}
                   className="btn-icon p-2 hover:text-[var(--error)] shrink-0"
                   aria-label="Delete quiz"
                 >

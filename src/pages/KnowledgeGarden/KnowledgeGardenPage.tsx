@@ -7,6 +7,7 @@ import { useStudyBoxStore, findReferenceArticle } from '@/stores/studyBoxStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import { tintFor } from '@/lib/tints'
+import { confirmDialog, toast } from '@/stores/feedbackStore'
 
 
 type SavedRef = { id: string; title: string; description: string; source: string; url: string; category: string; date_saved?: string }
@@ -96,7 +97,7 @@ export default function KnowledgeGardenPage() {
                   <div className="flex items-center gap-1 mt-3 -mb-1">
                     <button onClick={() => openArticle(ref)} className="text-xs font-medium text-[var(--pink)] hover:underline mr-auto">Study article</button>
                     <a href={ref.url} target="_blank" rel="noreferrer" className="btn-icon p-1.5" title="Open source" aria-label="Open source website"><ArrowSquareOut size={16} /></a>
-                    <button onClick={() => { if (confirm('Remove this reference from your garden?')) removeKnowledge(ref.id) }} className="btn-icon p-1.5 hover:text-[var(--error)]" title="Remove" aria-label="Remove reference"><Trash size={16} /></button>
+                    <button onClick={async () => { if (await confirmDialog({ title: 'Remove this reference?', message: 'It will be removed from your garden, along with its study article in the References folder.', confirmLabel: 'Remove', danger: true })) { removeKnowledge(ref.id); toast('Reference removed', 'success') } }} className="btn-icon p-1.5 hover:text-[var(--error)]" title="Remove" aria-label="Remove reference"><Trash size={16} /></button>
                   </div>
                 </div>
               </motion.article>

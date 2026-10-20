@@ -7,7 +7,8 @@ import { getRecitationPrompt, getRetDemPrompt } from '@/lib/simulationPrompts'
 import { cn } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { usePersonalization } from '@/hooks/usePersonalization'
-import { synthesizeSpeechElevenLabs } from '@/lib/elevenLabsTts'
+import { speak, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { toast } from '@/stores/feedbackStore'
 
 let lastStartedSessionId = '';
 
@@ -28,126 +29,84 @@ function SimulationSession() {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [interimText, setInterimText] = useState('')
   const [voiceMode, setVoiceMode] = useState(true)
+  // Set when iOS refused to play the reply aloud; shows a "Tap to hear" button
+  const [blockedReply, setBlockedReply] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
-  const silenceTimerRef = useRef<any>(null)
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const spokenIdsRef = useRef<Set<string>>(new Set())
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const speechRunRef = useRef(0)
+
+  // Speech-recognition callbacks are registered once, so they read live values through refs
+  const voiceModeRef = useRef(voiceMode)
+  const listeningRef = useRef(false)
+  const busyRef = useRef(false)
   const inputRef = useRef('')
+  const doSendRef = useRef<(text: string) => void>(() => {})
+  useEffect(() => { voiceModeRef.current = voiceMode }, [voiceMode])
+  useEffect(() => { inputRef.current = input }, [input])
+  useEffect(() => { busyRef.current = isTyping || isSpeaking }, [isTyping, isSpeaking])
 
-  inputRef.current = input
+  const speechSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+  const speaker = isFrance ? 'DOC_UNO' : 'NURSE_FLORENCE'
 
-  const startVoiceRecognition = useCallback(() => {
-    if (!recognitionRef.current || isListening || isTyping || isSpeaking) return
-    try {
-      setInterimText('')
-      recognitionRef.current.start()
-      setIsListening(true)
-    } catch (e) {}
-  }, [isListening, isTyping, isSpeaking])
+  const setListening = (value: boolean) => {
+    listeningRef.current = value
+    setIsListening(value)
+  }
 
   const stopVoiceRecognition = useCallback(() => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current)
       silenceTimerRef.current = null
     }
-    if (recognitionRef.current && isListening) {
-      try { recognitionRef.current.stop() } catch (e) {}
-      setIsListening(false)
+    // Always stop, whatever React state says, so the mic never hears the AI's own voice
+    try { recognitionRef.current?.stop() } catch { /* not running */ }
+    setListening(false)
+    setInterimText('')
+  }, [])
+
+  const startVoiceRecognition = useCallback(() => {
+    if (!recognitionRef.current || listeningRef.current || busyRef.current) return
+    try {
       setInterimText('')
+      recognitionRef.current.start()
+      setListening(true)
+    } catch {
+      setListening(false)
     }
-  }, [isListening])
+  }, [])
 
   const speakMessage = useCallback(async (text: string) => {
-    // Stop any currently playing audio
-    if (audioRef.current) {
-      audioRef.current.pause()
-      URL.revokeObjectURL(audioRef.current.src)
-      audioRef.current = null
-    }
-
-    setIsSpeaking(true)
-    const speaker = isFrance ? 'DOC_UNO' : 'NURSE_FLORENCE'
-
-    const audioUrl = await synthesizeSpeechElevenLabs({ text, speaker })
-
-    if (audioUrl) {
-      const audio = new Audio(audioUrl)
-      audioRef.current = audio
-      audio.onended = () => {
-        URL.revokeObjectURL(audioUrl)
-        audioRef.current = null
-        setIsSpeaking(false)
-        startVoiceRecognition()
-      }
-      audio.onerror = () => {
-        URL.revokeObjectURL(audioUrl)
-        audioRef.current = null
-        setIsSpeaking(false)
-        startVoiceRecognition()
-      }
-      audio.play().catch(() => {
-        setIsSpeaking(false)
-        startVoiceRecognition()
-      })
-    } else {
-      // ElevenLabs failed — just resume listening silently
-      setIsSpeaking(false)
-      startVoiceRecognition()
-    }
-  }, [isFrance, startVoiceRecognition])
-
-  const doSend = useCallback(async (text: string) => {
     stopVoiceRecognition()
-    addMessage('user', text)
-    setInput('')
-    setInterimText('')
-    setIsTyping(true)
-    try {
-      const currentStore = useSimulationStore.getState()
-      const systemPrompt = activeMode === 'recitation' 
-        ? getRecitationPrompt(topic!, difficulty, currentStore.sourceText || undefined) 
-        : getRetDemPrompt(topic!, difficulty, currentStore.sourceText || undefined)
-      
-      const currentMessages = currentStore.messages
-      const chatHistory: { role: 'system' | 'user' | 'assistant', content: string }[] = currentMessages.map(m => ({ 
-        role: m.role as 'system' | 'user' | 'assistant', 
-        content: m.content 
-      }))
-      chatHistory.unshift({ role: 'system', content: systemPrompt })
-
-      const response = await generateChatCompletion(chatHistory, 'recitation')
-      if (!response || !response.trim()) throw new Error('Empty response received from the AI.')
-
-      const cleanedResponse = response
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/\((?:waiting|smiles|giggles|nods|sighs|chuckles|pauses)[^)]*\)/gi, '')
-        .replace(/\*(?:smiles|giggles|nods|sighs|chuckles|pauses)\*/gi, '')
-        .replace(/[ \t]+/g, ' ')
-        .replace(/\n\s*\n\s*\n+/g, '\n\n')
-        .trim()
-
-      addMessage('assistant', cleanedResponse)
-    } catch (e) {
-      console.error('Chat API failure:', e)
-      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment!")
-    } finally {
-      setIsTyping(false)
+    stopPlayback()
+    const run = ++speechRunRef.current
+    setBlockedReply(null)
+    setIsSpeaking(true)
+    busyRef.current = true
+    const result = await speak(text, speaker, 1, () => speechRunRef.current === run)
+    if (speechRunRef.current !== run) return
+    setIsSpeaking(false)
+    busyRef.current = false
+    if (result === 'blocked') {
+      setBlockedReply(text)
+      return
     }
-  }, [activeMode, topic, difficulty, addMessage, stopVoiceRecognition])
+    // Hands-free: listen for the answer once the reply has finished
+    if (result === 'ended' && voiceModeRef.current) startVoiceRecognition()
+  }, [speaker, startVoiceRecognition, stopVoiceRecognition])
 
-  const triggerAIResponse = useCallback(async (isFirst = false) => {
+  const runTurn = useCallback(async (isFirst = false) => {
     setIsTyping(true)
     try {
       const currentStore = useSimulationStore.getState()
-      const systemPrompt = activeMode === 'recitation' 
-        ? getRecitationPrompt(topic!, difficulty, currentStore.sourceText || undefined) 
+      const systemPrompt = activeMode === 'recitation'
+        ? getRecitationPrompt(topic!, difficulty, currentStore.sourceText || undefined)
         : getRetDemPrompt(topic!, difficulty, currentStore.sourceText || undefined)
-      
-      const currentMessages = currentStore.messages
-      const chatHistory: { role: 'system' | 'user' | 'assistant', content: string }[] = currentMessages.map(m => ({ 
-        role: m.role as 'system' | 'user' | 'assistant', 
-        content: m.content 
+
+      const chatHistory: { role: 'system' | 'user' | 'assistant', content: string }[] = currentStore.messages.map(m => ({
+        role: m.role as 'system' | 'user' | 'assistant',
+        content: m.content
       }))
       if (isFirst) {
         chatHistory.push({ role: 'system', content: systemPrompt })
@@ -175,15 +134,26 @@ function SimulationSession() {
     }
   }, [activeMode, topic, difficulty, addMessage])
 
+  const doSend = useCallback((text: string) => {
+    if (!text.trim()) return
+    stopVoiceRecognition()
+    addMessage('user', text.trim())
+    setInput('')
+    setInterimText('')
+    runTurn()
+  }, [addMessage, runTurn, stopVoiceRecognition])
+  useEffect(() => { doSendRef.current = doSend }, [doSend])
+
   // Init speech recognition + first message trigger
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition
-      recognitionRef.current = new SpeechRecognition()
-      recognitionRef.current.continuous = true
-      recognitionRef.current.interimResults = true
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition()
+      recognitionRef.current = recognition
+      recognition.continuous = true
+      recognition.interimResults = true
 
-      recognitionRef.current.onresult = (event: any) => {
+      recognition.onresult = (event: any) => {
         let finalTranscript = ''
         let interimTranscript = ''
         for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -193,25 +163,28 @@ function SimulationSession() {
             interimTranscript += event.results[i][0].transcript
           }
         }
-        if (interimTranscript) setInterimText(interimTranscript)
+        setInterimText(interimTranscript)
         if (finalTranscript) {
-          setInput(prev => prev + ' ' + finalTranscript.trim())
-          if (voiceMode) {
+          const textSoFar = `${inputRef.current} ${finalTranscript.trim()}`.trim()
+          inputRef.current = textSoFar
+          setInput(textSoFar)
+          // Voice mode sends after a pause; with voice off, dictation only fills the box
+          if (voiceModeRef.current) {
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
-            const textAtEvent = inputRef.current + ' ' + finalTranscript.trim()
             silenceTimerRef.current = setTimeout(() => {
-              if (textAtEvent.trim()) doSend(textAtEvent.trim())
+              silenceTimerRef.current = null
+              if (inputRef.current.trim()) doSendRef.current(inputRef.current)
             }, 1500)
           }
         }
       }
 
-      recognitionRef.current.onerror = () => {
-        setIsListening(false)
+      recognition.onerror = () => {
+        setListening(false)
         setInterimText('')
       }
-      recognitionRef.current.onend = () => {
-        setIsListening(false)
+      recognition.onend = () => {
+        setListening(false)
         setInterimText('')
       }
     }
@@ -219,7 +192,7 @@ function SimulationSession() {
     const currentSessionId = useSimulationStore.getState().sessionId || '';
     if (messages.length === 0 && topic && lastStartedSessionId !== currentSessionId) {
       lastStartedSessionId = currentSessionId;
-      triggerAIResponse(true);
+      runTurn(true);
     }
   }, [])
 
@@ -234,13 +207,9 @@ function SimulationSession() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      speechRunRef.current++
       stopVoiceRecognition()
-      if (audioRef.current) {
-        audioRef.current.pause()
-        URL.revokeObjectURL(audioRef.current.src)
-        audioRef.current = null
-      }
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+      stopPlayback()
     }
   }, [stopVoiceRecognition])
 
@@ -249,57 +218,49 @@ function SimulationSession() {
   }, [messages, isTyping])
 
   const toggleListen = () => {
+    unlockAudio()
     if (isListening) {
       stopVoiceRecognition()
-    } else {
-      setInput('')
-      setInterimText('')
-      recognitionRef.current?.start()
-      setIsListening(true)
+      return
+    }
+    if (!recognitionRef.current) {
+      toast('Voice input isn\'t supported in this browser. You can type your answer instead.', 'info')
+      return
+    }
+    // Talking over the AI interrupts it
+    speechRunRef.current++
+    stopPlayback()
+    setIsSpeaking(false)
+    busyRef.current = isTyping
+    setBlockedReply(null)
+    setInput('')
+    inputRef.current = ''
+    setInterimText('')
+    try {
+      recognitionRef.current.start()
+      setListening(true)
+    } catch {
+      // Already running: treat the tap as "stop"
+      stopVoiceRecognition()
     }
   }
 
-  const handleSend = async () => {
-    if (!input.trim()) return
-    stopVoiceRecognition()
-    const text = input.trim()
-    setInput('')
-    setInterimText('')
-    // Add user message to chat FIRST so it appears in the chatbox
-    addMessage('user', text)
-    setIsTyping(true)
-    try {
-      const currentStore = useSimulationStore.getState()
-      const systemPrompt = activeMode === 'recitation' 
-        ? getRecitationPrompt(topic!, difficulty, currentStore.sourceText || undefined) 
-        : getRetDemPrompt(topic!, difficulty, currentStore.sourceText || undefined)
-      
-      // Use fresh messages from store (now includes the user message we just added)
-      const currentMessages = currentStore.messages
-      const chatHistory: { role: 'system' | 'user' | 'assistant', content: string }[] = currentMessages.map(m => ({ 
-        role: m.role as 'system' | 'user' | 'assistant', 
-        content: m.content 
-      }))
-      chatHistory.unshift({ role: 'system', content: systemPrompt })
-
-      const response = await generateChatCompletion(chatHistory, 'recitation')
-      if (!response || !response.trim()) throw new Error('Empty response received from the AI.')
-
-      const cleanedResponse = response
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/\((?:waiting|smiles|giggles|nods|sighs|chuckles|pauses)[^)]*\)/gi, '')
-        .replace(/\*(?:smiles|giggles|nods|sighs|chuckles|pauses)\*/gi, '')
-        .replace(/[ \t]+/g, ' ')
-        .replace(/\n\s*\n\s*\n+/g, '\n\n')
-        .trim()
-
-      addMessage('assistant', cleanedResponse)
-    } catch (e) {
-      console.error('Chat API failure:', e)
-      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment!")
-    } finally {
-      setIsTyping(false)
+  const toggleVoiceMode = () => {
+    unlockAudio()
+    if (voiceMode) {
+      speechRunRef.current++
+      stopPlayback()
+      setIsSpeaking(false)
+      busyRef.current = isTyping
+      setBlockedReply(null)
+      if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null }
     }
+    setVoiceMode(v => !v)
+  }
+
+  const handleSend = () => {
+    unlockAudio()
+    doSend(input)
   }
 
   const handleEnd = () => {
@@ -325,7 +286,7 @@ function SimulationSession() {
         </div>
         {('speechSynthesis' in window || 'webkitSpeechRecognition' in window) && (
           <button
-            onClick={() => setVoiceMode(v => !v)}
+            onClick={toggleVoiceMode}
             className={cn(
               'flex text-[12.5px] font-medium p-2 sm:px-3 sm:py-1.5 rounded-full transition-colors items-center gap-1.5 border shrink-0',
               voiceMode ? 'bg-[var(--rose-soft)] text-[var(--pink)] border-th-pink/20' : 'text-[var(--text-secondary)] border-[var(--border)]'
@@ -377,14 +338,21 @@ function SimulationSession() {
 
       {/* Voice status */}
       <div className="h-9 flex items-center px-1 text-[12.5px] text-[var(--text-secondary)]">
-        {isSpeaking ? (
+        {blockedReply && !isSpeaking ? (
+          <button
+            onClick={() => { unlockAudio(); speakMessage(blockedReply) }}
+            className="flex items-center gap-1.5 text-[var(--pink)] font-medium hover:underline"
+          >
+            <Volume2 size={15} /> Tap to hear {aiAssistantName}&rsquo;s reply
+          </button>
+        ) : isSpeaking ? (
           <span className="flex items-center gap-1.5 text-[var(--pink)]"><Volume2 size={15} className="animate-pulse" /> {aiAssistantName} is speaking</span>
         ) : isListening ? (
           <span className="flex items-center gap-1.5 min-w-0"><Mic size={15} className="text-[var(--success)] animate-pulse shrink-0" /> Listening{interimText && <span className="italic truncate">&ldquo;{interimText}&rdquo;</span>}</span>
         ) : isTyping ? (
           <span className="flex items-center gap-1.5"><Loader2 size={15} className="animate-spin text-[var(--pink)]" /> {aiAssistantName} is thinking</span>
         ) : (
-          <span>{voiceMode ? 'Tap the mic to answer out loud, or type below.' : 'Type your answer below.'}</span>
+          <span>{voiceMode && speechSupported ? 'Tap the mic to answer out loud, or type below.' : 'Type your answer below.'}</span>
         )}
       </div>
 
@@ -392,13 +360,16 @@ function SimulationSession() {
       <div className="fn-card p-2 flex items-end gap-2">
         <button
           onClick={toggleListen}
-          aria-label={isListening ? 'Stop listening' : 'Start speaking'}
+          aria-label={!speechSupported ? 'Voice input not supported in this browser' : isListening ? 'Stop listening' : 'Start speaking'}
+          title={!speechSupported ? 'Voice input isn\'t supported in this browser' : undefined}
+          aria-disabled={!speechSupported}
           className={cn(
             'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors',
-            isListening ? 'bg-[var(--error)] text-white animate-pulse' : 'bg-[var(--rose-soft)] text-[var(--pink)] hover:bg-th-pink/20'
+            !speechSupported ? 'bg-[var(--bg)] text-[var(--text-secondary)] opacity-50 cursor-not-allowed'
+              : isListening ? 'bg-[var(--error)] text-white animate-pulse' : 'bg-[var(--rose-soft)] text-[var(--pink)] hover:bg-th-pink/20'
           )}
         >
-          {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+          {isListening || !speechSupported ? <MicOff size={20} /> : <Mic size={20} />}
         </button>
 
         <div className="flex-1 relative">

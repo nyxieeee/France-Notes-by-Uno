@@ -124,6 +124,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       Text content:\n\n${sourceText.substring(0, 12000)}`
 
       const result = await generateJSON(prompt, systemPrompt, 'reviewer', 0.85, 12000)
+      if (typeof result.summary !== 'string' || !result.summary.trim()) throw new Error('The study guide came back empty. Please try again.')
 
       if (result.flashcards) result.flashcards = result.flashcards.map((f: any) => ({ ...f, id: `fc-${Math.random().toString(36).substring(7)}` }))
       if (result.mnemonics) result.mnemonics = result.mnemonics.map((m: any) => ({ ...m, id: `mn-${Math.random().toString(36).substring(7)}` }))
@@ -138,18 +139,18 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
         is_favorite: false,
         user_id: session.user.id,
         content: {
-          summary: result.summary || "Summary generated.",
+          summary: result.summary,
           key_points: result.key_points || [],
           flashcards: result.flashcards || [],
           mnemonics: result.mnemonics || [],
-          simplified_explanation: result.simplified_explanation || "Simplified explanation here.",
+          simplified_explanation: result.simplified_explanation || '',
         }
       }
 
       const { data, error } = await supabase.from('reviewers').insert([newReviewerData]).select().single()
-      if (error) console.error('Error saving reviewer:', error)
+      if (error || !data) throw new Error('The study guide was made but could not be saved. Check your connection and try again.')
 
-      const newReviewer = data as ReviewerItem || { ...newReviewerData, id: 'temp-id', created_at: new Date().toISOString() } as any
+      const newReviewer = data as ReviewerItem
       set((state) => ({ 
         reviewers: [newReviewer, ...state.reviewers], 
         isGeneratingReviewer: false, 
@@ -158,39 +159,11 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       return newReviewer
     } catch (error) {
       console.error("Reviewer Generation Error:", error)
-      const allTopics = useStudyBoxStore.getState().topics
-      const allItems = useStudyBoxStore.getState().items
-      let fallbackTitle = 'Error'
-      let fallbackLabel = 'Unknown'
-      if (sourceItemIds && sourceItemIds.length > 0) {
-        const selectedItems = allItems.filter(item => sourceItemIds.includes(item.id))
-        fallbackLabel = selectedItems.length > 0 ? selectedItems.map(i => i.file_name).join(', ') : 'Unknown'
-        fallbackTitle = selectedItems.length > 0 ? selectedItems[0].file_name.split('.')[0] : 'Error'
-      } else if (topicId) {
-        const selectedTopic = allTopics.find(t => t.id === topicId)
-        fallbackLabel = `${aiAssistantName} Clinical Library`
-        fallbackTitle = selectedTopic ? selectedTopic.title : 'Error'
-      }
-      const fallbackReviewer = {
-        id: `err-${Math.random().toString(36).substring(7)}`,
-        topic_id: topicId || null,
-        title: `Review — ${fallbackTitle}`,
-        source_file: fallbackLabel,
-        is_favorite: false,
-        created_at: new Date().toISOString(),
-        content: {
-          summary: `Oops! ${aiAssistantName} is currently busy or rate-limited. Please wait a few seconds and try again, ${greetingName}!`,
-          key_points: ['AI is temporarily busy — please retry in a few seconds!'],
-          flashcards: [], mnemonics: [],
-          simplified_explanation: `Don't worry, ${greetingName}! Just a temporary hiccup. Try again!`
-        }
-      } as any
-      set((state) => ({ 
-        reviewers: [fallbackReviewer, ...state.reviewers], 
-        isGeneratingReviewer: false, 
-        isGenerating: state.isGeneratingPresentation 
+      set((state) => ({
+        isGeneratingReviewer: false,
+        isGenerating: state.isGeneratingPresentation
       }))
-      return fallbackReviewer
+      throw error
     }
   },
 
@@ -239,6 +212,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       const prompt = `Analyze this text for a presentation. Random seed: ${randomSeed}-${new Date().getTime()}. Text:\n\n${sourceText.substring(0, 8000)}`
 
       const result = await generateJSON(prompt, systemPrompt, 'reviewer', 0.85, 12000)
+      if (!Array.isArray(result.slides) || result.slides.length === 0) throw new Error('The slides came back empty. Please try again.')
       if (result.slides) result.slides = result.slides.map((s: any) => ({ ...s, id: `sl-${Math.random().toString(36).substring(7)}` }))
 
       const { data: { session } } = await supabase.auth.getSession()
@@ -259,9 +233,9 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       }
 
       const { data, error } = await supabase.from('reviewers').insert([newPresentationData]).select().single()
-      if (error) console.error('Error saving presentation:', error)
+      if (error || !data) throw new Error('The slides were made but could not be saved. Check your connection and try again.')
 
-      const newPresentation = data as ReviewerItem || { ...newPresentationData, id: 'temp-id', created_at: new Date().toISOString() } as any
+      const newPresentation = data as ReviewerItem
       set((state) => ({ 
         reviewers: [newPresentation, ...state.reviewers], 
         isGeneratingPresentation: false, 

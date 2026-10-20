@@ -17,7 +17,7 @@ interface AuthState {
   updatePassword: (password: string) => Promise<void>
 }
 
-export const useAuthStore = create<AuthState>()((set) => ({
+export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
@@ -55,6 +55,17 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
     // Listen for auth changes (e.g. after Google redirect)
     supabase.auth.onAuthStateChange((_event, session) => {
+      const previous = get().user
+      // Every store holds the signed-in user's data. If the session ends or a different account
+      // signs in without a page load (expiry, another tab), reload so nothing carries over.
+      if (previous && !session?.user) {
+        window.location.replace('/login')
+        return
+      }
+      if (previous && session?.user && session.user.id !== previous.id) {
+        window.location.reload()
+        return
+      }
       if (session?.user) {
         const u = session.user
         set({
@@ -186,6 +197,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
       }))
     } catch (e) {
       console.error("Failed to update profile in Supabase:", e)
+      // Callers show the error; the profile must not look saved when it wasn't
+      throw e
     } finally {
       set({ isLoading: false })
     }

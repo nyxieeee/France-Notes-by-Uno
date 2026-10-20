@@ -11,6 +11,7 @@ import { useNotesStore } from '@/stores/notesStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import type { Note, HandwritingDrawing } from '@/types'
+import { confirmDialog } from '@/stores/feedbackStore'
 
 const SAVE_DELAY_MS = 600
 
@@ -251,7 +252,7 @@ function EditorBar({ note, topics, saveState, onBack, onSave, onDelete, children
         <PushPin size={18} weight={note.is_pinned ? 'fill' : 'regular'} />
       </button>
       <button
-        onClick={() => { if (confirm('Delete this note? This can’t be undone.')) onDelete() }}
+        onClick={async () => { if (await confirmDialog({ title: 'Delete this note?', message: 'This can’t be undone.', confirmLabel: 'Delete', danger: true })) onDelete() }}
         className="btn-icon hover:text-[var(--error)]"
         aria-label="Delete note"
         title="Delete"

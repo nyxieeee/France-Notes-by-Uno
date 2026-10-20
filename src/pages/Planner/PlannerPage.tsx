@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn, getReminderTypeHex, getReminderTypeLabel } from '@/lib/utils'
 import { localDayKey } from '@/hooks/useStudyActivity'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { toast } from '@/stores/feedbackStore'
 
 const CATEGORIES: { value: Reminder['reminder_type']; label: string }[] = [
   { value: 'assignment', label: 'Assignment' },
@@ -59,22 +60,31 @@ export default function PlannerPage() {
     setShowAddModal(true)
   }
 
-  const handleAddReminder = (e: React.FormEvent) => {
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleAddReminder = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTitle || !newDate) return
+    if (!newTitle.trim() || !newDate || isSaving) return
 
-    // Combine date and time; default to noon when no time is given
-    const finalDateTime = newTime ? `${newDate}T${newTime}:00` : `${newDate}T12:00:00`
+    // Combine date and time in local time; default to noon when no time is given
+    const finalDateTime = new Date(`${newDate}T${newTime || '12:00'}:00`).toISOString()
 
-    addReminder({
-      title: newTitle,
-      due_date: finalDateTime,
-      reminder_type: newType,
-    })
-
-    setShowAddModal(false)
-    setNewTitle('')
-    setNewTime('')
+    setIsSaving(true)
+    try {
+      await addReminder({
+        title: newTitle.trim(),
+        due_date: finalDateTime,
+        reminder_type: newType,
+      })
+      setShowAddModal(false)
+      setNewTitle('')
+      setNewTime('')
+      toast('Task added', 'success')
+    } catch {
+      toast("Couldn't save the task. Check your connection and try again.", 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const groups = useMemo(() => {
@@ -292,7 +302,7 @@ export default function PlannerPage() {
 
                 <div className="flex justify-end gap-2 pt-1">
                   <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary px-5 py-2.5 text-sm">Cancel</button>
-                  <button type="submit" className="btn-primary px-5 py-2.5 text-sm">Save task</button>
+                  <button type="submit" disabled={isSaving} className="btn-primary px-5 py-2.5 text-sm disabled:opacity-60">{isSaving ? 'Saving…' : 'Save task'}</button>
                 </div>
               </form>
             </motion.div>

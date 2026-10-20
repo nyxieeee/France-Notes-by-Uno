@@ -18,6 +18,9 @@ const sortNotes = (notes: Note[]) =>
     Number(b.is_pinned) - Number(a.is_pinned) || new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   )
 
+// Pending save chain per note id (see updateNote)
+const saveQueues = new Map<string, Promise<void>>()
+
 export const useNotesStore = create<NotesState>()((set, get) => ({
   notes: [],
   isLoading: false,
@@ -66,18 +69,26 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
     return data as Note
   },
 
-  updateNote: async (id, updates) => {
+  updateNote: (id, updates) => {
     const updated_at = new Date().toISOString()
     // Optimistic — the editor saves on a debounce, so keep local state instant
     set(state => ({
       notes: sortNotes(state.notes.map(n => n.id === id ? { ...n, ...updates, updated_at } : n))
     }))
 
-    const { error } = await supabase.from('notes').update({ ...updates, updated_at }).eq('id', id)
-    if (error) {
-      console.error('Error saving note:', error)
-      set({ error: error.message })
+    // Saves for one note go out one at a time, in order, so a slow earlier save can never land
+    // after (and overwrite) a newer one
+    const run = async () => {
+      const { error } = await supabase.from('notes').update({ ...updates, updated_at }).eq('id', id)
+      if (error) {
+        console.error('Error saving note:', error)
+        set({ error: error.message })
+      }
     }
+    const queued = (saveQueues.get(id) ?? Promise.resolve()).then(run, run)
+    saveQueues.set(id, queued)
+    queued.finally(() => { if (saveQueues.get(id) === queued) saveQueues.delete(id) })
+    return queued
   },
 
   deleteNote: async (id) => {

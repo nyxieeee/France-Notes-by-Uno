@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -7,6 +7,8 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
+import { toast } from '@/stores/feedbackStore'
+import { usePersonalization } from '@/hooks/usePersonalization'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useNotesStore } from '@/stores/notesStore'
@@ -77,6 +79,12 @@ export default function SearchPage() {
   const q = params.get('q') ?? ''
   const tab = (params.get('tab') as Tab) || 'all'
   const [draft, setDraft] = useState(q)
+  // Keep the box in step with ?q= when a search arrives from elsewhere (e.g. the top bar while already here)
+  const [syncedQ, setSyncedQ] = useState(q)
+  if (q !== syncedQ) {
+    setSyncedQ(q)
+    setDraft(q)
+  }
   const [recent, setRecent] = useState<string[]>(loadRecent)
   const [openQuestion, setOpenQuestion] = useState<string | null>(null)
 
@@ -85,7 +93,13 @@ export default function SearchPage() {
   const { notes } = useNotesStore()
   const { quizzes } = useQuizStore()
   const sources = useTrustedSourceSearch()
+  const { knowledgeGardenName } = usePersonalization()
   const [savingIds, setSavingIds] = useState<string[]>([])
+
+  // Arriving on the Trusted Sources tab with a query (?tab=sources&q=...) runs the web search
+  useEffect(() => {
+    if (tab === 'sources' && q.trim() && sources.searchedQuery !== q && !sources.isSearching) sources.search(q)
+  }, [tab, q, sources])
 
   const setTab = (next: Tab) => {
     const p = new URLSearchParams(params)
@@ -159,7 +173,13 @@ export default function SearchPage() {
     const saved = savedKnowledge.find(k => k.id === r.id || k.url === r.url)
     if (saved) { removeKnowledge(saved.id); return }
     setSavingIds(prev => [...prev, r.id])
-    try { await saveKnowledge(r) } catch (err) { console.error('Save reference failed:', err) }
+    try {
+      await saveKnowledge(r)
+      toast(`Saved to ${knowledgeGardenName}`, 'success')
+    } catch (err) {
+      console.error('Save reference failed:', err)
+      toast(err instanceof Error && err.message ? err.message : "Couldn't save the reference. Please try again.", 'error')
+    }
     finally { setSavingIds(prev => prev.filter(id => id !== r.id)) }
   }
 

@@ -46,7 +46,8 @@ export const useReminderStore = create<ReminderState>()((set, get) => ({
 
     const newRem = {
       title: reminder.title,
-      due_date: reminder.due_date,
+      // Local wall-clock times without an offset would be stored as UTC; send an absolute instant
+      due_date: new Date(reminder.due_date).toISOString(),
       reminder_type: reminder.reminder_type,
       completed: false,
       user_id: session.user.id
@@ -60,6 +61,7 @@ export const useReminderStore = create<ReminderState>()((set, get) => ({
 
     if (error) {
       console.error('Error adding reminder:', error)
+      throw new Error(error.message)
     } else if (data) {
       set((state) => ({
         reminders: [data as Reminder, ...state.reminders]

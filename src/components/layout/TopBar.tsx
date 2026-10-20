@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useReminderStore } from '@/stores/reminderStore'
+import { localDayKey } from '@/hooks/useStudyActivity'
+import { getReminderTypeHex } from '@/lib/utils'
+import type { Reminder } from '@/types'
 
 const getNursingFacts = (isFrance: boolean, greetingName: string) => {
   if (isFrance) {
@@ -87,20 +90,13 @@ const getNursingFacts = (isFrance: boolean, greetingName: string) => {
   }
 }
 
-const getEmptyMessages = (isFrance: boolean, greetingName: string) => {
-  if (isFrance) {
-    return [
-      `No new trivia today, ${greetingName}! Just focus on studying! Doc Uno is cheering for you! I love you!`,
-      `No new notifications! Stay hydrated, future nurse! I'm always proud of you! I love you, ${greetingName}!`,
-      `The ward is quiet today, ${greetingName}! Time to focus on your nursing board review! I love you!`
-    ]
-  } else {
-    return [
-      `No new notifications today, ${greetingName}. Keep focusing on your study review!`,
-      `Your notification dashboard is clear. Remember to stay hydrated and take regular breaks!`,
-      `Everything is quiet in the clinical logs. Ready for another review session? Let's excel!`
-    ]
-  }
+function dueLabel(reminder: Reminder, todayKey: string, tomorrowKey: string) {
+  const key = localDayKey(new Date(reminder.due_date))
+  const time = new Date(reminder.due_date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  if (key < todayKey) return { text: `Overdue · ${new Date(reminder.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, overdue: true }
+  if (key === todayKey) return { text: `Today · ${time}`, overdue: false }
+  if (key === tomorrowKey) return { text: `Tomorrow · ${time}`, overdue: false }
+  return { text: time, overdue: false }
 }
 
 export default function TopBar() {
@@ -113,43 +109,46 @@ export default function TopBar() {
 
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [hasNotification, setHasNotification] = useState(false)
-  const [activeFact, setActiveFact] = useState<{ title: string; content: string } | null>(null)
-  const [emptyMessage, setEmptyMessage] = useState("")
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  const now = new Date()
+  const todayKey = localDayKey(now)
+  const tomorrow = new Date(now)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tomorrowKey = localDayKey(tomorrow)
+
+  // Open tasks that are overdue or due today/tomorrow, soonest first
+  const dueSoon = reminders
+    .filter(r => !r.completed && localDayKey(new Date(r.due_date)) <= tomorrowKey)
+    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+
+  // Which of today's due tasks have already been seen, stored per user per day
+  const seenKey = `fn-bell-seen-${user?.id || 'guest'}-${todayKey}`
+  const [seenIds, setSeenIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(seenKey) || '[]') } catch { return [] }
+  })
+  const [seenFor, setSeenFor] = useState(seenKey)
+  if (seenFor !== seenKey) {
+    // New day or different user: reload the seen list
+    setSeenFor(seenKey)
+    try { setSeenIds(JSON.parse(localStorage.getItem(seenKey) || '[]')) } catch { setSeenIds([]) }
+  }
+  const hasUnseen = dueSoon.some(r => !seenIds.includes(r.id))
+
+  // A fact of the day for when nothing is due (stable for the whole day)
   const factsList = getNursingFacts(isFrance, greetingName)
-  const emptyList = getEmptyMessages(isFrance, greetingName)
+  const dayIndex = Math.floor(new Date(todayKey).getTime() / 86400000)
+  const factOfDay = factsList[Math.abs(dayIndex) % factsList.length]
 
-  useEffect(() => {
-    // Check if there are any uncompleted reminders due today!
-    const today = new Date()
-    const todayStr = today.toISOString().split('T')[0]
-    const dueToday = reminders.filter(r => !r.completed && r.due_date.startsWith(todayStr))
-
-    if (dueToday.length > 0) {
-      setHasNotification(true)
-      const firstDue = dueToday[0]
-      setActiveFact({
-        title: `Reminder: ${firstDue.title}`,
-        content: isFrance 
-          ? `Babe, deadline na ng ${firstDue.title} ngayon! Gusto mo bang mag-review tayo? You got this!`
-          : `You have an upcoming deadline for ${firstDue.title} today. Please ensure you are prepared. Let's study!`
-      })
-    } else {
-      // Determine randomly if they have a notification today (65% chance)
-      const shouldHaveNotify = Math.random() < 0.65
-      setHasNotification(shouldHaveNotify)
-      
-      if (shouldHaveNotify) {
-        const randomFact = factsList[Math.floor(Math.random() * factsList.length)]
-        setActiveFact(randomFact)
-      } else {
-        const randomEmpty = emptyList[Math.floor(Math.random() * emptyList.length)]
-        setEmptyMessage(randomEmpty)
-      }
+  const openPanel = () => {
+    const next = !isOpen
+    setIsOpen(next)
+    if (next && hasUnseen) {
+      const ids = Array.from(new Set([...seenIds, ...dueSoon.map(r => r.id)]))
+      setSeenIds(ids)
+      try { localStorage.setItem(seenKey, JSON.stringify(ids)) } catch { /* storage unavailable */ }
     }
-  }, [isFrance, greetingName, reminders])
+  }
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -161,14 +160,6 @@ export default function TopBar() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  const handleMarkAsRead = () => {
-    setHasNotification(false)
-    setIsOpen(false)
-    // Select a new random empty message for next time
-    const randomEmpty = emptyList[Math.floor(Math.random() * emptyList.length)]
-    setEmptyMessage(randomEmpty)
-  }
 
   return (
     <header className="h-16 border-b border-[var(--border)] bg-th-card/80 backdrop-blur-md flex items-center justify-between gap-4 px-4 md:px-8 sticky top-0 z-40">
@@ -215,12 +206,12 @@ export default function TopBar() {
 
         <div className="relative" ref={dropdownRef}>
           <button 
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={openPanel}
             className="btn-icon relative transition-transform hover:scale-105 active:scale-95"
-            aria-label="Notifications"
+            aria-label={hasUnseen ? `Notifications, ${dueSoon.length} due` : 'Notifications'}
           >
             <Bell size={20} />
-            {hasNotification && (
+            {hasUnseen && (
               <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[var(--pink)] rounded-full border-2 border-[var(--card)] animate-pulse-soft"></span>
             )}
           </button>
@@ -265,36 +256,48 @@ export default function TopBar() {
                   </div>
                 </div>
 
-                {hasNotification && activeFact ? (
-                  <div className="space-y-3 relative z-50">
-                    <div className="bg-th-pink/5 border border-th-pink/10 rounded-xl p-3 text-left">
-                      <h5 
-                        className="text-xs font-semibold text-[var(--pink)] mb-1"
-                        style={{ fontFamily: "'Baloo 2', sans-serif" }}
-                      >
-                        {activeFact.title}
-                      </h5>
-                      <p className="text-xs text-[var(--text)] leading-relaxed font-body">
-                        {activeFact.content}
-                      </p>
+                {dueSoon.length > 0 ? (
+                  <div className="relative z-50">
+                    <p className="text-[11.5px] font-medium text-[var(--text-secondary)] mb-1.5">
+                      {isFrance ? `Coming up, ${greetingName}` : 'Due soon'}
+                    </p>
+                    <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar -mx-1">
+                      {dueSoon.slice(0, 8).map(r => {
+                        const label = dueLabel(r, todayKey, tomorrowKey)
+                        return (
+                          <button
+                            key={r.id}
+                            onClick={() => { setIsOpen(false); navigate('/planner') }}
+                            className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-[var(--rose-soft)] text-left"
+                          >
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getReminderTypeHex(r.reminder_type) }} />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[13px] font-medium truncate">{r.title}</span>
+                              <span className={`block text-[11.5px] ${label.overdue ? 'text-[var(--error)]' : 'text-[var(--text-secondary)]'}`}>{label.text}</span>
+                            </span>
+                          </button>
+                        )
+                      })}
                     </div>
-                    <button 
-                      onClick={handleMarkAsRead}
-                      className="w-full btn-primary py-1.5 text-xs rounded-xl flex items-center justify-center gap-1.5 font-semibold shadow-sm transition-all hover:shadow-md hover:scale-[1.01]"
+                    <button
+                      onClick={() => { setIsOpen(false); navigate('/planner') }}
+                      className="mt-2 w-full btn-secondary py-1.5 text-xs rounded-xl font-semibold"
                     >
-                      {isFrance ? "Oki Doc!" : "Understood!"}
+                      Open planner
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-2 py-1 text-center relative z-50">
-                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed italic px-2 font-body">
-                      "{emptyMessage}"
-                    </p>
-                    <button 
+                  <div className="space-y-3 relative z-50">
+                    <p className="text-[12.5px] text-[var(--text-secondary)]">Nothing due today or tomorrow.</p>
+                    <div className="bg-th-pink/5 border border-th-pink/10 rounded-xl p-3 text-left">
+                      <h5 className="text-xs font-semibold text-[var(--pink)] mb-1">{factOfDay.title}</h5>
+                      <p className="text-xs text-[var(--text)] leading-relaxed font-body">{factOfDay.content}</p>
+                    </div>
+                    <button
                       onClick={() => setIsOpen(false)}
-                      className="mt-2 w-full btn-secondary py-1 text-xs rounded-xl font-semibold hover:bg-[var(--secondary-bg)]"
+                      className="w-full btn-secondary py-1.5 text-xs rounded-xl font-semibold"
                     >
-                      Close
+                      {isFrance ? 'Oki Doc!' : 'Close'}
                     </button>
                   </div>
                 )}

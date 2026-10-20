@@ -16,6 +16,7 @@ import MarkdownText from '@/components/shared/MarkdownText'
 import { exportToPDF, exportToDOCX, exportToPPTX, printFlashcards } from '@/lib/export'
 import type { Flashcard, PresentationSlide, ReviewerItem } from '@/types'
 import { tintFor } from '@/lib/tints'
+import { confirmDialog, toast } from '@/stores/feedbackStore'
 
 type Filter = 'all' | 'guides' | 'slides' | 'favorites'
 
@@ -144,7 +145,13 @@ export default function ReviewerLibraryPage() {
                     {stats.map(s => <span key={s} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--rose-soft)] border border-[var(--border)]">{s}</span>)}
                     <div className="flex-1" />
                     <button
-                      onClick={(e) => { e.stopPropagation(); if (confirm('Delete this reviewer?')) deleteReviewer(reviewer.id) }}
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        if (await confirmDialog({ title: 'Delete this reviewer?', message: `"${reviewer.title}" will be removed from your library.`, confirmLabel: 'Delete', danger: true })) {
+                          deleteReviewer(reviewer.id)
+                          toast('Reviewer deleted', 'success')
+                        }
+                      }}
                       className="btn-icon p-1.5 hover:text-[var(--error)]"
                       aria-label="Delete reviewer"
                     >
@@ -385,7 +392,7 @@ function ReviewerDetail({ reviewer, onClose, topicTitle, onQuiz }: {
 
   const exports = [
     { label: 'PDF', icon: Download, run: () => exportToPDF(reviewer), show: true },
-    { label: 'Word document', icon: FileText, run: () => exportToDOCX(reviewer), show: true },
+    { label: 'Word document', icon: FileText, run: () => exportToDOCX(reviewer).catch(() => toast("Couldn't create the Word file. Please try again.", 'error')), show: true },
     { label: 'PowerPoint', icon: Presentation, run: () => exportToPPTX(reviewer), show: deck },
     { label: 'Print flashcards', icon: Printer, run: () => printFlashcards(reviewer), show: (reviewer.content.flashcards?.length ?? 0) > 0 },
   ].filter(e => e.show)

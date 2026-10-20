@@ -5,7 +5,8 @@ import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/ai'
-import { synthesizeSpeechElevenLabs } from '@/lib/elevenLabsTts'
+import { speak, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { toast } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -240,7 +241,9 @@ export default function PodcastReviewPage() {
   const [speed, setSpeed] = useState(1)
   const [progress, setProgress] = useState(0)
 
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const playRunRef = useRef(0)
+  const speedRef = useRef(speed)
+  useEffect(() => { speedRef.current = speed }, [speed])
   const currentLineRef = useRef(-1)
   const isPlayingRef = useRef(false)
 
@@ -274,12 +277,10 @@ export default function PodcastReviewPage() {
   }, [user?.id])
 
   const stopAllPlayback = () => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-      audioRef.current = null
-    }
+    // Bumping the run id makes any line still being synthesized drop itself instead of playing
+    playRunRef.current++
     isPlayingRef.current = false
+    stopPlayback()
   }
 
   const saveEpisodeToHistory = async (newEpisode: PodcastEpisode) => {
@@ -435,52 +436,48 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
     setActiveEpisodeId(ep.id)
   }
 
-  // ─── Playback Engine (Google Cloud TTS Neural2 + WebSpeech Fallback) ──────
-  const speakLine = useCallback(async (lineIndex: number) => {
-    if (lineIndex >= script.length || !isPlayingRef.current) {
-      setIsPlaying(false)
-      setCurrentLine(-1)
-      setProgress(1)
-      isPlayingRef.current = false
-      return
-    }
+  // ─── Playback Engine (ElevenLabs, falling back to the browser's own voices) ──
+  const speakLine = useCallback(async (startIndex: number, run: number) => {
+    for (let lineIndex = startIndex; lineIndex < script.length; lineIndex++) {
+      if (playRunRef.current !== run) return
+      const line = script[lineIndex]
+      currentLineRef.current = lineIndex
+      setCurrentLine(lineIndex)
+      setProgress(lineIndex / script.length)
 
-    const line = script[lineIndex]
-    currentLineRef.current = lineIndex
-    setCurrentLine(lineIndex)
-    setProgress(lineIndex / script.length)
+      const result = await speak(line.text, line.speaker, speedRef.current, () => playRunRef.current === run)
+      if (playRunRef.current !== run) return
 
-    // Attempt 1: Synthesize with ElevenLabs Turbo v2.5
-    const audioUrl = await synthesizeSpeechElevenLabs({
-      text: line.text,
-      speaker: line.speaker,
-    })
-
-    if (audioUrl && isPlayingRef.current) {
-      const audio = new Audio(audioUrl)
-      audioRef.current = audio
-      audio.playbackRate = speed
-
-      audio.onended = () => {
-        URL.revokeObjectURL(audioUrl)
-        if (isPlayingRef.current) {
-          speakLine(lineIndex + 1)
-        }
+      if (result === 'blocked') {
+        // iOS refused to start audio; pause on this line so one more tap on Play resumes it
+        isPlayingRef.current = false
+        setIsPlaying(false)
+        toast('Tap play again to start the audio.', 'info')
+        return
       }
-      audio.onerror = () => {
-        URL.revokeObjectURL(audioUrl)
-        if (isPlayingRef.current) speakLine(lineIndex + 1)
+      if (result === 'error') {
+        // No voice available at all: stop instead of racing silently through the episode
+        isPlayingRef.current = false
+        setIsPlaying(false)
+        toast('Audio isn\'t available right now. You can still read the transcript.', 'error')
+        return
       }
-      audio.play().catch(() => {
-        URL.revokeObjectURL(audioUrl)
-        if (isPlayingRef.current) speakLine(lineIndex + 1)
-      })
-      return
     }
+    setIsPlaying(false)
+    setCurrentLine(-1)
+    setProgress(1)
+    isPlayingRef.current = false
+  }, [script])
 
-    // If ElevenLabs fails, skip line and continue
-    if (isPlayingRef.current) speakLine(lineIndex + 1)
-  }, [script, speed])
+  const startFrom = (lineIndex: number) => {
+    // Must run inside the tap so iPad Safari allows audio for the whole episode
+    unlockAudio()
+    stopAllPlayback()
+    const run = playRunRef.current
+    isPlayingRef.current = true
+    setIsPlaying(true)
+    speakLine(lineIndex, run)
+  }
 
   const handlePlay = () => {
     if (script.length === 0) return
@@ -488,23 +485,13 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
       stopAllPlayback()
       setIsPlaying(false)
     } else {
-      isPlayingRef.current = true
-      setIsPlaying(true)
-      const start = currentLine < 0 || currentLine >= script.length ? 0 : currentLine
-      speakLine(start)
+      startFrom(currentLine < 0 || currentLine >= script.length ? 0 : currentLine)
     }
   }
 
   const handleRestart = () => {
-    stopAllPlayback()
-    setIsPlaying(false)
-    setCurrentLine(-1)
     setProgress(0)
-    setTimeout(() => {
-      isPlayingRef.current = true
-      setIsPlaying(true)
-      speakLine(0)
-    }, 150)
+    startFrom(0)
   }
 
   const hasScript = script.length > 0

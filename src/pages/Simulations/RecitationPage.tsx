@@ -5,6 +5,7 @@ import { useSimulationStore } from '@/stores/simulationStore'
 import type { DifficultyMode } from '@/stores/simulationStore'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { cn } from '@/lib/utils'
+import { unlockAudio } from '@/lib/elevenLabsTts'
 import { SimulationEngine } from '@/components/shared/SimulationEngine'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -13,8 +14,11 @@ export default function RecitationPage() {
   const { isActive, isEvaluating, activeMode, reset } = useSimulationStore()
 
   useEffect(() => {
-    // Clear old completed evaluation reports on mount if not in an active session
-    if (!isActive) {
+    // Clear an old finished report (it's saved in history), but keep a session that is still
+    // being graded or whose grading failed, so the transcript and "Try again" aren't lost
+    const sim = useSimulationStore.getState()
+    const gradingPending = sim.isEvaluating && !sim.scores
+    if (!sim.isActive && !gradingPending) {
       reset()
     }
   }, [])
@@ -63,6 +67,8 @@ function RecitationSetup() {
   }
 
   const handleStart = () => {
+    // Inside the tap, so iPad Safari lets the examiner's voice play later
+    unlockAudio()
     const { sourceText, sourceName } = getSourcePayload()
     startSession('recitation', selectedTopic, difficulty, sourceText, sourceName)
   }

@@ -15,6 +15,7 @@ import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatDate } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { toast } from '@/stores/feedbackStore'
 
 const YEAR_LEVELS = [
   { value: '1st Year', label: '1st Year' },
@@ -38,6 +39,7 @@ export default function ProfilePage() {
     year_level: user?.year_level || ''
   })
   const [savedAt, setSavedAt] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Cropper State
   const [selectedImageToCrop, setSelectedImageToCrop] = useState<string | null>(null)
@@ -110,10 +112,12 @@ export default function ProfilePage() {
         )
         
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8)
-        updateProfile({ avatar_url: compressedBase64 })
+        await updateProfile({ avatar_url: compressedBase64 })
+        toast('Profile picture updated.', 'success')
       }
     } catch (e) {
       console.error(e)
+      toast('Couldn\'t save your profile picture. Check your connection and try again.', 'error')
     } finally {
       setSelectedImageToCrop(null)
     }
@@ -245,11 +249,21 @@ export default function ProfilePage() {
             <div className="flex items-center justify-end gap-3 mt-5">
               {savedAt > 0 && !isDirty && <span className="text-[12.5px] text-[var(--success)] flex items-center gap-1"><Check size={14} weight="bold" /> Saved</span>}
               <button
-                disabled={!isDirty}
-                onClick={() => { updateProfile(editForm); setSavedAt(Date.now()) }}
+                disabled={!isDirty || isSaving}
+                onClick={async () => {
+                  setIsSaving(true)
+                  try {
+                    await updateProfile(editForm)
+                    setSavedAt(Date.now())
+                  } catch {
+                    toast('Couldn\'t save your changes. Check your connection and try again.', 'error')
+                  } finally {
+                    setIsSaving(false)
+                  }
+                }}
                 className="btn-primary px-5 py-2.5 text-sm disabled:opacity-50"
               >
-                Save changes
+                {isSaving ? 'Saving…' : 'Save changes'}
               </button>
             </div>
           </section>

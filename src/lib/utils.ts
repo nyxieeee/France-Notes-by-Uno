@@ -139,8 +139,13 @@ export function checkAnswerCorrectness(
       .toLowerCase()
       .trim()
 
-  // Normalize to arrays if it's SATA or either is an array
-  const isSata = questionType === 'sata' || Array.isArray(correctAnswer) || Array.isArray(userAnswer)
+  // Only select-all-that-apply questions compare sets of answers
+  const isSata = questionType === 'sata'
+  if (!isSata) {
+    // Single-answer questions sometimes come back from the AI with the answer wrapped in an array
+    if (Array.isArray(correctAnswer)) correctAnswer = correctAnswer[0] ?? ''
+    if (Array.isArray(userAnswer)) userAnswer = userAnswer[0] ?? ''
+  }
 
   if (isSata) {
     const correctArr = Array.isArray(correctAnswer) 

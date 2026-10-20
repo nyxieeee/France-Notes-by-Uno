@@ -156,168 +156,12 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
 
   addItem: async (file: File, topicId?: string) => {
     set({ isUploading: true })
-    
-    let extractedText = ''
+    // Whatever happens below, never leave the upload/processing banner stuck on screen
     try {
-      extractedText = await extractTextFromFile(file)
-      if (!extractedText.trim()) {
-        extractedText = `[SYSTEM MESSAGE: The uploaded document '${file.name}' did not contain any readable text. Scanned pages could not be read — try a clearer scan or upload the pages as photos.]`
-      }
-    } catch (error) {
-      console.error('Failed to extract text', error)
-      extractedText = `[SYSTEM MESSAGE: Failed to extract text from this document: ${file.name}. It may be corrupted or encrypted.]`
+      return await addItemSteps(file, topicId)
+    } finally {
+      set({ isUploading: false, isProcessing: false })
     }
-    
-    set({ isUploading: false, isProcessing: true })
-
-    let assignedTopicId = topicId || null
-    if (!assignedTopicId && extractedText.trim() && !extractedText.startsWith('[SYSTEM MESSAGE')) {
-      try {
-        const prompt = `
-          Based on the following document text, classify it into a broad nursing subject category.
-          Existing folders: ${get().topics.filter(t => t.id !== REFERENCES_TOPIC_ID).map(t => `"${t.title}"`).join(', ')}.
-          If one of the existing folders fits, return its title exactly as written. Only invent a new title (max 3 words) when none fit. Provide a short description.
-          Return a hex color code that fits a soft, pastel, cozy feminine theme (e.g., "#FFB6C1", "#A8D8B9", "#B8C5F7").
-          
-          Text snippet:
-          "${extractedText.substring(0, 1500)}"
-          
-          Format as JSON: { "title": "Topic Name", "description": "Short description", "color": "#HEX" }
-        `
-        const category = await generateJSON(prompt, DOC_UNO_SYSTEM_PROMPT, 'studybox')
-        
-        const existingTopics = get().topics
-        const existingTopic = existingTopics.find((t: Topic) => t.title.toLowerCase() === category.title?.toLowerCase())
-        
-        if (existingTopic) {
-          assignedTopicId = existingTopic.id
-        } else {
-          const newTopic = await get().createFolder(
-            category.title || 'General Notes',
-            category.color,
-            category.description || 'Automatically categorized notes'
-          )
-          assignedTopicId = newTopic.id
-        }
-      } catch (err) {
-        console.error("Failed to auto-categorize:", err)
-      }
-    }
-
-    const ext = file.name.split('.').pop()?.toLowerCase() || ''
-    const fileType = ['pdf'].includes(ext) ? 'pdf'
-      : ['docx', 'doc'].includes(ext) ? 'docx'
-      : ['pptx', 'ppt'].includes(ext) ? 'pptx'
-      : ['txt'].includes(ext) ? 'txt'
-      : 'image'
-
-    let previewImage: string | null = null
-    if (fileType === 'image') {
-      try {
-        previewImage = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.readAsDataURL(file)
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = error => reject(error)
-        })
-      } catch (e) {
-        console.error('Failed to read image as base64 preview', e)
-      }
-    }
-
-    let summaryText = ''
-    if (extractedText.trim() && !extractedText.startsWith('[SYSTEM MESSAGE')) {
-      try {
-        const config = getPersonalizationConfig(useAuthStore.getState().user)
-        const { isFrance, greetingName, aiAssistantName } = config
-
-        let summaryPrompt = ""
-        if (isFrance) {
-          summaryPrompt = `
-            You are Doc Uno, a loving and extremely smart nursing tutor helping your girlfriend France study.
-            Review the following document text and write a HIGHLY DETAILED, comprehensive, and clinically rigorous nursing study guide/summary of this material.
-            Do not output a simple or brief summary. Ensure it provides extensive information suitable for both clinical practice and high-stakes board exams like the PNLE.
-            
-            CUTE AESTHETIC & PERSONALITY RULE:
-            - Do not use emojis anywhere in the output.
-            - Speak to her in a sweet, supportive English boyfriend tone. Call her "babe", cheer her on, and make the review feel like a cozy, romantic, and extremely smart study date — in pure English only, no Tagalog!
-            
-            CRITICAL FORMATTING RULE:
-            - Do NOT use markdown tables (e.g. | BP | Stage | etc.) under any circumstances. If you need to make comparisons or show lists of stages/diagnostics, present them as clean bullet points, bold key-value lines, or indented lists. Raw tables are hard to read, so they must be avoided.
-            
-            Use markdown formatting and structure it with:
-            1. **Clinical Pathophysiology & Concepts Overview**: Exhaustive, deep-dive description of the disease/topic process, mechanisms, anatomical changes, etiology, and why they occur.
-            2. **High-Yield Clinical Assessment & Laboratory Findings**: Complete breakdown of physical assessments (early vs late signs, priority assessments), diagnostics, and critical lab values she must look out for.
-            3. **Pharmacological & Medical Management**: Critical medications, drug classes, therapeutic actions, adverse effects, and nursing interventions during drug administration.
-            4. **Exhaustive Nursing Care Priorities & Scientific Rationales**: Detailed step-by-step nursing interventions (assess, do, teach) with clinical rationales.
-            5. **Doc Uno's PNLE Board Appraisal & Study Pearls**: Specific board-exam style clinical focus scenarios, SATA concepts, and test-taking tips, written in a loving English boyfriend tone (call her "babe", cheer her on — no Tagalog!).
-            
-            Text to summarize:
-            "${extractedText.substring(0, 6000)}"
-          `
-        } else {
-          summaryPrompt = `
-            You are ${aiAssistantName}, an expert clinical nursing instructor.
-            Review the following document text and write a HIGHLY DETAILED, comprehensive, and clinically rigorous nursing study guide/summary of this material.
-            Do not output a simple or brief summary. Ensure it provides extensive, board-ready clinical reviews.
-            
-            PROFESSIONAL ENCOURAGING RULE:
-            - Do not use emojis anywhere in the output.
-            - Address the student as ${greetingName}. Keep the tone extremely professional, warm, highly intelligent, and focused on helping them excel on the board exams.
-            - Absolutely NO romantic references or boyfriend endearments.
-            
-            CRITICAL FORMATTING RULE:
-            - Do NOT use markdown tables (e.g. | BP | Stage | etc.) under any circumstances. If you need to make comparisons or show lists of stages/diagnostics, present them as clean bullet points, bold key-value lines, or indented lists. Raw tables are hard to read, so they must be avoided.
-            
-            Use markdown formatting and structure it with:
-            1. **Clinical Pathophysiology & Concepts Overview**: Exhaustive, deep-dive description of the disease/topic process, mechanisms, anatomical changes, etiology, and why they occur.
-            2. **High-Yield Clinical Assessment & Laboratory Findings**: Complete breakdown of physical assessments (early vs late signs, priority assessments), diagnostics, and critical lab values.
-            3. **Pharmacological & Medical Management**: Critical medications, drug classes, therapeutic actions, adverse effects, and nursing interventions during drug administration.
-            4. **Exhaustive Nursing Care Priorities & Scientific Rationales**: Detailed step-by-step nursing interventions (assess, do, teach) with clinical rationales.
-            5. **Board Appraisal & Study Pearls**: Specific board-exam style clinical focus scenarios, SATA concepts, and test-taking tips.
-            
-            Text to summarize:
-            "${extractedText.substring(0, 6000)}"
-          `
-        }
-
-        summaryText = await generateCompletion(summaryPrompt, undefined, 'studybox')
-      } catch (err) {
-        console.error("Failed to generate AI summary:", err)
-      }
-    }
-
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) throw new Error("No active session found")
-
-    const newItem = {
-      file_name: file.name,
-      file_type: fileType,
-      file_size: file.size,
-      extracted_text: extractedText,
-      preview_image: previewImage,
-      topic_id: assignedTopicId,
-      is_favorite: false,
-      tags: [],
-      summary: summaryText || undefined,
-      user_id: session.user.id
-    }
-    
-    // Save to Supabase
-    const { data, error } = await supabase
-      .from('study_materials')
-      .insert([newItem])
-      .select()
-      .single()
-
-    if (error) console.error("Error inserting file to Supabase", error)
-
-    set((state) => ({
-      items: data ? [data as StudyBoxItem, ...state.items] : state.items,
-      isProcessing: false,
-    }))
-    
-    return data as StudyBoxItem || { ...newItem, id: 'temp-id' } as any
   },
 
   removeItem: async (id: string) => {
@@ -362,7 +206,8 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
   clearSelection: () => set({ selectedItemIds: [] }),
 
   saveKnowledge: async (result: KnowledgeSearchResult) => {
-    const isAlreadySaved = get().savedKnowledge.some((k) => k.id === result.id)
+    // Search results get fresh ids on every search, so match saved references by their link
+    const isAlreadySaved = get().savedKnowledge.some((k) => k.id === result.id || (!!result.url && k.url === result.url))
     if (isAlreadySaved) return
 
     let fullArticleText = `SOURCE: ${result.source}\nURL: ${result.url}\n\n`
@@ -410,7 +255,8 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       user_id: session.user.id
     }
 
-    const { data: insertedItem } = await supabase.from('study_materials').insert([newItem]).select().single()
+    const { data: insertedItem, error: itemError } = await supabase.from('study_materials').insert([newItem]).select().single()
+    if (itemError || !insertedItem) throw new Error("The reference couldn't be saved. Check your connection and try again.")
     
     // In SQL we also had a saved_knowledge table
     const knowledgeToSave = {
@@ -422,11 +268,16 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       date_saved: new Date().toISOString(),
       user_id: session.user.id
     }
-    const { data: insertedKnowledge } = await supabase.from('saved_knowledge').insert([knowledgeToSave]).select().single()
+    const { data: insertedKnowledge, error: knowledgeError } = await supabase.from('saved_knowledge').insert([knowledgeToSave]).select().single()
+    if (knowledgeError || !insertedKnowledge) {
+      // Don't leave an orphaned article behind in the Study Box
+      await supabase.from('study_materials').delete().eq('id', (insertedItem as StudyBoxItem).id)
+      throw new Error("The reference couldn't be saved. Check your connection and try again.")
+    }
 
     set((state) => ({
-      savedKnowledge: insertedKnowledge ? [insertedKnowledge as KnowledgeSearchResult, ...state.savedKnowledge] : state.savedKnowledge,
-      items: insertedItem ? [insertedItem as StudyBoxItem, ...state.items] : state.items
+      savedKnowledge: [insertedKnowledge as KnowledgeSearchResult, ...state.savedKnowledge],
+      items: [insertedItem as StudyBoxItem, ...state.items]
     }))
   },
 
@@ -578,3 +429,170 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       .slice(0, count),
 }))
 
+// The upload pipeline behind addItem: extract text, sort into a folder, summarize, save.
+// Throws with a message that is safe to show to the user.
+async function addItemSteps(file: File, topicId?: string): Promise<StudyBoxItem> {
+  const set = useStudyBoxStore.setState
+  const get = useStudyBoxStore.getState
+
+  let extractedText: string
+  try {
+    extractedText = await extractTextFromFile(file)
+  } catch (error) {
+    console.error('Failed to extract text', error)
+    throw new Error(`Couldn't read “${file.name}”. It may be damaged, password-protected or an unsupported format.`)
+  }
+  if (!extractedText.trim()) {
+    extractedText = `[SYSTEM MESSAGE: The uploaded document '${file.name}' did not contain any readable text. Scanned pages could not be read — try a clearer scan or upload the pages as photos.]`
+  }
+
+  set({ isUploading: false, isProcessing: true })
+
+  let assignedTopicId = topicId || null
+  if (!assignedTopicId && extractedText.trim() && !extractedText.startsWith('[SYSTEM MESSAGE')) {
+    try {
+      const prompt = `
+        Based on the following document text, classify it into a broad nursing subject category.
+        Existing folders: ${get().topics.filter(t => t.id !== REFERENCES_TOPIC_ID).map(t => `"${t.title}"`).join(', ')}.
+        If one of the existing folders fits, return its title exactly as written. Only invent a new title (max 3 words) when none fit. Provide a short description.
+        Return a hex color code that fits a soft, pastel, cozy feminine theme (e.g., "#FFB6C1", "#A8D8B9", "#B8C5F7").
+        
+        Text snippet:
+        "${extractedText.substring(0, 1500)}"
+        
+        Format as JSON: { "title": "Topic Name", "description": "Short description", "color": "#HEX" }
+      `
+      const category = await generateJSON(prompt, DOC_UNO_SYSTEM_PROMPT, 'studybox')
+      
+      const existingTopics = get().topics
+      const existingTopic = existingTopics.find((t: Topic) => t.title.toLowerCase() === category.title?.toLowerCase())
+      
+      if (existingTopic) {
+        assignedTopicId = existingTopic.id
+      } else {
+        const newTopic = await get().createFolder(
+          category.title || 'General Notes',
+          category.color,
+          category.description || 'Automatically categorized notes'
+        )
+        assignedTopicId = newTopic.id
+      }
+    } catch (err) {
+      console.error("Failed to auto-categorize:", err)
+    }
+  }
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || ''
+  const fileType = ['pdf'].includes(ext) ? 'pdf'
+    : ['docx', 'doc'].includes(ext) ? 'docx'
+    : ['pptx', 'ppt'].includes(ext) ? 'pptx'
+    : ['txt'].includes(ext) ? 'txt'
+    : 'image'
+
+  let previewImage: string | null = null
+  if (fileType === 'image') {
+    try {
+      previewImage = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = error => reject(error)
+      })
+    } catch (e) {
+      console.error('Failed to read image as base64 preview', e)
+    }
+  }
+
+  let summaryText = ''
+  if (extractedText.trim() && !extractedText.startsWith('[SYSTEM MESSAGE')) {
+    try {
+      const config = getPersonalizationConfig(useAuthStore.getState().user)
+      const { isFrance, greetingName, aiAssistantName } = config
+
+      let summaryPrompt = ""
+      if (isFrance) {
+        summaryPrompt = `
+          You are Doc Uno, a loving and extremely smart nursing tutor helping your girlfriend France study.
+          Review the following document text and write a HIGHLY DETAILED, comprehensive, and clinically rigorous nursing study guide/summary of this material.
+          Do not output a simple or brief summary. Ensure it provides extensive information suitable for both clinical practice and high-stakes board exams like the PNLE.
+          
+          CUTE AESTHETIC & PERSONALITY RULE:
+          - Do not use emojis anywhere in the output.
+          - Speak to her in a sweet, supportive English boyfriend tone. Call her "babe", cheer her on, and make the review feel like a cozy, romantic, and extremely smart study date — in pure English only, no Tagalog!
+          
+          CRITICAL FORMATTING RULE:
+          - Do NOT use markdown tables (e.g. | BP | Stage | etc.) under any circumstances. If you need to make comparisons or show lists of stages/diagnostics, present them as clean bullet points, bold key-value lines, or indented lists. Raw tables are hard to read, so they must be avoided.
+          
+          Use markdown formatting and structure it with:
+          1. **Clinical Pathophysiology & Concepts Overview**: Exhaustive, deep-dive description of the disease/topic process, mechanisms, anatomical changes, etiology, and why they occur.
+          2. **High-Yield Clinical Assessment & Laboratory Findings**: Complete breakdown of physical assessments (early vs late signs, priority assessments), diagnostics, and critical lab values she must look out for.
+          3. **Pharmacological & Medical Management**: Critical medications, drug classes, therapeutic actions, adverse effects, and nursing interventions during drug administration.
+          4. **Exhaustive Nursing Care Priorities & Scientific Rationales**: Detailed step-by-step nursing interventions (assess, do, teach) with clinical rationales.
+          5. **Doc Uno's PNLE Board Appraisal & Study Pearls**: Specific board-exam style clinical focus scenarios, SATA concepts, and test-taking tips, written in a loving English boyfriend tone (call her "babe", cheer her on — no Tagalog!).
+          
+          Text to summarize:
+          "${extractedText.substring(0, 6000)}"
+        `
+      } else {
+        summaryPrompt = `
+          You are ${aiAssistantName}, an expert clinical nursing instructor.
+          Review the following document text and write a HIGHLY DETAILED, comprehensive, and clinically rigorous nursing study guide/summary of this material.
+          Do not output a simple or brief summary. Ensure it provides extensive, board-ready clinical reviews.
+          
+          PROFESSIONAL ENCOURAGING RULE:
+          - Do not use emojis anywhere in the output.
+          - Address the student as ${greetingName}. Keep the tone extremely professional, warm, highly intelligent, and focused on helping them excel on the board exams.
+          - Absolutely NO romantic references or boyfriend endearments.
+          
+          CRITICAL FORMATTING RULE:
+          - Do NOT use markdown tables (e.g. | BP | Stage | etc.) under any circumstances. If you need to make comparisons or show lists of stages/diagnostics, present them as clean bullet points, bold key-value lines, or indented lists. Raw tables are hard to read, so they must be avoided.
+          
+          Use markdown formatting and structure it with:
+          1. **Clinical Pathophysiology & Concepts Overview**: Exhaustive, deep-dive description of the disease/topic process, mechanisms, anatomical changes, etiology, and why they occur.
+          2. **High-Yield Clinical Assessment & Laboratory Findings**: Complete breakdown of physical assessments (early vs late signs, priority assessments), diagnostics, and critical lab values.
+          3. **Pharmacological & Medical Management**: Critical medications, drug classes, therapeutic actions, adverse effects, and nursing interventions during drug administration.
+          4. **Exhaustive Nursing Care Priorities & Scientific Rationales**: Detailed step-by-step nursing interventions (assess, do, teach) with clinical rationales.
+          5. **Board Appraisal & Study Pearls**: Specific board-exam style clinical focus scenarios, SATA concepts, and test-taking tips.
+          
+          Text to summarize:
+          "${extractedText.substring(0, 6000)}"
+        `
+      }
+
+      summaryText = await generateCompletion(summaryPrompt, undefined, 'studybox')
+    } catch (err) {
+      console.error("Failed to generate AI summary:", err)
+    }
+  }
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) throw new Error("No active session found")
+
+  const newItem = {
+    file_name: file.name,
+    file_type: fileType,
+    file_size: file.size,
+    extracted_text: extractedText,
+    preview_image: previewImage,
+    topic_id: assignedTopicId,
+    is_favorite: false,
+    tags: [],
+    summary: summaryText || undefined,
+    user_id: session.user.id
+  }
+  
+  // Save to Supabase
+  const { data, error } = await supabase
+    .from('study_materials')
+    .insert([newItem])
+    .select()
+    .single()
+
+  if (error || !data) {
+    console.error("Error inserting file to Supabase", error)
+    throw new Error(`“${file.name}” could not be saved. Check your connection and try again.`)
+  }
+
+  set((state) => ({ items: [data as StudyBoxItem, ...state.items] }))
+  return data as StudyBoxItem
+}

@@ -538,7 +538,8 @@ export async function generateJSON(
     }
     // ── End repair ──────────────────────────────────────────────────────────
 
-    return {}
+    // Never hand callers an empty object: they would save it as if it were real content
+    throw new Error('The AI response could not be read. Please try again.')
   }
 }
 

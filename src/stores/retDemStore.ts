@@ -40,6 +40,9 @@ interface RetDemState {
   generateProcedureFromUpload: () => Promise<RetDemProcedure>
 }
 
+/** A failure with a message written for the student, safe to show as-is. */
+export class RetDemError extends Error {}
+
 export const useRetDemStore = create<RetDemState>()((set, get) => ({
   procedures: [],
   activeProcedure: null,
@@ -151,7 +154,10 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
       const prompt = `Generate a fresh, unique, and complete nursing procedure guide for: "${topic}". Seed: ${randomSeed}`
 
       const result = await generateJSON(prompt, systemPrompt, 'retdem', 0.8, 4000)
-      
+      if (!Array.isArray(result?.steps) || result.steps.length === 0) {
+        throw new RetDemError('The procedure came back incomplete. Please try generating it again.')
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) throw new Error("No active session found")
       
@@ -168,9 +174,11 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
       }
 
       const { data, error } = await supabase.from('retdem_procedures').insert([newProcedureData]).select().single()
-      if (error) console.error('Error saving retdem procedure to Supabase:', error)
-
-      const savedProcedure = data as RetDemProcedure || { ...newProcedureData, id: 'temp-id', created_at: new Date().toISOString() } as any
+      if (error || !data) {
+        console.error('Error saving retdem procedure to Supabase:', error)
+        throw new RetDemError('The procedure was generated but couldn\'t be saved. Check your connection and try again.')
+      }
+      const savedProcedure = data as RetDemProcedure
       set((state) => ({
         procedures: [savedProcedure, ...state.procedures],
         activeProcedure: savedProcedure,
@@ -216,6 +224,9 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
       const prompt = `Convert this reference into a detailed checklist. Seed: ${randomSeed}\n\nReference:\n${combinedText}`
 
       const result = await generateJSON(prompt, systemPrompt, 'retdem', 0.8, 4000)
+      if (!Array.isArray(result?.steps) || result.steps.length === 0) {
+        throw new RetDemError('Couldn\'t build a checklist from that file. Try a clearer copy or a different file.')
+      }
 
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) throw new Error("No active session found")
@@ -247,19 +258,16 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
         }
       }
 
-      let procedure: RetDemProcedure
-      try {
-        const { data: savedProcedure, error: procedureError } = await supabase
-          .from('retdem_procedures')
-          .insert([newProcedureData])
-          .select()
-          .single()
-        if (procedureError) throw procedureError
-        procedure = savedProcedure as RetDemProcedure
-      } catch (e) {
-        console.error('Error saving uploaded procedure, using local fallback:', e)
-        procedure = { ...newProcedureData, id: `temp-${Math.random().toString(36).substring(7)}`, created_at: new Date().toISOString() } as RetDemProcedure
+      const { data: savedProcedure, error: procedureError } = await supabase
+        .from('retdem_procedures')
+        .insert([newProcedureData])
+        .select()
+        .single()
+      if (procedureError || !savedProcedure) {
+        console.error('Error saving uploaded procedure:', procedureError)
+        throw new RetDemError('The checklist was generated but couldn\'t be saved. Check your connection and try again.')
       }
+      const procedure = savedProcedure as RetDemProcedure
 
       set((state) => ({
         procedures: [procedure, ...state.procedures],

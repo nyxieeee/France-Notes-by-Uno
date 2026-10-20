@@ -35,6 +35,15 @@ interface MedInputs {
 
 const DROP_FACTORS = [10, 15, 20, 60]
 const DOSE_UNITS = ['mg', 'mcg', 'g', 'mEq', 'units', 'mL']
+// Mass units convert to mg; every other unit only compares with itself
+const MG_PER_UNIT: Record<string, number> = { g: 1000, mg: 1, mcg: 0.001 }
+
+/** Converts the ordered dose into the on-hand unit, or null when the units can't be compared. */
+function toHandUnit(dose: number, from: string, to: string): number | null {
+  if (from === to) return dose
+  if (from in MG_PER_UNIT && to in MG_PER_UNIT) return (dose * MG_PER_UNIT[from]) / MG_PER_UNIT[to]
+  return null
+}
 
 const ResultBadge = ({ label, value, unit, accent = false }: { label: string; value: string; unit: string; accent?: boolean }) => (
   <motion.div
@@ -249,7 +258,14 @@ export default function DosageCalculatorPage() {
     if (!dh || dh <= 0) { setMedError('Please enter the dose on hand.'); return }
     if (!vh || vh <= 0) { setMedError('Please enter the volume on hand.'); return }
 
-    const giveVolume = Math.round((od / dh) * vh * 100) / 100
+    const desired = toHandUnit(od, medInputs.orderedUnit, medInputs.handUnit)
+    if (desired === null) {
+      setMedError(`Can't convert ${medInputs.orderedUnit} to ${medInputs.handUnit}. Check the order and the label: both doses must use the same kind of unit.`)
+      setMedResult(null)
+      return
+    }
+
+    const giveVolume = Math.round((desired / dh) * vh * 100) / 100
     setMedResult(giveVolume)
     setMedError(null)
 
@@ -259,7 +275,7 @@ export default function DosageCalculatorPage() {
       type: 'med',
       title: `Med Dose: ${od} ${medInputs.orderedUnit} Ordered`,
       summary: `Give ${giveVolume} mL`,
-      details: `Ordered: ${od} ${medInputs.orderedUnit} | On Hand: ${dh} ${medInputs.handUnit} per ${vh} mL`,
+      details: `Ordered: ${od} ${medInputs.orderedUnit}${medInputs.orderedUnit !== medInputs.handUnit ? ` (= ${Math.round(desired * 1000) / 1000} ${medInputs.handUnit})` : ''} | On Hand: ${dh} ${medInputs.handUnit} per ${vh} mL`,
       created_at: new Date().toISOString()
     })
   }
@@ -377,7 +393,7 @@ export default function DosageCalculatorPage() {
                         />
                         <select
                           value={medInputs[f.unitKey]}
-                          onChange={e => setMed({ [f.unitKey]: e.target.value }, false)}
+                          onChange={e => setMed({ [f.unitKey]: e.target.value })}
                           className="fn-input rounded-xl bg-[var(--card)] py-2.5 w-24 text-sm font-medium"
                           aria-label={`${f.label} unit`}
                         >
@@ -403,7 +419,7 @@ export default function DosageCalculatorPage() {
                       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="rounded-2xl bg-[var(--rose-soft)] p-4 space-y-3">
                         <p className="text-[12.5px] font-medium text-[var(--success)] flex items-center gap-1.5"><CheckCircle2 size={15} weight="fill" /> Result saved to your history</p>
                         <ResultBadge label="Volume to give" value={String(medResult)} unit="mL" accent />
-                        <FormulaNote>Volume to give = (ordered dose ÷ dose on hand) × volume on hand</FormulaNote>
+                        <FormulaNote>Volume to give = (ordered dose ÷ dose on hand) × volume on hand. g, mg and mcg are converted to the same unit first.</FormulaNote>
                       </motion.div>
                     )}
                   </AnimatePresence>

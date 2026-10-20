@@ -40,7 +40,7 @@ export default function ProgressCard() {
         <h2 className="font-heading font-semibold text-[15px] flex items-center gap-2">
           <TrendingUp size={16} className="text-[var(--pink)]" /> Your Progress
         </h2>
-        <Link to="/quiz" className="text-xs font-medium text-[var(--pink)] hover:underline flex items-center gap-0.5">
+        <Link to="/quiz?view=history" className="text-xs font-medium text-[var(--pink)] hover:underline flex items-center gap-0.5">
           Quiz history <ChevronRight size={14} />
         </Link>
       </div>

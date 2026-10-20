@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { useRetDemStore } from '@/stores/retDemStore'
+import { useRetDemStore, RetDemError } from '@/stores/retDemStore'
 import type { HistoryFile } from '@/stores/retDemStore'
 import { Stethoscope, CaretRight as ChevronRight, Clock, Check, ArrowLeft, Play, Heart, MagnifyingGlass as Search, Info, ListChecks, Sparkle as Sparkles, UploadSimple as Upload, X, FileText, CircleNotch as Loader2, CheckCircle as CheckCircle2, Trash as Trash2, ClockCounterClockwise as History, WarningCircle, Eye, Microphone, ChalkboardTeacher, HandHeart, UserCircle } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
@@ -10,9 +10,11 @@ import { tintFor } from '@/lib/tints'
 import MarkdownText from '@/components/shared/MarkdownText'
 import type { RetDemProcedure, RecitationMode } from '@/types'
 import { useSimulationStore } from '@/stores/simulationStore'
+import { unlockAudio } from '@/lib/elevenLabsTts'
 import { SimulationEngine } from '@/components/shared/SimulationEngine'
 import { visionExtractText } from '@/lib/ai'
 import { extractTextFromFile } from '@/lib/extractor'
+import { toast } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 
 const SUGGESTED_PROCEDURES = ['Foley Catheter', 'IV Insertion', 'Wound Dressing', 'NG Tube Insertion', 'Blood Transfusion', 'Nasogastric Suction']
@@ -29,8 +31,11 @@ export default function RetDemPage() {
   const { isActive, isEvaluating, activeMode, reset } = useSimulationStore()
 
   useEffect(() => {
-    // Clear old completed evaluation reports on mount if not in an active session
-    if (!isActive) {
+    // Clear an old finished report (it's saved in history), but keep a session that is still
+    // being graded or whose grading failed, so the transcript and "Try again" aren't lost
+    const sim = useSimulationStore.getState()
+    const gradingPending = sim.isEvaluating && !sim.scores
+    if (!sim.isActive && !gradingPending) {
       reset()
     }
   }, [])
@@ -64,9 +69,11 @@ export default function RetDemPage() {
           // PDFs (including scanned ones) and DOCX need real parsing, not readAsText
           extractedText = await extractTextFromFile(file)
         }
+        if (!extractedText.trim() || extractedText.startsWith('[SYSTEM MESSAGE')) throw new Error('No readable text')
         addUploadedFile(file.name, extractedText)
       } catch (e) {
         console.error('File extraction failed for', file.name, e)
+        toast(`Couldn't read text from “${file.name}”. Try a clearer photo, or a PDF or Word file.`, 'error')
       }
     }
     setIsExtracting(false)
@@ -206,7 +213,7 @@ export default function RetDemPage() {
                               setActiveTab('library')
                             } catch (e) {
                               console.error(e)
-                              setGenerateError(connectionError)
+                              setGenerateError(e instanceof RetDemError ? e.message : connectionError)
                             }
                           }}
                           disabled={isGenerating}
@@ -327,7 +334,7 @@ export default function RetDemPage() {
                           setActiveTab('library')
                         } catch (err) {
                           console.error(err)
-                          setGenerateError(connectionError)
+                          setGenerateError(err instanceof RetDemError ? err.message : connectionError)
                         }
                       }}
                       className="p-6 space-y-4"
@@ -517,7 +524,7 @@ function RetDemDetail({ procedure, onBack, mode: storedMode, onModeChange }: {
               <Heart size={16} weight={procedure.is_favorite ? 'fill' : 'regular'} className={procedure.is_favorite ? 'text-[var(--pink)]' : ''} /> {procedure.is_favorite ? 'Saved' : 'Save'}
             </button>
             <button
-              onClick={() => startSession('retdem', procedure.title, mode, buildProcedureSourceText(), sourceName)}
+              onClick={() => { unlockAudio(); startSession('retdem', procedure.title, mode, buildProcedureSourceText(), sourceName) }}
               className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"
             >
               <Play size={16} weight="fill" /> Start practice

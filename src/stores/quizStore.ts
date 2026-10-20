@@ -5,6 +5,7 @@ import { generateJSON } from '@/lib/ai'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
+import { toast } from './feedbackStore'
 
 interface QuizState {
   quizzes: Quiz[]
@@ -17,6 +18,9 @@ interface QuizState {
   isFinished: boolean
   isLoading: boolean
   error: string | null
+  // Set when quiz generation fails; the page shows it with Retry / Back
+  generationError: string | null
+  lastConfig: QuizSetupConfig | null
 
   fetchQuizzes: () => Promise<void>
   startQuiz: (config: QuizSetupConfig) => Promise<void>
@@ -29,6 +33,8 @@ interface QuizState {
   getScore: () => number
 }
 
+let finishing = false
+
 export const useQuizStore = create<QuizState>()((set, get) => ({
   quizzes: [],
   activeQuiz: null,
@@ -40,6 +46,8 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
   isFinished: false,
   isLoading: false,
   error: null,
+  generationError: null,
+  lastConfig: null,
 
   fetchQuizzes: async () => {
     set({ isLoading: true, error: null })
@@ -63,7 +71,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
   },
 
   startQuiz: async (config: any) => {
-    set({ isGenerating: true, generationProgress: { done: 0, total: config.size }, activeQuiz: null, questions: [], currentIndex: 0, answers: {}, isFinished: false })
+    set({ isGenerating: true, generationError: null, lastConfig: config, generationProgress: { done: 0, total: config.size }, activeQuiz: null, questions: [], currentIndex: 0, answers: {}, isFinished: false })
     
     // Create temporary quiz object in memory while generating
     const newQuiz: Partial<Quiz> = {
@@ -229,21 +237,12 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       }))
     } catch (error) {
       console.error("Quiz Generation Error:", error)
-      const errorQuestion: QuizQuestion = {
-        id: "error-q",
-        quiz_id: "error-quiz",
-        question: "The AI couldn't finish generating your quiz. Please try again in a moment, or pick a smaller quiz size.",
-        question_type: "multiple_choice",
-        choices: ["Retry", "Go Back", "Upload another document", "Cancel"],
-        correct_answer: "Retry",
-        rationale: "There was an error communicating with the AI. Try generating the quiz again."
-      }
-
-      set(() => ({
-        activeQuiz: { ...newQuiz, total_items: 1, created_at: new Date().toISOString() } as Quiz,
-        questions: [errorQuestion],
-        isGenerating: false
-      }))
+      set({
+        isGenerating: false,
+        activeQuiz: null,
+        questions: [],
+        generationError: "The AI couldn't finish writing your quiz. Check your connection and try again, or pick a smaller quiz size.",
+      })
     }
   },
 
@@ -268,14 +267,10 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
   },
 
   finishQuiz: async () => {
-    const { activeQuiz, questions, answers } = get()
-    if (!activeQuiz) return
-
-    // Generation failed — the placeholder question isn't a real attempt, so don't record a score
-    if (questions.some(q => q.id === 'error-q')) {
-      get().resetQuiz()
-      return
-    }
+    const { activeQuiz, questions, answers, isFinished } = get()
+    // A timed-out quiz and a tap on Finish can both land here; only the first one saves
+    if (!activeQuiz || isFinished || finishing) return
+    finishing = true
 
     const score = get().getScore()
     const { data: { session } } = await supabase.auth.getSession()
@@ -298,7 +293,9 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
 
     if (error) {
       console.error("Failed to save quiz to Supabase:", error)
+      toast("Your score couldn't be saved to your history. Check your connection.", 'error')
     }
+    finishing = false
 
     set((state) => ({
       isFinished: true,
@@ -308,7 +305,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
   },
 
   resetQuiz: () => {
-    set({ activeQuiz: null, questions: [], currentIndex: 0, answers: {}, isFinished: false })
+    set({ activeQuiz: null, questions: [], currentIndex: 0, answers: {}, isFinished: false, generationError: null })
   },
   
   deleteQuiz: async (id: string) => {

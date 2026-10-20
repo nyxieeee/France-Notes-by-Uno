@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { confirmDialog } from '@/stores/feedbackStore'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Microphone, Stethoscope, CaretRight, Heart, CheckCircle, Trash, ListChecks, Play } from '@phosphor-icons/react'
@@ -121,7 +122,7 @@ export default function SimulationHubPage() {
               </p>
             </div>
             <button
-              onClick={() => { if (confirm('Delete this result?')) deleteSession(s.id) }}
+              onClick={async () => { if (await confirmDialog({ title: 'Delete this result?', message: 'The score and feedback for this session will be removed from your history.', confirmLabel: 'Delete', danger: true })) deleteSession(s.id) }}
               className="btn-icon p-1.5 hover:text-[var(--error)]"
               aria-label="Delete result"
             >

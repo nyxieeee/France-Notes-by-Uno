@@ -34,6 +34,60 @@ interface ChatState {
   getDocUnoResponse: (userMessage: string) => Promise<string>
 }
 
+const LEGACY_SESSION_ID = 'earlier-chats'
+const cacheKey = (userId: string) => `france_notes_chat_sessions_${userId}`
+const migratedKey = (userId: string) => `france_notes_chat_synced_${userId}`
+const titleFrom = (text: string) => text.substring(0, 30) + (text.length > 30 ? '...' : '')
+
+type ChatRow = ChatMessage & { session_id?: string | null; session_title?: string | null }
+
+// null = not checked yet; false = chat_messages has no session columns (schema.sql not re-run)
+let sessionColumns: boolean | null = null
+async function hasSessionColumns() {
+  if (sessionColumns === null) {
+    const { error } = await supabase.from('chat_messages').select('session_id, session_title').limit(1)
+    sessionColumns = !error
+  }
+  return sessionColumns
+}
+
+function readCache(userId: string): ChatSession[] {
+  try { return JSON.parse(localStorage.getItem(cacheKey(userId)) || '[]') as ChatSession[] } catch { return [] }
+}
+function writeCache(userId: string, sessions: ChatSession[]) {
+  try { localStorage.setItem(cacheKey(userId), JSON.stringify(sessions)) } catch { /* storage full or blocked */ }
+}
+
+async function saveMessage(userId: string, sessionId: string, sessionTitle: string, msg: ChatMessage) {
+  const row = { role: msg.role, content: msg.content, user_id: userId, created_at: msg.created_at }
+  if (await hasSessionColumns()) {
+    const { error } = await supabase.from('chat_messages').insert([{ ...row, session_id: sessionId, session_title: sessionTitle }])
+    if (!error) return
+    console.warn('Saving chat message with session failed, retrying without:', error.message)
+  }
+  const { error } = await supabase.from('chat_messages').insert([row])
+  if (error) console.warn('Saving chat message failed:', error.message)
+}
+
+// Chats from before sessions were synced exist only in this browser plus as untagged rows.
+// Upload them with their session ids once, then drop the untagged copies so they don't show twice.
+async function migrateLocalSessions(userId: string, local: ChatSession[], legacyRows: ChatRow[]) {
+  if (localStorage.getItem(migratedKey(userId))) return false
+  const withMessages = local.filter(s => s.messages.length > 0)
+  if (withMessages.length === 0) { localStorage.setItem(migratedKey(userId), '1'); return false }
+  const rows = withMessages.flatMap(s => s.messages.map(m => ({
+    role: m.role, content: m.content, user_id: userId, created_at: m.created_at,
+    session_id: s.id, session_title: s.title,
+  })))
+  const { error } = await supabase.from('chat_messages').insert(rows)
+  if (error) { console.warn('Chat migration failed:', error.message); return false }
+  const uploaded = new Set(rows.map(r => `${r.role}\u0000${r.content}`))
+  const duplicates = legacyRows.filter(r => uploaded.has(`${r.role}\u0000${r.content}`)).map(r => r.id)
+  if (duplicates.length > 0) await supabase.from('chat_messages').delete().in('id', duplicates)
+  localStorage.setItem(migratedKey(userId), '1')
+  return true
+}
+
 export const useChatStore = create<ChatState>()((set, get) => ({
   sessions: [],
   activeSessionId: null,
@@ -55,56 +109,63 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }
 
     const userId = session.user.id
-    const storageKey = `france_notes_chat_sessions_${userId}`
-    const localData = localStorage.getItem(storageKey)
+    const local = readCache(userId)
+    // Show this device's copy right away; the synced version replaces it below
+    if (local.length > 0) set({ sessions: local, activeSessionId: get().activeSessionId ?? local[0].id })
 
-    if (localData) {
-      try {
-        const parsed = JSON.parse(localData) as ChatSession[]
-        set({ 
-          sessions: parsed, 
-          activeSessionId: parsed.length > 0 ? parsed[0].id : null,
-          isLoading: false 
-        })
-        return
-      } catch (e) {
-        console.error('Failed to parse local chat sessions:', e)
-      }
+    const load = () => supabase.from('chat_messages').select('*').eq('user_id', userId).order('created_at', { ascending: true })
+    const { data, error } = await load()
+    if (error || !data) {
+      // Offline or blocked: keep the local copy
+      set({ isLoading: false })
+      return
     }
 
-    // Migration / Fallback: If no local sessions, fetch existing single thread from Supabase
-    try {
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true })
+    if (!(await hasSessionColumns())) {
+      // Older database without session columns: sessions live on this device, server rows are a backup
+      if (local.length === 0 && data.length > 0) {
+        const backup: ChatSession = { id: LEGACY_SESSION_ID, title: 'Earlier chats', messages: data as ChatMessage[], created_at: data[0].created_at }
+        writeCache(userId, [backup])
+        set({ sessions: [backup], activeSessionId: backup.id })
+      }
+      set({ isLoading: false })
+      return
+    }
 
-      if (!error && data && data.length > 0) {
-        // Create a default session containing these messages
-        const defaultSession: ChatSession = {
-          id: generateId(),
-          title: data[0].content ? data[0].content.substring(0, 30) + (data[0].content.length > 30 ? '...' : '') : 'Study Companion Chat',
-          messages: data as ChatMessage[],
-          created_at: data[0].created_at || new Date().toISOString()
+    let rows = data as ChatRow[]
+    if (await migrateLocalSessions(userId, local, rows.filter(r => !r.session_id))) {
+      const reloaded = await load()
+      if (!reloaded.error && reloaded.data) rows = reloaded.data as ChatRow[]
+    }
+
+    const grouped = new Map<string, ChatSession>()
+    for (const row of rows) {
+      const id = row.session_id || LEGACY_SESSION_ID
+      let chat = grouped.get(id)
+      if (!chat) {
+        chat = {
+          id,
+          title: row.session_id ? (row.session_title || titleFrom(row.content)) : 'Earlier chats',
+          messages: [],
+          created_at: row.created_at,
         }
-        
-        const initialSessions = [defaultSession]
-        localStorage.setItem(storageKey, JSON.stringify(initialSessions))
-        
-        set({ 
-          sessions: initialSessions, 
-          activeSessionId: defaultSession.id,
-          isLoading: false 
-        })
-      } else {
-        // No past messages, start with a fresh template
-        set({ sessions: [], activeSessionId: null, isLoading: false })
+        grouped.set(id, chat)
       }
-    } catch (err) {
-      console.error('Error during Supabase messages migration:', err)
-      set({ sessions: [], activeSessionId: null, isLoading: false })
+      chat.messages.push({ id: row.id, role: row.role, content: row.content, created_at: row.created_at })
     }
+    // Newest conversation first; keep a just-created empty chat from this device
+    const synced = Array.from(grouped.values()).sort((x, y) =>
+      new Date(y.messages[y.messages.length - 1].created_at).getTime() - new Date(x.messages[x.messages.length - 1].created_at).getTime())
+    const emptyLocal = local.filter(s => s.messages.length === 0 && !grouped.has(s.id))
+    const sessions = [...emptyLocal, ...synced]
+
+    writeCache(userId, sessions)
+    const current = get().activeSessionId
+    set({
+      sessions,
+      activeSessionId: current && sessions.some(s => s.id === current) ? current : sessions[0]?.id ?? null,
+      isLoading: false,
+    })
   },
 
   setActiveSession: (sessionId: string | null) => {
@@ -126,9 +187,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ sessions: updatedSessions, activeSessionId: newSession.id })
 
     const user = useAuthStore.getState().user
-    if (user?.id) {
-      localStorage.setItem(`france_notes_chat_sessions_${user.id}`, JSON.stringify(updatedSessions))
-    }
+    if (user?.id) writeCache(user.id, updatedSessions)
 
     return newSession.id
   },
@@ -145,8 +204,15 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ sessions: updatedSessions, activeSessionId: nextActiveId })
 
     const user = useAuthStore.getState().user
-    if (user?.id) {
-      localStorage.setItem(`france_notes_chat_sessions_${user.id}`, JSON.stringify(updatedSessions))
+    if (!user?.id) return
+    writeCache(user.id, updatedSessions)
+
+    const removing = sessions.find(s => s.id === sessionId)
+    if (sessionId === LEGACY_SESSION_ID) {
+      const ids = removing?.messages.map(m => m.id) ?? []
+      if (ids.length > 0) await supabase.from('chat_messages').delete().in('id', ids)
+    } else if (await hasSessionColumns()) {
+      await supabase.from('chat_messages').delete().eq('user_id', user.id).eq('session_id', sessionId)
     }
   },
 
@@ -191,20 +257,12 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         return s
       })
       
-      localStorage.setItem(`france_notes_chat_sessions_${user.id}`, JSON.stringify(updated))
+      writeCache(user.id, updated)
       return { sessions: updated, isTyping: true }
     })
 
-    // Back up to Supabase 'chat_messages' table (optional, for safety)
-    try {
-      await supabase.from('chat_messages').insert([{
-        role: 'user',
-        content,
-        user_id: user.id
-      }])
-    } catch (e) {
-      console.warn('Backup of message to Supabase failed:', e)
-    }
+    const sessionTitle = get().sessions.find(s => s.id === currentSessionId)?.title || titleFrom(content)
+    await saveMessage(user.id, currentSessionId, sessionTitle, userMsg)
 
     // Get Doc Uno / AI response
     const responseContent = await get().getDocUnoResponse(content)
@@ -228,20 +286,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         return s
       })
       
-      localStorage.setItem(`france_notes_chat_sessions_${user.id}`, JSON.stringify(updated))
+      writeCache(user.id, updated)
       return { sessions: updated, isTyping: false }
     })
 
-    // Back up AI response to Supabase
-    try {
-      await supabase.from('chat_messages').insert([{
-        role: 'assistant',
-        content: responseContent,
-        user_id: user.id
-      }])
-    } catch (e) {
-      console.warn('Backup of AI response to Supabase failed:', e)
-    }
+    await saveMessage(user.id, currentSessionId, sessionTitle, assistantMsg)
   },
 
   clearHistory: async () => {
@@ -249,7 +298,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const user = useAuthStore.getState().user
     if (!user?.id) return
 
-    localStorage.removeItem(`france_notes_chat_sessions_${user.id}`)
+    localStorage.removeItem(cacheKey(user.id))
 
     // Clear backups in Supabase
     try {

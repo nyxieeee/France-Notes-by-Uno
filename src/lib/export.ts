@@ -3,6 +3,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
 import type { ReviewerItem } from '@/types'
 import { useAuthStore } from '@/stores/authStore'
 import { isFranceUser } from '@/lib/personalization'
+import { toast } from '@/stores/feedbackStore'
 
 export const exportToPDF = async (reviewer: ReviewerItem) => {
   const { user } = useAuthStore.getState()
@@ -138,6 +139,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
     pdf.save(`${reviewer.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_Study_Guide.pdf`)
   } catch (err) {
     console.error("PDF Export error:", err)
+    toast("Couldn't create the PDF. Please try again.", 'error')
   }
 }
 
@@ -389,19 +391,20 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     await pptx.writeFile({ fileName: `${reviewer.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_Slides.pptx` })
   } catch (err) {
     console.error("Failed to export PPTX slide deck:", err)
+    toast("Couldn't create the PowerPoint file. Please try again.", 'error')
   }
 }
 
 export const printFlashcards = (reviewer: ReviewerItem) => {
   const cards = reviewer.content.flashcards
   if (!cards || cards.length === 0) {
-    alert("Babe, there are no flashcards generated for this reviewer yet!")
+    toast('This reviewer has no flashcards to print yet.', 'info')
     return
   }
 
   const printWindow = window.open('', '_blank')
   if (!printWindow) {
-    alert("Please allow popups to print your flashcards!")
+    toast('Allow pop-ups for this site to print your flashcards.', 'error')
     return
   }
 
