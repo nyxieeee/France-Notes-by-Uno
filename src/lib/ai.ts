@@ -420,8 +420,10 @@ export async function callGeminiGroundedSearch(
 
 // ─── Core Router ──────────────────────────────────────────────────────────────
 
-// Features that stick to their primary provider and never fall back
-const SINGLE_PROVIDER_FEATURES: AIFeature[] = ['quiz']
+// Features that stick to their primary provider and never fall back.
+// (Quizzes used to, back when one request wrote the whole quiz; they now go 5 questions at a time,
+// which Gemini handles fine, so a Mistral outage or rate limit no longer stops her quiz.)
+const SINGLE_PROVIDER_FEATURES: AIFeature[] = []
 
 async function routedCall(
   feature: AIFeature,
