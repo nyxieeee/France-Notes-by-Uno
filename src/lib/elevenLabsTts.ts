@@ -1,8 +1,8 @@
-// ─── ElevenLabs Text-to-Speech Client ───────────────────────────────────────
-// Routes through /api/elevenlabs Vercel proxy so the API key stays server-side.
+// ─── Text-to-Speech Client ──────────────────────────────────────────────────
+// Routes through the /api/tts (free voices) and /api/elevenlabs Vercel proxies so keys stay server-side.
 // Playback helpers below fall back to the Web Speech API if the proxy call fails.
 
-import { getVoiceChoice } from '@/lib/voices'
+import { HOST_VOICES, findVoice, getVoiceChoice } from '@/lib/voices'
 
 export type ElevenLabsSpeaker = 'DOC_UNO' | 'NURSE_FLORENCE'
 
@@ -16,40 +16,24 @@ export interface ElevenLabsSynthOptions {
   nextText?: string
 }
 
-/**
- * Synthesizes speech via the /api/elevenlabs proxy (ElevenLabs Turbo v2.5).
- * Returns a blob object-URL (audio/mpeg) on success, or null on failure.
- */
-export async function synthesizeSpeechElevenLabs({
-  text,
-  speaker,
-  voiceId,
-  previousText,
-  nextText,
-}: ElevenLabsSynthOptions): Promise<string | null> {
+async function requestAudio(endpoint: string, body: Record<string, unknown>): Promise<string | null> {
   try {
-    const response = await fetch('/api/elevenlabs', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text,
-        speaker,
-        voice_id: voiceId || getVoiceChoice(speaker),
-        previous_text: previousText,
-        next_text: nextText,
-      }),
+      body: JSON.stringify(body),
     })
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({ error: response.statusText }))
-      console.error('[ElevenLabs TTS] Status:', response.status, '| ElevenLabs error:', errData.error)
+      console.error(`[TTS ${endpoint}] Status:`, response.status, '| error:', errData.error)
       return null
     }
 
-    // Proxy returns base64-encoded audio as JSON
+    // Proxies return base64-encoded audio as JSON
     const data = await response.json()
     if (!data.audio) {
-      console.warn('[ElevenLabs TTS] No audio in proxy response')
+      console.warn(`[TTS ${endpoint}] No audio in proxy response`)
       return null
     }
 
@@ -63,9 +47,32 @@ export async function synthesizeSpeechElevenLabs({
     return URL.createObjectURL(blob)
 
   } catch (error) {
-    console.error('[ElevenLabs TTS] Error:', error)
+    console.error(`[TTS ${endpoint}] Error:`, error)
     return null
   }
+}
+
+/**
+ * Synthesizes speech with the host's chosen voice: free Microsoft neural voices (/api/tts) or
+ * ElevenLabs (/api/elevenlabs, uses credits). If the chosen service fails, the other one is tried.
+ * Returns a blob object-URL (audio/mpeg) on success, or null on failure.
+ */
+export async function synthesizeSpeech({
+  text,
+  speaker,
+  voiceId,
+  previousText,
+  nextText,
+}: ElevenLabsSynthOptions): Promise<string | null> {
+  const chosen = findVoice(speaker, voiceId || getVoiceChoice(speaker)) ?? HOST_VOICES[speaker][0]
+  const viaFree = (voice?: string) => requestAudio('/api/tts', { text, speaker, voice })
+  const viaElevenLabs = (voice?: string) =>
+    requestAudio('/api/elevenlabs', { text, speaker, voice_id: voice, previous_text: previousText, next_text: nextText })
+
+  if (chosen.provider === 'free') {
+    return (await viaFree(chosen.id)) ?? (voiceId ? null : await viaElevenLabs())
+  }
+  return (await viaElevenLabs(chosen.id)) ?? (voiceId ? null : await viaFree())
 }
 
 // ─── Playback that survives iPad Safari's autoplay rules ────────────────────
@@ -166,7 +173,7 @@ export function speakWithBrowser(text: string, speaker: ElevenLabsSpeaker, rate 
 
 /** Synthesize with ElevenLabs and play it, falling back to browser speech. */
 export async function speak(text: string, speaker: ElevenLabsSpeaker, rate = 1, stillWanted: () => boolean = () => true): Promise<PlaybackResult> {
-  const url = await synthesizeSpeechElevenLabs({ text, speaker })
+  const url = await synthesizeSpeech({ text, speaker })
   // Playback may have been stopped or skipped while the clip was being synthesized
   if (!stillWanted()) {
     if (url) URL.revokeObjectURL(url)
@@ -203,7 +210,7 @@ export async function speakLong(text: string, speaker: ElevenLabsSpeaker, rate =
   const clips = new Map<number, Promise<string | null>>()
   const fetchClip = (i: number) => {
     if (i < chunks.length && !clips.has(i)) {
-      clips.set(i, synthesizeSpeechElevenLabs({ text: chunks[i], speaker, previousText: chunks[i - 1], nextText: chunks[i + 1] }))
+      clips.set(i, synthesizeSpeech({ text: chunks[i], speaker, previousText: chunks[i - 1], nextText: chunks[i + 1] }))
     }
   }
   const release = () => clips.forEach(p => p.then(url => { if (url) URL.revokeObjectURL(url) }))

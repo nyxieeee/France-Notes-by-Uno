@@ -5,7 +5,7 @@ import type { CropSettings } from '@/stores/profileMediaStore'
 import ImageCropDialog from '@/components/profile/ImageCropDialog'
 import { HOST_VOICES, getVoiceChoice, setVoiceChoice } from '@/lib/voices'
 import type { HostSpeaker } from '@/lib/voices'
-import { synthesizeSpeechElevenLabs, playClip, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { synthesizeSpeech, playClip, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useStudyBoxStore, isReferenceArticle } from '@/stores/studyBoxStore'
@@ -446,7 +446,7 @@ function VoicePicker({ isFrance }: { isFrance: boolean }) {
     unlockAudio()
     stopPlayback()
     setPreviewing(voiceId)
-    const url = await synthesizeSpeechElevenLabs({ text: SAMPLE[speaker], speaker, voiceId })
+    const url = await synthesizeSpeech({ text: SAMPLE[speaker], speaker, voiceId })
     if (!url) {
       toast("Couldn't play the preview. Check your connection and try again.", 'error')
       setPreviewing(null)
@@ -465,7 +465,7 @@ function VoicePicker({ isFrance }: { isFrance: boolean }) {
   return (
     <section className="fn-card p-5">
       <h3 className="font-heading font-semibold text-[15px]">Voices</h3>
-      <p className="text-[12.5px] text-[var(--text-secondary)] mb-3">How the hosts sound in Nursepod and voice practice.</p>
+      <p className="text-[12.5px] text-[var(--text-secondary)] mb-3">How the hosts sound in Nursepod and voice practice. Free voices have no limit.</p>
       <div className="space-y-2">
         {(['DOC_UNO', 'NURSE_FLORENCE'] as HostSpeaker[]).map(speaker => {
           const current = HOST_VOICES[speaker].find(v => v.id === choice[speaker])!
@@ -481,8 +481,14 @@ function VoicePicker({ isFrance }: { isFrance: boolean }) {
               </button>
               {open === speaker && (
                 <div className="border-t border-[var(--border)] p-1.5 space-y-0.5">
-                  {HOST_VOICES[speaker].map(v => (
-                    <div key={v.id} className={cn('flex items-center gap-2 px-2.5 py-2 rounded-lg', choice[speaker] === v.id ? 'bg-[var(--rose-soft)]' : 'hover:bg-[var(--rose-soft)]')}>
+                  {HOST_VOICES[speaker].map((v, i, all) => (
+                    <div key={v.id}>
+                    {all[i - 1]?.provider !== v.provider && (
+                      <p className="px-2.5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                        {v.provider === 'free' ? 'Free voices' : 'ElevenLabs (uses monthly credits)'}
+                      </p>
+                    )}
+                    <div className={cn('flex items-center gap-2 px-2.5 py-2 rounded-lg', choice[speaker] === v.id ? 'bg-[var(--rose-soft)]' : 'hover:bg-[var(--rose-soft)]')}>
                       <button onClick={() => pick(speaker, v.id)} className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
                         <span className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0', choice[speaker] === v.id ? 'border-[var(--pink)]' : 'border-[var(--accent)]')}>
                           {choice[speaker] === v.id && <span className="w-2 h-2 rounded-full bg-[var(--pink)]" />}
@@ -499,6 +505,7 @@ function VoicePicker({ isFrance }: { isFrance: boolean }) {
                       >
                         {previewing === v.id ? <CircleNotch size={14} className="animate-spin" /> : <Play size={13} weight="fill" />}
                       </button>
+                    </div>
                     </div>
                   ))}
                 </div>

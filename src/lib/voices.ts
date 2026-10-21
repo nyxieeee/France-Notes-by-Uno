@@ -1,28 +1,44 @@
-// ElevenLabs premade voices (available on every plan) that she can pick for each host
+// Voices she can pick for each host. Free voices (Microsoft neural, no quota) come first and
+// are the defaults; ElevenLabs premade voices use the account's monthly credits.
 
 export type HostSpeaker = 'DOC_UNO' | 'NURSE_FLORENCE'
 
-export interface VoiceOption { id: string; name: string; description: string }
+export type VoiceProvider = 'free' | 'elevenlabs'
+
+export interface VoiceOption { id: string; name: string; description: string; provider: VoiceProvider }
+
+const free = (id: string, name: string, description: string): VoiceOption => ({ id, name, description, provider: 'free' })
+const eleven = (id: string, name: string, description: string): VoiceOption => ({ id, name, description, provider: 'elevenlabs' })
 
 export const HOST_VOICES: Record<HostSpeaker, VoiceOption[]> = {
   DOC_UNO: [
-    { id: 'iP95p4xoKVk53GtZA4qT', name: 'Chris', description: 'Natural and down-to-earth, like a real conversation' },
-    { id: 'cjVigY5qzO86Huf0OWal', name: 'Eric', description: 'Smooth and friendly' },
-    { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian', description: 'Deep, calm and reassuring' },
-    { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', description: 'Young, warm and clear' },
-    { id: 'bIHbv24MWmeRgasZH58o', name: 'Will', description: 'Relaxed and chill' },
-    { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie', description: 'Easygoing, Australian accent' },
-    { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George', description: 'Warm British storyteller' },
-    { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam', description: 'The original voice' },
+    free('en-US-AndrewMultilingualNeural', 'Andrew', 'Warm and conversational'),
+    free('en-US-BrianMultilingualNeural', 'Brian', 'Casual and easygoing'),
+    free('en-PH-JamesNeural', 'James', 'Filipino English accent'),
+    free('en-US-ChristopherNeural', 'Christopher', 'Calm and steady'),
+    free('en-GB-RyanNeural', 'Ryan', 'Friendly British accent'),
+    eleven('iP95p4xoKVk53GtZA4qT', 'Chris', 'Natural and down-to-earth, like a real conversation'),
+    eleven('cjVigY5qzO86Huf0OWal', 'Eric', 'Smooth and friendly'),
+    eleven('nPczCjzI2devNBz1zQrb', 'Brian', 'Deep, calm and reassuring'),
+    eleven('TX3LPaxmHKxFdv7VOQHJ', 'Liam', 'Young, warm and clear'),
+    eleven('bIHbv24MWmeRgasZH58o', 'Will', 'Relaxed and chill'),
+    eleven('IKne3meq5aSn9XLyUdCD', 'Charlie', 'Easygoing, Australian accent'),
+    eleven('JBFqnCBsd6RMkjVDRZzb', 'George', 'Warm British storyteller'),
+    eleven('pNInz6obpgDQGcFmaJgB', 'Adam', 'The original voice'),
   ],
   NURSE_FLORENCE: [
-    { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', description: 'Soft and reassuring (the original voice)' },
-    { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Matilda', description: 'Warm and friendly' },
-    { id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica', description: 'Bright, playful and warm' },
-    { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Laura', description: 'Upbeat and lively' },
-    { id: '9BWtsMINqrJLrRacOk9x', name: 'Aria', description: 'Expressive and natural' },
-    { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily', description: 'Gentle British accent' },
-    { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice', description: 'Clear and confident, British' },
+    free('en-US-AvaMultilingualNeural', 'Ava', 'Warm and caring'),
+    free('en-US-EmmaMultilingualNeural', 'Emma', 'Bright and cheerful'),
+    free('en-PH-RosaNeural', 'Rosa', 'Filipino English accent'),
+    free('en-US-JennyNeural', 'Jenny', 'Soft and friendly'),
+    free('en-GB-SoniaNeural', 'Sonia', 'Gentle British accent'),
+    eleven('EXAVITQu4vr4xnSDxMaL', 'Sarah', 'Soft and reassuring (the original voice)'),
+    eleven('XrExE9yKIg1WjnnlVkGX', 'Matilda', 'Warm and friendly'),
+    eleven('cgSgspJ2msm6clMCkdW9', 'Jessica', 'Bright, playful and warm'),
+    eleven('FGY2WhTYpPnrIDTdsKH5', 'Laura', 'Upbeat and lively'),
+    eleven('9BWtsMINqrJLrRacOk9x', 'Aria', 'Expressive and natural'),
+    eleven('pFZP5JQG7iQjIQuC4Bku', 'Lily', 'Gentle British accent'),
+    eleven('Xb7hH8MSUJpSbSDYk0k2', 'Alice', 'Clear and confident, British'),
   ],
 }
 
@@ -35,6 +51,10 @@ export function getVoiceChoice(speaker: HostSpeaker): string {
     if (saved && HOST_VOICES[speaker].some(v => v.id === saved)) return saved
   } catch { /* storage unavailable */ }
   return HOST_VOICES[speaker][0].id
+}
+
+export function findVoice(speaker: HostSpeaker, id: string): VoiceOption | undefined {
+  return HOST_VOICES[speaker].find(v => v.id === id)
 }
 
 export function setVoiceChoice(speaker: HostSpeaker, id: string) {

@@ -37,6 +37,30 @@ const ELEVENLABS_VOICES = {
   NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || 'EXAVITQu4vr4xnSDxMaL', // Sarah
 }
 
+const EDGE_VOICES = {
+  DOC_UNO: 'en-US-AndrewMultilingualNeural',
+  NURSE_FLORENCE: 'en-US-AvaMultilingualNeural',
+}
+
+async function edgeSpeech(text, voice) {
+  const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts')
+  const tts = new MsEdgeTTS({ connectionTimeoutMs: 10000 })
+  try {
+    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3)
+    const { audioStream } = tts.toStream(text)
+    const chunks = []
+    await new Promise((resolve, reject) => {
+      audioStream.on('data', d => chunks.push(d))
+      audioStream.on('close', resolve)
+      audioStream.on('error', reject)
+    })
+    if (!chunks.length) throw new Error('No audio returned')
+    return Buffer.concat(chunks)
+  } finally {
+    tts.close()
+  }
+}
+
 if (!MISTRAL_API_KEY && !GEMINI_API_KEY) {
   console.warn('⚠ No API keys found in .env. Create a .env file from .env.example')
 }
@@ -101,6 +125,14 @@ async function handleRequest(req, res) {
       res.writeHead(apiRes.status, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(data))
 
+    } else if (path === '/api/tts') {
+      const { text, speaker, voice } = body
+      if (!text || !EDGE_VOICES[speaker]) throw new Error('Missing text or unknown speaker')
+      const voiceName = typeof voice === 'string' && /^[a-z]{2,3}-[A-Z]{2}-[A-Za-z]+Neural$/.test(voice) ? voice : EDGE_VOICES[speaker]
+      const audio = await edgeSpeech(String(text).slice(0, 5000), voiceName)
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+      res.end(JSON.stringify({ audio: audio.toString('base64'), contentType: 'audio/mpeg' }))
+
     } else if (path === '/api/elevenlabs') {
       if (!ELEVENLABS_API_KEY) throw new Error('VITE_ELEVENLABS_API_KEY not set')
       const { text, speaker, voice_id, previous_text, next_text } = body
@@ -147,6 +179,6 @@ async function handleRequest(req, res) {
 const PORT = 3001
 createServer(handleRequest).listen(PORT, () => {
   console.log(`✅ API dev server running on http://localhost:${PORT}`)
-  console.log(`   Routes: /api/mistral, /api/gemini, /api/elevenlabs`)
+  console.log(`   Routes: /api/mistral, /api/gemini, /api/tts, /api/elevenlabs`)
   console.log(`   Start Vite in another terminal: npm run dev`)
 })

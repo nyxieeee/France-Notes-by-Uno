@@ -5,7 +5,7 @@ import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/ai'
-import { synthesizeSpeechElevenLabs, playClip, speakWithBrowser, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { synthesizeSpeech, playClip, speakWithBrowser, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
 import { toast, confirmDialog } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useStudyBoxStore, isReferenceArticle, findReferenceArticle } from '@/stores/studyBoxStore'
@@ -269,7 +269,7 @@ export default function PodcastReviewPage() {
   const prefetch = (index: number) => {
     const line = scriptRef.current[index]
     if (!line || clipCache.current.has(index)) return
-    clipCache.current.set(index, synthesizeSpeechElevenLabs({ text: line.text, speaker: line.speaker }))
+    clipCache.current.set(index, synthesizeSpeech({ text: line.text, speaker: line.speaker }))
   }
 
   useEffect(() => {
