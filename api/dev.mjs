@@ -129,7 +129,9 @@ async function handleRequest(req, res) {
       const { text, speaker, voice } = body
       if (!text || !EDGE_VOICES[speaker]) throw new Error('Missing text or unknown speaker')
       const voiceName = typeof voice === 'string' && /^[a-z]{2,3}-[A-Z]{2}-[A-Za-z]+Neural$/.test(voice) ? voice : EDGE_VOICES[speaker]
-      const audio = await edgeSpeech(String(text).slice(0, 5000), voiceName)
+      const input = String(text).slice(0, 5000)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+      const audio = await edgeSpeech(input, voiceName).catch(() => edgeSpeech(input, voiceName))
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
       res.end(JSON.stringify({ audio: audio.toString('base64'), contentType: 'audio/mpeg' }))
 

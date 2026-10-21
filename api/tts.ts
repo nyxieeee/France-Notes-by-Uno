@@ -10,6 +10,10 @@ const DEFAULT_VOICES: Record<string, string> = {
 const VOICE_PATTERN = /^[a-z]{2,3}-[A-Z]{2}-[A-Za-z]+Neural$/
 const MAX_CHARS = 5000
 
+// The text is placed inside SSML (XML), so a bare & or < in a line breaks the whole request
+const escapeXml = (text: string) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+
 function synthesize(text: string, voice: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const tts = new MsEdgeTTS({ connectionTimeoutMs: 10000 })
@@ -49,7 +53,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const voiceName = typeof voice === 'string' && VOICE_PATTERN.test(voice) ? voice : DEFAULT_VOICES[speaker]
 
   try {
-    const audio = await synthesize(text.slice(0, MAX_CHARS), voiceName)
+    const input = escapeXml(text.slice(0, MAX_CHARS))
+    // One quick retry covers the occasional dropped connection
+    const audio = await synthesize(input, voiceName).catch(() => synthesize(input, voiceName))
     return res.status(200).json({ audio: audio.toString('base64'), contentType: 'audio/mpeg' })
   } catch (error) {
     console.error('[TTS proxy] Error:', error)

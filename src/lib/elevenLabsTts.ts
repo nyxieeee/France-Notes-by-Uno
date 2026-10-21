@@ -16,11 +16,16 @@ export interface ElevenLabsSynthOptions {
   nextText?: string
 }
 
-// Voices read "Doc" as "document" and can stumble on "Dr.", so say both as "Doctor"
+// Voices read "Doc" as "document" and can stumble on "Dr." and math symbols, so say them in words
 export function spokenText(text: string): string {
   return text
     .replace(/\bDoc\b/g, 'Doctor')
     .replace(/\bDr\.\s*/g, 'Doctor ')
+    .replace(/\s*(<=|≤)\s*/g, ' less than or equal to ')
+    .replace(/\s*(>=|≥)\s*/g, ' greater than or equal to ')
+    .replace(/\s*<\s*(?=\d)/g, ' less than ')
+    .replace(/\s*>\s*(?=\d)/g, ' greater than ')
+    .replace(/(\w)\s*&\s*(\w)/g, '$1 and $2')
 }
 
 async function requestAudio(endpoint: string, body: Record<string, unknown>): Promise<string | null> {
@@ -80,7 +85,8 @@ export async function synthesizeSpeech({
     requestAudio('/api/elevenlabs', { text, speaker, voice_id: voice, previous_text: previousText, next_text: nextText })
 
   if (chosen.provider === 'free') {
-    return (await viaFree(chosen.id)) ?? (voiceId ? null : await viaElevenLabs())
+    // Retry once before switching to a different-sounding voice mid-episode
+    return (await viaFree(chosen.id)) ?? (await viaFree(chosen.id)) ?? (voiceId ? null : await viaElevenLabs())
   }
   return (await viaElevenLabs(chosen.id)) ?? (voiceId ? null : await viaFree())
 }
