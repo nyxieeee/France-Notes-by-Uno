@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, CircleNotch as Loader2, ShieldWarning as ShieldAlert, SpeakerHigh as Volume2, Headphones, Check, ArrowUpRight, Warning, ArrowLeft, StopCircle, ArrowClockwise, Target } from '@phosphor-icons/react'
+import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, CircleNotch as Loader2, ShieldWarning as ShieldAlert, SpeakerHigh as Volume2, Headphones, Check, ArrowUpRight, Warning, ArrowLeft, StopCircle, ArrowClockwise, Target, WarningCircle as WarningCircleIcon } from '@phosphor-icons/react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { generateChatCompletion } from '@/lib/ai'
@@ -46,6 +46,8 @@ function SimulationSession() {
   const wantListeningRef = useRef(false)
   // When the spoken answer will be sent automatically (shown as a countdown)
   const [autoSendAt, setAutoSendAt] = useState<number | null>(null)
+  // Set when a reply couldn't be fetched; shows a retry instead of a fake examiner message
+  const [turnFailed, setTurnFailed] = useState<{ isFirst: boolean } | null>(null)
 
   // Speech-recognition callbacks are registered once, so they read live values through refs
   const voiceModeRef = useRef(voiceMode)
@@ -114,6 +116,7 @@ function SimulationSession() {
   }, [speaker, startVoiceRecognition, stopVoiceRecognition])
 
   const runTurn = useCallback(async (isFirst = false) => {
+    setTurnFailed(null)
     setIsTyping(true)
     try {
       const currentStore = useSimulationStore.getState()
@@ -129,10 +132,10 @@ function SimulationSession() {
       const spoken = voiceModeRef.current
         ? '\n\nVOICE MODE: Your reply is read aloud. Keep every turn to at most 3 short sentences (about 60 words), ask exactly ONE question, and never use lists, headings or symbols.'
         : ''
-      if (isFirst) {
-        chatHistory.push({ role: 'system', content: systemPrompt + spoken })
-      } else {
-        chatHistory.unshift({ role: 'system', content: systemPrompt + spoken })
+      chatHistory.unshift({ role: 'system', content: systemPrompt + spoken })
+      // The AI needs the conversation to end with the student; the opening turn has nothing yet
+      if (isFirst || !chatHistory.some(m => m.role === 'user')) {
+        chatHistory.push({ role: 'user', content: 'I am ready. Please greet me briefly and ask your first question.' })
       }
 
       const response = await generateChatCompletion(chatHistory, 'recitation')
@@ -149,7 +152,8 @@ function SimulationSession() {
       addMessage('assistant', cleanedResponse)
     } catch (e) {
       console.error('Chat API failure:', e)
-      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment!")
+      // Not added to the conversation: a fake reply would be graded and sent back to the AI
+      setTurnFailed({ isFirst })
     } finally {
       setIsTyping(false)
     }
@@ -391,6 +395,13 @@ function SimulationSession() {
             </div>
           </div>
         ))}
+        {turnFailed && !isTyping && (
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-th-error/25 bg-th-error/5 text-[13px]">
+            <WarningCircleIcon size={18} className="text-[var(--error)] shrink-0" />
+            <p className="flex-1 text-[var(--text-secondary)]">{aiAssistantName} couldn't be reached. Check your connection, then try again.</p>
+            <button onClick={() => runTurn(turnFailed.isFirst)} className="btn-primary px-4 py-1.5 text-xs shrink-0">Try again</button>
+          </div>
+        )}
         {isTyping && (
           <div className="flex gap-3">
             <img src={assistantAvatar} alt={aiAssistantName} className="w-8 h-8 rounded-full object-cover shrink-0 border border-th-pink/15" />
