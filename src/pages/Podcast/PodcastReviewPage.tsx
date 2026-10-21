@@ -5,8 +5,8 @@ import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/ai'
-import { speak, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
-import { toast } from '@/stores/feedbackStore'
+import { synthesizeSpeechElevenLabs, playClip, speakWithBrowser, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { toast, confirmDialog } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -157,6 +157,16 @@ function OptionDropdown({ icon: OptionIcon, placeholder, value, options, onSelec
 }
 
 // ─── Parse script ─────────────────────────────────────────────────────────────
+// The model sometimes formats lines with markdown anyway; strip it so it neither shows nor gets read aloud
+function cleanLine(text: string): string {
+  return text
+    .replace(/\*\*|__|\*|`/g, '')
+    .replace(/^#+\s*/, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^["']|["']$/g, '')
+    .trim()
+}
+
 function parseScript(raw: string): DialogueLine[] {
   const lines: DialogueLine[] = []
 
@@ -177,11 +187,7 @@ function parseScript(raw: string): DialogueLine[] {
       const speakerRaw = match[1].toUpperCase().replace(/\s/g, '_')
       let text = match[2].trim()
 
-      text = text
-        .replace(/^(\*\*|\*|#)+/, '')
-        .replace(/(\*\*|\*|#)+$/, '')
-        .replace(/^["']|["']$/g, '')
-        .trim()
+      text = cleanLine(text)
 
       if (!text || text === '**' || text === '*' || /^SECTION\s*\d+/i.test(text) || /^EPISODE\s*INTRO/i.test(text)) {
         continue
@@ -201,7 +207,7 @@ function parseScript(raw: string): DialogueLine[] {
       if (cleaned && cleaned !== '**') {
         lines.push({
           speaker: i % 2 === 0 ? 'DOC_UNO' : 'NURSE_FLORENCE',
-          text: cleaned
+          text: cleanLine(cleaned)
         })
       }
     })
@@ -230,6 +236,12 @@ export default function PodcastReviewPage() {
   const [script, setScript] = useState<DialogueLine[]>([])
   const [episodeTitle, setEpisodeTitle] = useState('')
   const [activeEpisodeId, setActiveEpisodeId] = useState<string | null>(null)
+  // The episode is written in two parts; this is true while the second part is still being written
+  const [isWritingMore, setIsWritingMore] = useState(false)
+  const scriptRef = useRef<DialogueLine[]>([])
+  const writingMoreRef = useRef(false)
+  useEffect(() => { scriptRef.current = script }, [script])
+  useEffect(() => { writingMoreRef.current = isWritingMore }, [isWritingMore])
 
   // Saved episodes / History
   const [savedEpisodes, setSavedEpisodes] = useState<PodcastEpisode[]>([])
@@ -246,6 +258,18 @@ export default function PodcastReviewPage() {
   useEffect(() => { speedRef.current = speed }, [speed])
   const currentLineRef = useRef(-1)
   const isPlayingRef = useRef(false)
+
+  // Voice clips fetched ahead of time (current line + the next two) so hosts speak without gaps
+  const clipCache = useRef(new Map<number, Promise<string | null>>())
+  const resetClips = () => {
+    clipCache.current.forEach(p => p.then(url => { if (url) URL.revokeObjectURL(url) }))
+    clipCache.current = new Map()
+  }
+  const prefetch = (index: number) => {
+    const line = scriptRef.current[index]
+    if (!line || clipCache.current.has(index)) return
+    clipCache.current.set(index, synthesizeSpeechElevenLabs({ text: line.text, speaker: line.speaker }))
+  }
 
   useEffect(() => {
     fetchItems()
@@ -270,7 +294,7 @@ export default function PodcastReviewPage() {
           localStorage.setItem(storageKey, JSON.stringify(initialData))
         }
       }
-      setSavedEpisodes(initialData)
+      setSavedEpisodes(initialData.map(ep => ({ ...ep, script: (ep.script || []).map(l => ({ ...l, text: cleanLine(l.text) })) })))
     }
 
     fetchEpisodes()
@@ -309,21 +333,38 @@ export default function PodcastReviewPage() {
     }
   }
 
-  const deleteEpisodeFromHistory = async (id: string) => {
+  const deleteEpisodeFromHistory = async (ep: PodcastEpisode) => {
+    const ok = await confirmDialog({ title: `Delete “${ep.title}”?`, message: 'This episode will be removed from your library.', confirmLabel: 'Delete', danger: true })
+    if (!ok) return
     const storageKey = `france_notes_podcast_episodes_${user?.id || 'guest'}`
-    setSavedEpisodes(prev => {
-      const updated = prev.filter(e => e.id !== id)
-      localStorage.setItem(storageKey, JSON.stringify(updated))
-      return updated
-    })
+    const previous = savedEpisodes
+    const updated = previous.filter(e => e.id !== ep.id)
+    setSavedEpisodes(updated)
+    localStorage.setItem(storageKey, JSON.stringify(updated))
 
-    if (activeEpisodeId === id) {
+    // If it's the episode in the player, stop it and clear the player right away
+    if (activeEpisodeId === ep.id) {
+      stopAllPlayback()
+      resetClips()
+      setIsPlaying(false)
+      setCurrentLine(-1)
+      setProgress(0)
+      setScript([])
+      setEpisodeTitle('')
       setActiveEpisodeId(null)
     }
 
     if (user?.id) {
-      await supabase.from('podcast_episodes').delete().eq('id', id).eq('user_id', user.id)
+      const { error } = await supabase.from('podcast_episodes').delete().eq('id', ep.id).eq('user_id', user.id)
+      if (error) {
+        // Put it back so the list matches what's actually saved
+        setSavedEpisodes(previous)
+        localStorage.setItem(storageKey, JSON.stringify(previous))
+        toast("Couldn't delete the episode. Check your connection and try again.", 'error')
+        return
+      }
     }
+    toast('Episode deleted', 'success')
   }
 
 
@@ -362,6 +403,8 @@ export default function PodcastReviewPage() {
     setCurrentLine(-1)
     setProgress(0)
     setScript([])
+    resetClips()
+    setIsWritingMore(false)
 
     let systemPrompt = `You are an elite medical and nursing podcast showrunner producing "Nursepod" — a premier, highly engaging clinical education podcast.
 Write an extensive, highly professional, naturally flowing podcast episode script between TWO expert co-hosts:
@@ -394,58 +437,116 @@ CRITICAL REQUIREMENTS:
 - Write AT LEAST 50 to 70 rich dialogue exchanges total.
 - Format EVERY line EXACTLY as: [DOC UNO]: text OR [NURSE FLORENCE]: text
 - Alternate naturally between the hosts (1-4 sentences per turn).
-- Pure dialogue only — NO stage directions, NO parentheses, NO asterisks (**), NO bold section headers.
+- Pure dialogue only — NO stage directions, NO parentheses, NO bold section headers.
+- Plain text only. Never use markdown: no asterisks (* or **) for emphasis, no underscores, no backticks, no # headings.
 - Do NOT write section headers like "**SECTION 1**" or "**EPISODE INTRO**". Have the hosts speak naturally without announcing section titles.`
 
-    const prompt = `Create a comprehensive, full-length, professional nursing podcast episode about: "${sourceDetails.title}". 
-Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational professional discussion covering pathophysiology, clinical assessments, pharmacology, priority nursing interventions, and a step-by-step board scenario breakdown.`
+    const brief = `Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational professional discussion covering pathophysiology, clinical assessments, pharmacology, priority nursing interventions, and a step-by-step board scenario breakdown.`
+    // Part one is short so the hosts can start talking quickly; part two is written while she listens
+    const partOnePrompt = `Write PART ONE of a nursing podcast episode about: "${sourceDetails.title}".
+Cover only section 1 (EPISODE INTRO) and section 2 (PATHOPHYSIOLOGY & ETIOLOGY), in about 14 to 18 dialogue exchanges. End at a natural hand-off into clinical presentation. Do not write the outro.
+${brief}`
+
+    const episodeId = `ep-${crypto.randomUUID()}`
+    let partOne: DialogueLine[]
+    try {
+      partOne = parseScript(await generateCompletion(partOnePrompt, systemPrompt, 'reviewer'))
+      if (partOne.length === 0) throw new Error('Empty script')
+    } catch (err) {
+      console.error('[Podcast] Generation failed:', err)
+      setGenError('The episode could not be written. Check your connection and try again.')
+      setIsGenerating(false)
+      return
+    }
+
+    setScript(partOne)
+    setEpisodeTitle(sourceDetails.title)
+    setActiveEpisodeId(episodeId)
+    setIsGenerating(false)
+    setIsWritingMore(true)
+    prefetch(0)
+
+    let fullScript = partOne
+    try {
+      const transcript = partOne.map(l => `[${l.speaker === 'DOC_UNO' ? 'DOC UNO' : 'NURSE FLORENCE'}]: ${l.text}`).join('\n')
+      const partTwoPrompt = `Here is PART ONE of the episode about "${sourceDetails.title}" that has already aired:
+"""
+${transcript}
+"""
+Now write PART TWO, continuing the SAME conversation seamlessly from the last line. Do not greet again or repeat the intro or pathophysiology.
+Cover section 3 (CLINICAL PRESENTATION & ASSESSMENT), section 4 (LABS, DIAGNOSTICS & PHARMACOLOGY), section 5 (NURSING MANAGEMENT & PRIORITIZATION), section 6 (NCLEX/PNLE BOARD QUESTION DISSECTION) and section 7 (OUTRO), in about 35 to 45 dialogue exchanges.
+${brief}`
+      const partTwo = parseScript(await generateCompletion(partTwoPrompt, systemPrompt, 'reviewer'))
+      if (partTwo.length > 0) {
+        fullScript = [...partOne, ...partTwo]
+        // Only extend the player if she is still on this episode
+        setScript(current => current === partOne ? fullScript : current)
+      }
+    } catch (err) {
+      console.error('[Podcast] Part two failed:', err)
+      toast("The rest of the episode couldn't be written, so this one is shorter.", 'error')
+    } finally {
+      setIsWritingMore(false)
+    }
 
     try {
-      const raw = await generateCompletion(prompt, systemPrompt, 'reviewer')
-      const lines = parseScript(raw)
-      if (lines.length === 0) throw new Error('Empty script')
-      const episodeId = `ep-${Date.now()}`
-      setScript(lines)
-      setEpisodeTitle(sourceDetails.title)
-      setActiveEpisodeId(episodeId)
-
       const newEp: PodcastEpisode = {
         id: episodeId,
         title: sourceDetails.title,
         topic: sourceDetails.title,
-        script: lines,
+        script: fullScript,
         created_at: new Date().toISOString(),
         source_type: sourceDetails.sourceType
       }
       await saveEpisodeToHistory(newEp)
     } catch (err) {
-      console.error('[Podcast] Generation failed:', err)
-      setGenError('The episode could not be written. Check your connection and try again.')
-    } finally {
-      setIsGenerating(false)
+      console.error('[Podcast] Saving the episode failed:', err)
+      toast("The episode couldn't be saved to your library.", 'error')
     }
   }
 
   const loadSavedEpisode = (ep: PodcastEpisode) => {
     stopAllPlayback()
+    resetClips()
+    setIsWritingMore(false)
     setIsPlaying(false)
     setCurrentLine(-1)
     setProgress(0)
     setScript(ep.script)
+    scriptRef.current = ep.script
     setEpisodeTitle(ep.title)
     setActiveEpisodeId(ep.id)
+    prefetch(0)
   }
 
   // ─── Playback Engine (ElevenLabs, falling back to the browser's own voices) ──
   const speakLine = useCallback(async (startIndex: number, run: number) => {
-    for (let lineIndex = startIndex; lineIndex < script.length; lineIndex++) {
+    for (let lineIndex = startIndex; ; lineIndex++) {
       if (playRunRef.current !== run) return
-      const line = script[lineIndex]
+      // Reached the end of what's written so far: wait for part two if it's still being written
+      while (lineIndex >= scriptRef.current.length && writingMoreRef.current) {
+        await new Promise(r => setTimeout(r, 400))
+        if (playRunRef.current !== run) return
+      }
+      if (lineIndex >= scriptRef.current.length) break
+
+      const line = scriptRef.current[lineIndex]
       currentLineRef.current = lineIndex
       setCurrentLine(lineIndex)
-      setProgress(lineIndex / script.length)
+      setProgress(lineIndex / scriptRef.current.length)
 
-      const result = await speak(line.text, line.speaker, speedRef.current, () => playRunRef.current === run)
+      prefetch(lineIndex)
+      prefetch(lineIndex + 1)
+      prefetch(lineIndex + 2)
+      const url = await clipCache.current.get(lineIndex)
+      clipCache.current.delete(lineIndex)
+      if (playRunRef.current !== run) {
+        if (url) URL.revokeObjectURL(url)
+        return
+      }
+
+      let result = url ? await playClip(url, speedRef.current) : 'error'
+      if (result === 'error') result = await speakWithBrowser(line.text, line.speaker, speedRef.current)
       if (playRunRef.current !== run) return
 
       if (result === 'blocked') {
@@ -467,7 +568,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
     setCurrentLine(-1)
     setProgress(1)
     isPlayingRef.current = false
-  }, [script])
+  }, [])
 
   const startFrom = (lineIndex: number) => {
     // Must run inside the tap so iPad Safari allows audio for the whole episode
@@ -496,7 +597,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
 
   const hasScript = script.length > 0
   const estimatedDuration = hasScript ? Math.max(1, Math.round(script.reduce((acc, l) => acc + l.text.split(' ').length, 0) / 130)) : 0
-  const canGenerate = !isGenerating && !((inputMode === 'type' && !freeText.trim()) || (inputMode === 'topic' && topics.length === 0) || (inputMode === 'file' && items.length === 0) || (inputMode === 'knowledge' && savedKnowledge.length === 0))
+  const canGenerate = !isGenerating && !isWritingMore && !((inputMode === 'type' && !freeText.trim()) || (inputMode === 'topic' && topics.length === 0) || (inputMode === 'file' && items.length === 0) || (inputMode === 'knowledge' && savedKnowledge.length === 0))
   const activeSpeaker = currentLine >= 0 ? script[currentLine]?.speaker : null
 
   const SOURCES: { id: SourceMode; label: string; icon: Icon }[] = [
@@ -573,7 +674,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
               </div>
               <h3 className="font-heading font-semibold text-lg">Writing your episode</h3>
               <p className="text-sm text-[var(--text-secondary)] max-w-sm mt-1">
-                Doc Uno and Nurse Florence are outlining the pathophysiology, nursing priorities and a board-style question. This takes about a minute.
+                Doc Uno and Nurse Florence are getting the opening ready. You can start listening in a few seconds while they write the rest.
               </p>
               <div className="flex gap-1.5 mt-5">
                 {[0, 150, 300].map(d => <span key={d} className="w-2 h-2 rounded-full bg-[var(--pink)] animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
@@ -643,10 +744,15 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
               <div className="fn-card">
                 <div className="px-5 py-3.5 border-b border-[var(--border)] flex items-center justify-between">
                   <h3 className="font-heading font-semibold text-[15px]">Transcript</h3>
-                  {currentLine >= 0 && <span className="text-[12px] text-[var(--text-secondary)]">Line {currentLine + 1} of {script.length}</span>}
+                  {currentLine >= 0 && <span className="text-[12px] text-[var(--text-secondary)]">Line {currentLine + 1} of {script.length}{isWritingMore ? '+' : ''}</span>}
                 </div>
                 <div className="p-2 sm:p-3 space-y-0.5 max-h-[520px] overflow-y-auto custom-scrollbar">
                   {script.map((line, i) => <TranscriptLine key={i} line={line} active={currentLine === i} />)}
+                  {isWritingMore && (
+                    <p className="flex items-center gap-2 px-3 py-3 text-[12.5px] text-[var(--text-secondary)]">
+                      <Loader2 size={14} className="animate-spin text-[var(--pink)]" /> Writing the rest of the episode. It will keep playing on its own.
+                    </p>
+                  )}
                 </div>
               </div>
             </>
@@ -689,7 +795,7 @@ Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational 
                     </p>
                   </div>
                   <button
-                    onClick={e => { e.stopPropagation(); deleteEpisodeFromHistory(ep.id) }}
+                    onClick={e => { e.stopPropagation(); deleteEpisodeFromHistory(ep) }}
                     className="btn-icon p-1.5 hover:text-[var(--error)] sm:opacity-0 group-hover:opacity-100"
                     aria-label={`Delete ${ep.title}`}
                   >

@@ -40,7 +40,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_multilingual_v2',
+          // Flash is ElevenLabs' low-latency model, so each line is ready in a fraction of the time
+          model_id: 'eleven_flash_v2_5',
           voice_settings: {
             stability,
             similarity_boost,
