@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Cropper from 'react-easy-crop'
-import type { Area, Point } from 'react-easy-crop'
+import { useProfileMediaStore, readImageFile } from '@/stores/profileMediaStore'
+import type { CropSettings } from '@/stores/profileMediaStore'
+import ImageCropDialog from '@/components/profile/ImageCropDialog'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useStudyBoxStore, isReferenceArticle } from '@/stores/studyBoxStore'
@@ -9,13 +10,13 @@ import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
-import { User, SignOut as LogOut, Moon, Sun, Calendar, GraduationCap, CaretRight as ChevronRight, Camera, Check, Lock, Footprints, Target, FirstAidKit, Books, Exam, Trophy, MoonStars, Star, PresentationChart, Certificate, Folder, Heart, Medal } from '@phosphor-icons/react'
+import { User, SignOut as LogOut, Moon, Sun, Calendar, GraduationCap, CaretRight as ChevronRight, Camera, Check, Lock, Footprints, Target, FirstAidKit, Books, Exam, Trophy, MoonStars, Star, PresentationChart, Certificate, Folder, Heart, Medal, ImageSquare, Crop, UploadSimple, Trash } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { cn, formatDate } from '@/lib/utils'
 import { usePersonalization } from '@/hooks/usePersonalization'
-import { toast } from '@/stores/feedbackStore'
+import { toast, confirmDialog } from '@/stores/feedbackStore'
 
 const YEAR_LEVELS = [
   { value: '1st Year', label: '1st Year' },
@@ -29,7 +30,8 @@ export default function ProfilePage() {
   const { user, logout, updateProfile } = useAuthStore()
   const navigate = useNavigate()
   const { theme, toggleTheme } = useThemeStore()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
 
   const { isFrance, aiAssistantName, greetingName, studyBoxName } = usePersonalization()
 
@@ -41,85 +43,76 @@ export default function ProfilePage() {
   const [savedAt, setSavedAt] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
 
-  // Cropper State
-  const [selectedImageToCrop, setSelectedImageToCrop] = useState<string | null>(null)
-  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
-
   const { items, topics } = useStudyBoxStore()
   const { quizzes } = useQuizStore()
   const { reviewers } = useReviewerStore()
   const { procedures } = useRetDemStore()
   const { reminders } = useReminderStore()
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click()
-  }
+  // Profile photo and cover: originals are kept so either can be re-adjusted later
+  const media = useProfileMediaStore()
+  const fetchMedia = useProfileMediaStore(st => st.fetchMedia)
+  const mediaLoadedFor = useProfileMediaStore(st => st.loadedFor)
+  useEffect(() => {
+    if (user?.id && mediaLoadedFor !== user.id) fetchMedia(user.id)
+  }, [user?.id, mediaLoadedFor, fetchMedia])
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [photoMenu, setPhotoMenu] = useState<null | 'avatar' | 'cover'>(null)
+  const [cropJob, setCropJob] = useState<null | { kind: 'avatar' | 'cover'; image: string; initial: CropSettings | null }>(null)
+
+  const pickPhoto = async (kind: 'avatar' | 'cover', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setSelectedImageToCrop(reader.result)
-          setCrop({ x: 0, y: 0 })
-          setZoom(1)
-        }
-      }
-      reader.readAsDataURL(file)
-      // Reset input so same file can be selected again
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+    e.target.value = ''
+    if (!file) return
+    try {
+      setCropJob({ kind, image: await readImageFile(file), initial: null })
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn't open that photo.", 'error')
     }
   }
 
-  const onCropComplete = (_croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels)
+  const adjustPhoto = (kind: 'avatar' | 'cover') => {
+    setPhotoMenu(null)
+    if (kind === 'avatar') {
+      const image = media.avatar_original || user?.avatar_url
+      if (image) setCropJob({ kind, image, initial: media.avatar_original ? media.avatar_crop : null })
+    } else if (media.cover_original || media.cover_image) {
+      setCropJob({ kind, image: (media.cover_original || media.cover_image)!, initial: media.cover_original ? media.cover_crop : null })
+    }
   }
 
-  const handleCropSave = async () => {
-    if (!selectedImageToCrop || !croppedAreaPixels) return
-
+  const saveCrop = async (cropped: string, settings: CropSettings) => {
+    if (!cropJob || !user) return
     try {
-      const img = new Image()
-      img.src = selectedImageToCrop
-      
-      await new Promise((resolve) => {
-        img.onload = resolve
-      })
-
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      
-      const MAX_SIZE = 150
-      canvas.width = MAX_SIZE
-      canvas.height = MAX_SIZE
-      
-      if (ctx) {
-        ctx.drawImage(
-          img,
-          croppedAreaPixels.x,
-          croppedAreaPixels.y,
-          croppedAreaPixels.width,
-          croppedAreaPixels.height,
-          0,
-          0,
-          MAX_SIZE,
-          MAX_SIZE
-        )
-        
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8)
-        await updateProfile({ avatar_url: compressedBase64 })
+      if (cropJob.kind === 'avatar') {
+        await updateProfile({ avatar_url: cropped })
+        await media.saveMedia(user.id, { avatar_original: cropJob.image, avatar_crop: settings })
         toast('Profile picture updated.', 'success')
+      } else {
+        await media.saveMedia(user.id, { cover_image: cropped, cover_original: cropJob.image, cover_crop: settings })
+        toast('Cover photo updated.', 'success')
       }
-    } catch (e) {
-      console.error(e)
-      toast('Couldn\'t save your profile picture. Check your connection and try again.', 'error')
-    } finally {
-      setSelectedImageToCrop(null)
+      setCropJob(null)
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn't save your photo. Check your connection and try again.", 'error')
+    }
+  }
+
+  const removePhoto = async (kind: 'avatar' | 'cover') => {
+    setPhotoMenu(null)
+    if (!user) return
+    const ok = await confirmDialog({ title: kind === 'avatar' ? 'Remove profile picture?' : 'Remove cover photo?', confirmLabel: 'Remove', danger: true })
+    if (!ok) return
+    try {
+      if (kind === 'avatar') {
+        await updateProfile({ avatar_url: null })
+        await media.saveMedia(user.id, { avatar_original: null, avatar_crop: null })
+      } else {
+        await media.saveMedia(user.id, { cover_image: null, cover_original: null, cover_crop: null })
+      }
+      toast(kind === 'avatar' ? 'Profile picture removed.' : 'Cover photo removed.', 'success')
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn't remove the photo.", 'error')
     }
   }
 
@@ -174,10 +167,37 @@ export default function ProfilePage() {
       <PageHeader icon={User} title="Profile & Settings" subtitle="Your account, progress and preferences." />
 
       {/* Profile hero */}
-      <section className="fn-card overflow-hidden mb-5">
-        <div className="h-24 sm:h-28 bg-gradient-to-r from-th-pink/25 via-[var(--rose-soft)] to-th-pink/10" />
+      <section className="fn-card mb-5">
+        <div className="relative rounded-t-[inherit] h-32 sm:h-auto sm:aspect-[4/1] bg-gradient-to-r from-th-pink/25 via-[var(--rose-soft)] to-th-pink/10">
+          {media.cover_image && <img src={media.cover_image} alt="" className="absolute inset-0 w-full h-full object-cover rounded-t-[inherit]" />}
+          <div className="absolute top-3 right-3">
+            <button
+              onClick={() => (media.cover_image ? setPhotoMenu(photoMenu === 'cover' ? null : 'cover') : coverInputRef.current?.click())}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 hover:bg-black/50 backdrop-blur text-white text-[12.5px] font-medium transition-colors"
+            >
+              <ImageSquare size={15} /> {media.cover_image ? 'Edit cover' : 'Add cover photo'}
+            </button>
+            {photoMenu === 'cover' && (
+              <PhotoMenu
+                className="right-0 top-full mt-1.5"
+                onClose={() => setPhotoMenu(null)}
+                items={[
+                  { label: 'Adjust cover', icon: Crop, onClick: () => adjustPhoto('cover') },
+                  { label: 'Upload new cover', icon: UploadSimple, onClick: () => { setPhotoMenu(null); coverInputRef.current?.click() } },
+                  { label: 'Remove cover', icon: Trash, onClick: () => removePhoto('cover'), danger: true },
+                ]}
+              />
+            )}
+          </div>
+          <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={e => pickPhoto('cover', e)} />
+        </div>
         <div className="px-5 sm:px-7 pb-6 -mt-12 sm:-mt-14 flex flex-col sm:flex-row sm:items-start gap-4">
-          <button onClick={handleAvatarClick} className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 group" aria-label="Change profile picture">
+          <div className="relative shrink-0">
+          <button
+            onClick={() => (user?.avatar_url ? setPhotoMenu(photoMenu === 'avatar' ? null : 'avatar') : avatarInputRef.current?.click())}
+            className="relative w-24 h-24 sm:w-28 sm:h-28 group block"
+            aria-label="Change profile picture"
+          >
             <div className="w-full h-full rounded-full border-4 border-[var(--card)] bg-[var(--rose-soft)] overflow-hidden shadow-fn">
               {user?.avatar_url ? (
                 <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
@@ -192,7 +212,19 @@ export default function ProfilePage() {
               <Camera size={14} weight="fill" />
             </span>
           </button>
-          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
+          {photoMenu === 'avatar' && (
+            <PhotoMenu
+              className="left-0 top-full mt-1.5"
+              onClose={() => setPhotoMenu(null)}
+              items={[
+                { label: 'Adjust current photo', icon: Crop, onClick: () => adjustPhoto('avatar') },
+                { label: 'Upload new photo', icon: UploadSimple, onClick: () => { setPhotoMenu(null); avatarInputRef.current?.click() } },
+                { label: 'Remove photo', icon: Trash, onClick: () => removePhoto('avatar'), danger: true },
+              ]}
+            />
+          )}
+          <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={e => pickPhoto('avatar', e)} />
+          </div>
 
           <div className="min-w-0 flex-1 sm:pt-[60px]">
             <h2 className="font-heading font-semibold text-2xl truncate">{user?.full_name}</h2>
@@ -342,56 +374,48 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Crop Modal */}
       <AnimatePresence>
-        {selectedImageToCrop && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fn-card w-full max-w-md relative z-10 overflow-hidden flex flex-col bg-[var(--card)] p-6"
-            >
-              <h3 className="font-heading font-bold text-lg mb-4 text-center">Adjust Profile Picture</h3>
-              
-              <div className="relative w-full h-64 bg-black/10 rounded-2xl overflow-hidden mb-6 shadow-inner">
-                <Cropper
-                  image={selectedImageToCrop}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  cropShape="round"
-                  showGrid={false}
-                  onCropChange={setCrop}
-                  onZoomChange={setZoom}
-                  onCropComplete={onCropComplete}
-                />
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setSelectedImageToCrop(null)}
-                  className="flex-1 btn-ghost border border-[var(--border)] bg-transparent hover:bg-[var(--bg)]"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleCropSave}
-                  className="flex-1 btn-primary"
-                >
-                  Save Picture
-                </button>
-              </div>
-            </motion.div>
-          </div>
+        {cropJob && (
+          <ImageCropDialog
+            key={cropJob.image.length + cropJob.kind}
+            image={cropJob.image}
+            title={cropJob.kind === 'avatar' ? 'Adjust profile picture' : 'Adjust cover photo'}
+            aspect={cropJob.kind === 'avatar' ? 1 : 4}
+            round={cropJob.kind === 'avatar'}
+            outputWidth={cropJob.kind === 'avatar' ? 192 : 1600}
+            initial={cropJob.initial}
+            onCancel={() => setCropJob(null)}
+            onSave={saveCrop}
+          />
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+function PhotoMenu({ items, onClose, className }: {
+  items: { label: string; icon: Icon; onClick: () => void; danger?: boolean }[]
+  onClose: () => void
+  className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const close = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) onClose() }
+    // Wait a tick so the tap that opened the menu doesn't close it
+    const id = setTimeout(() => document.addEventListener('pointerdown', close), 0)
+    return () => { clearTimeout(id); document.removeEventListener('pointerdown', close) }
+  }, [onClose])
+  return (
+    <div ref={ref} className={cn('absolute z-30 w-52 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-fn-lg p-1.5', className)}>
+      {items.map(item => (
+        <button
+          key={item.label}
+          onClick={item.onClick}
+          className={cn('w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-left hover:bg-[var(--rose-soft)]', item.danger ? 'text-[var(--error)]' : 'text-[var(--text)]')}
+        >
+          <item.icon size={16} /> {item.label}
+        </button>
+      ))}
     </div>
   )
 }

@@ -198,6 +198,17 @@ create table if not exists public.study_folders (
   created_at timestamptz not null default now()
 );
 
+-- ── Profile photos: full-size originals (so they can be re-cropped) and the cover photo ─
+create table if not exists public.profile_media (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  avatar_original text,
+  avatar_crop jsonb,
+  cover_image text,
+  cover_original text,
+  cover_crop jsonb,
+  updated_at timestamptz not null default now()
+);
+
 -- ── Indexes for the per-user, newest-first lists the app loads ──────────────
 create index if not exists study_materials_user_created_idx on public.study_materials (user_id, created_at desc);
 create index if not exists saved_knowledge_user_saved_idx on public.saved_knowledge (user_id, date_saved desc);
@@ -222,7 +233,7 @@ begin
   foreach t in array array[
     'study_materials', 'saved_knowledge', 'reviewers', 'quizzes', 'reminders', 'notes',
     'retdem_procedures', 'retdem_upload_history', 'simulation_sessions', 'chat_messages',
-    'podcast_episodes', 'dosage_calculations', 'saved_labs', 'study_folders'
+    'podcast_episodes', 'dosage_calculations', 'saved_labs', 'study_folders', 'profile_media'
   ]
   loop
     execute format('alter table public.%I enable row level security', t);

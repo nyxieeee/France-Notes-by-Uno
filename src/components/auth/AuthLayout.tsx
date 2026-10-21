@@ -16,7 +16,7 @@ export default function AuthLayout({ children, footerNote }: { children: ReactNo
     <div className="min-h-screen bg-[var(--bg)] flex">
       {/* Brand panel */}
       <aside className="hidden lg:flex relative w-[55%] overflow-hidden bg-gradient-to-br from-[var(--rose-soft)] via-[var(--bg)] to-[var(--secondary-bg)] flex-col">
-        <ParisIllustration className="absolute inset-x-0 bottom-0 w-full h-[52%]" />
+        <ParisIllustration className="absolute inset-x-0 bottom-0 w-full aspect-[8/5] max-h-[70%]" />
         <div className="absolute inset-0 bg-gradient-to-b from-th-bg/70 via-transparent to-transparent" />
 
         <p className="absolute right-12 top-12 font-script text-2xl text-th-pink/80 leading-tight rotate-[-8deg] text-center">
