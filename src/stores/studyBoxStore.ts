@@ -6,6 +6,7 @@ import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
 import { readImageFile } from './profileMediaStore'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 interface StudyBoxState {
   items: StudyBoxItem[]
@@ -163,7 +164,7 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       .order("date_saved", { ascending: false })
       
     if (!error && data) {
-      set({ savedKnowledge: data as KnowledgeSearchResult[] })
+      set({ savedKnowledge: (data as KnowledgeSearchResult[]).map(k => ({ ...k, title: deepStripMarkdown(k.title), description: deepStripMarkdown(k.description) })) })
     }
   },
 

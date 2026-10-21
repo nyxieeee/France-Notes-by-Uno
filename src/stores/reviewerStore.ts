@@ -5,6 +5,7 @@ import { getPersonalizationConfig } from '@/lib/personalization'
 import { useStudyBoxStore, materialDisplayName } from './studyBoxStore'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 interface ReviewerState {
   reviewers: ReviewerItem[]
@@ -49,7 +50,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       .order('created_at', { ascending: false })
 
     if (!error && data) {
-      set({ reviewers: data as ReviewerItem[], isLoading: false })
+      set({ reviewers: (data as ReviewerItem[]).map(r => ({ ...r, title: deepStripMarkdown(r.title), content: deepStripMarkdown(r.content) })), isLoading: false })
     } else {
       if (error) console.error('Error fetching reviewers:', error)
       set({ reviewers: [], isLoading: false })

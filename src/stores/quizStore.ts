@@ -6,6 +6,7 @@ import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
 import { toast } from './feedbackStore'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 interface QuizState {
   quizzes: Quiz[]
@@ -66,7 +67,8 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       console.error('Error fetching quizzes:', error)
       set({ error: error.message, quizzes: [], isLoading: false })
     } else {
-      set({ quizzes: data as Quiz[], isLoading: false })
+      // Questions and her answers are cleaned together so answer checking still lines up
+      set({ quizzes: (data as Quiz[]).map(q => ({ ...q, questions: deepStripMarkdown(q.questions), user_answers: deepStripMarkdown(q.user_answers) })), isLoading: false })
     }
   },
 

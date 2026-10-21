@@ -3,6 +3,7 @@ import { generateId } from '@/lib/utils'
 import type { KnowledgeSearchResult } from '@/types'
 import { callGeminiGroundedSearch, generateJSON } from '@/lib/ai'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 // Web search over trusted nursing/medical sources (Gemini with Google Search grounding)
 export function useTrustedSourceSearch() {
@@ -27,7 +28,8 @@ export function useTrustedSourceSearch() {
     `
 
     const apply = (found: KnowledgeSearchResult[]) => {
-      setResults(prev => isLoadMore ? [...prev, ...found] : found)
+      const clean = found.map(r => ({ ...r, title: deepStripMarkdown(r.title), description: deepStripMarkdown(r.description) }))
+      setResults(prev => isLoadMore ? [...prev, ...clean] : clean)
       setPage(currentPage)
     }
 

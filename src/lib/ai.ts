@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/stores/authStore'
 import { getPersonalizationConfig, type PersonalizationConfig } from '@/lib/personalization'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 export type { PersonalizationConfig }
 
@@ -510,7 +511,8 @@ export async function generateJSON(
 
   try {
     const cleaned = stripThinkBlocks(raw).replace(/```json|```/g, '').trim()
-    return JSON.parse(cleaned)
+    // Structured results are shown as plain text, so no markdown symbols may survive
+    return deepStripMarkdown(JSON.parse(cleaned))
   } catch {
     console.error(`[AI Router] Failed to parse JSON for ${feature}. Response length: ${raw.length} chars. First 500 chars:`, raw.substring(0, 500))
     console.error(`[AI Router] Last 200 chars:`, raw.substring(raw.length - 200))
@@ -543,7 +545,7 @@ export async function generateJSON(
 
       const parsed = JSON.parse(repaired)
       console.warn(`[AI Router] Repaired truncated JSON for ${feature} — recovered ${parsed.questions?.length ?? 0} questions.`)
-      return parsed
+      return deepStripMarkdown(parsed)
     } catch (repairError) {
       console.error(`[AI Router] JSON repair also failed for ${feature}:`, repairError)
     }

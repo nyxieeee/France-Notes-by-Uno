@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { generateJSON } from '@/lib/ai'
 import { getSimulationEvaluationPrompt } from '@/lib/simulationPrompts'
 import type { SimulationSession } from '@/types'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 export type SimulationMode = 'recitation' | 'retdem' | null
 export type DifficultyMode = 'gentle' | 'clinical_instructor' | 'doc_uno'
@@ -139,7 +140,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
     if (error) console.error('Error fetching simulation history:', error)
-    else set({ history: data as SimulationSession[] })
+    else set({ history: (data as SimulationSession[]).map(s => ({ ...s, feedback: deepStripMarkdown(s.feedback) })) })
   },
 
   deleteSession: async (id) => {

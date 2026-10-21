@@ -4,6 +4,7 @@ import { generateJSON } from '@/lib/ai'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 export type UploadedFile = {
   id: string
@@ -61,7 +62,7 @@ export const useRetDemStore = create<RetDemState>()((set, get) => ({
       .order('created_at', { ascending: false })
     
     if (!error && data) {
-      set({ procedures: data as RetDemProcedure[] })
+      set({ procedures: deepStripMarkdown(data as RetDemProcedure[]) })
     }
   },
 
