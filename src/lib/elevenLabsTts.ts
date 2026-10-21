@@ -16,6 +16,13 @@ export interface ElevenLabsSynthOptions {
   nextText?: string
 }
 
+// Voices read "Doc" as "document" and can stumble on "Dr.", so say them the way people do
+export function spokenText(text: string): string {
+  return text
+    .replace(/\bDoc\b/g, 'Dock')
+    .replace(/\bDr\.\s*/g, 'Doctor ')
+}
+
 async function requestAudio(endpoint: string, body: Record<string, unknown>): Promise<string | null> {
   try {
     const response = await fetch(endpoint, {
@@ -65,6 +72,9 @@ export async function synthesizeSpeech({
   nextText,
 }: ElevenLabsSynthOptions): Promise<string | null> {
   const chosen = findVoice(speaker, voiceId || getVoiceChoice(speaker)) ?? HOST_VOICES[speaker][0]
+  text = spokenText(text)
+  previousText = previousText && spokenText(previousText)
+  nextText = nextText && spokenText(nextText)
   const viaFree = (voice?: string) => requestAudio('/api/tts', { text, speaker, voice })
   const viaElevenLabs = (voice?: string) =>
     requestAudio('/api/elevenlabs', { text, speaker, voice_id: voice, previous_text: previousText, next_text: nextText })
@@ -157,7 +167,7 @@ export function speakWithBrowser(text: string, speaker: ElevenLabsSpeaker, rate 
       stopCurrent = null
       resolve(result)
     }
-    const utterance = new SpeechSynthesisUtterance(text)
+    const utterance = new SpeechSynthesisUtterance(spokenText(text))
     utterance.rate = rate
     const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'))
     // Rough voice split so the two hosts sound different

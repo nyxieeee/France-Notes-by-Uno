@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Microphone as Mic2, Play, Pause, ArrowCounterClockwise as RotateCcw, CaretDown as ChevronDown, CircleNotch as Loader2, Sparkle as Sparkles, Clock, ChatsCircle, FileText, BookmarkSimple as Bookmark, Folder, PencilSimple, Trash as Trash2, Headphones, WarningCircle } from '@phosphor-icons/react'
+import { Microphone as Mic2, Play, Pause, ArrowCounterClockwise as RotateCcw, CaretDown as ChevronDown, CircleNotch as Loader2, Sparkle as Sparkles, Clock, ChatsCircle, FileText, BookmarkSimple as Bookmark, Folder, PencilSimple, Trash as Trash2, Headphones, WarningCircle, MusicNotes, MusicNotesSimple } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
 import { generateCompletion } from '@/lib/ai'
+import { startBackgroundMusic, stopBackgroundMusic, getMusicPreference, setMusicPreference } from '@/lib/backgroundMusic'
 import { synthesizeSpeech, playClip, speakWithBrowser, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
 import { toast, confirmDialog } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -252,6 +253,7 @@ export default function PodcastReviewPage() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentLine, setCurrentLine] = useState(-1)
   const [speed, setSpeed] = useState(1)
+  const [musicOn, setMusicOn] = useState(getMusicPreference)
   const [progress, setProgress] = useState(0)
 
   const playRunRef = useRef(0)
@@ -306,6 +308,7 @@ export default function PodcastReviewPage() {
     playRunRef.current++
     isPlayingRef.current = false
     stopPlayback()
+    stopBackgroundMusic()
   }
 
   const saveEpisodeToHistory = async (newEpisode: PodcastEpisode) => {
@@ -555,6 +558,7 @@ ${brief}`
         // iOS refused to start audio; pause on this line so one more tap on Play resumes it
         isPlayingRef.current = false
         setIsPlaying(false)
+        stopBackgroundMusic()
         toast('Tap play again to start the audio.', 'info')
         return
       }
@@ -562,6 +566,7 @@ ${brief}`
         // No voice available at all: stop instead of racing silently through the episode
         isPlayingRef.current = false
         setIsPlaying(false)
+        stopBackgroundMusic()
         toast('Audio isn\'t available right now. You can still read the transcript.', 'error')
         return
       }
@@ -570,6 +575,7 @@ ${brief}`
     setCurrentLine(-1)
     setProgress(1)
     isPlayingRef.current = false
+    stopBackgroundMusic()
   }, [])
 
   const startFrom = (lineIndex: number) => {
@@ -579,7 +585,17 @@ ${brief}`
     const run = playRunRef.current
     isPlayingRef.current = true
     setIsPlaying(true)
+    if (musicOn) startBackgroundMusic()
     speakLine(lineIndex, run)
+  }
+
+  const toggleMusic = () => {
+    const next = !musicOn
+    setMusicOn(next)
+    setMusicPreference(next)
+    if (!isPlayingRef.current) return
+    if (next) startBackgroundMusic()
+    else stopBackgroundMusic()
   }
 
   const handlePlay = () => {
@@ -729,6 +745,15 @@ ${brief}`
                     ))}
                   </div>
                   <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={toggleMusic}
+                      className={cn('btn-icon w-10 h-10 border rounded-full flex items-center justify-center', musicOn ? 'border-[var(--pink)]/40 text-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] text-[var(--text-secondary)]')}
+                      aria-label={musicOn ? 'Turn off background music' : 'Turn on background music'}
+                      aria-pressed={musicOn}
+                      title={musicOn ? 'Background music on' : 'Background music off'}
+                    >
+                      {musicOn ? <MusicNotes size={16} weight="fill" /> : <MusicNotesSimple size={16} />}
+                    </button>
                     <button onClick={handleRestart} className="btn-icon w-10 h-10 border border-[var(--border)] rounded-full flex items-center justify-center" aria-label="Restart episode">
                       <RotateCcw size={16} />
                     </button>
