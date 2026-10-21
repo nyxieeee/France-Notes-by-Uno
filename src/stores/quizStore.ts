@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { Quiz, QuizQuestion, QuizSetupConfig } from '@/types'
 import { shuffleArray, checkAnswerCorrectness } from '@/lib/utils'
 import { generateJSON } from '@/lib/ai'
+import { quizBlueprints, blueprintInstructions } from '@/lib/caseBlueprints'
+import type { CaseBlueprint } from '@/lib/caseBlueprints'
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
@@ -100,7 +102,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       const { isFrance, greetingName, aiAssistantName } = configDetails
 
       // Built per batch so each request only asks for `count` questions
-      const buildPrompts = (count: number, avoid: string[]) => {
+      const buildPrompts = (count: number, avoid: string[], plan: CaseBlueprint[]) => {
         let systemPrompt = ""
         if (isFrance) {
           systemPrompt = `
@@ -119,7 +121,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
 
             CRITICAL DIVERSITY & DYNAMIC VARIETY RULE:
             - Every single time a quiz is generated, it MUST be completely unique and highly dynamic!
-            - Introduce diverse client cases with varying age groups, ethnicities, clinical backgrounds, and comorbidities.
+            - Introduce diverse client cases with varying age groups, clinical backgrounds, and comorbidities.
             - Explore different sub-topics and disease stages (acute vs chronic, early vs late symptoms, primary vs secondary prevention).
             - Do NOT reuse identical questions or standard textbook templates — write fresh, engaging, and immersive clinical narratives.
           `
@@ -141,7 +143,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
 
             CRITICAL DIVERSITY & DYNAMIC VARIETY RULE:
             - Every single time a quiz is generated, it MUST be completely unique and highly dynamic!
-            - Introduce diverse client cases with varying age groups, ethnicities, clinical backgrounds, and comorbidities.
+            - Introduce diverse client cases with varying age groups, clinical backgrounds, and comorbidities.
             - Explore different sub-topics and disease stages (acute vs chronic, early vs late symptoms, primary vs secondary prevention).
             - Do NOT reuse identical questions or standard textbook templates — write fresh, engaging, and immersive clinical narratives.
           `
@@ -194,6 +196,8 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
         CRITICAL INSTRUCTION: You MUST generate EXACTLY ${count} questions. Please count them as you generate: 1, 2, ..., ${count}. Do NOT stop generating until you have exactly ${count} questions. If you generate fewer than ${count}, you fail the task.
         CRITICAL DIVERSITY INSTRUCTION: Ensure that all questions, scenario profiles, lab values, and clinical settings are completely different from prior quizzes. Explore a different sub-focus within this topic area (e.g. drug side effects, priority assessments, post-op instructions, or ethical nurse dilemmas) to keep it fully dynamic!`
 
+        systemPrompt += blueprintInstructions(plan)
+
         if (avoid.length > 0) {
           systemPrompt += `
         Do NOT repeat or closely paraphrase any of these questions already in this quiz:
@@ -207,6 +211,8 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       // overflows the output limit and comes back cut off (unparseable)
       const BATCH_SIZE = 5
       const generatedQuestions: QuizQuestion[] = []
+      // Every question in the whole quiz gets its own patient, setting and focus up front
+      const plan = quizBlueprints(config.size)
       let failedAttempts = 0
       let lastReason = ''
 
@@ -214,7 +220,8 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
         // Free-tier AI limits reject requests sent back to back, so wait a bit longer after each failure
         if (failedAttempts > 0) await new Promise(r => setTimeout(r, 2000 * failedAttempts))
         const count = Math.min(BATCH_SIZE, config.size - generatedQuestions.length)
-        const { prompt, systemPrompt } = buildPrompts(count, generatedQuestions.map(q => q.question))
+        const offset = generatedQuestions.length
+        const { prompt, systemPrompt } = buildPrompts(count, generatedQuestions.map(q => q.question), plan.slice(offset, offset + count))
 
         let batch: QuizQuestion[] = []
         try {
