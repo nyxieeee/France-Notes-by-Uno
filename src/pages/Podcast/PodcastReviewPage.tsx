@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Microphone as Mic2, Play, Pause, ArrowCounterClockwise as RotateCcw, CaretDown as ChevronDown, CircleNotch as Loader2, Sparkle as Sparkles, Clock, ChatsCircle, FileText, BookmarkSimple as Bookmark, Folder, PencilSimple, Trash as Trash2, Headphones, WarningCircle, MusicNotes, MusicNotesSimple } from '@phosphor-icons/react'
+import { Microphone as Mic2, Play, Pause, CaretDown as ChevronDown, CircleNotch as Loader2, Sparkle as Sparkles, Clock, ChatsCircle, FileText, BookmarkSimple as Bookmark, Folder, PencilSimple, Trash as Trash2, Headphones, WarningCircle, MusicNotes, MusicNotesSimple, SkipBack, SkipForward } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { cn } from '@/lib/utils'
@@ -70,21 +70,29 @@ function HostAvatar({ speaker, size = 36, active = true }: { speaker: DialogueLi
 }
 
 // ─── Transcript Line ──────────────────────────────────────────────────────────
-function TranscriptLine({ line, active }: { line: DialogueLine; active: boolean }) {
+function TranscriptLine({ line, active, onSelect }: { line: DialogueLine; active: boolean; onSelect: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (active && ref.current) {
-      ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Scroll only the transcript box, never the page, so the player controls stay put under her finger
+    const el = ref.current
+    const box = el?.parentElement
+    if (active && el && box) {
+      box.scrollTo({ top: el.offsetTop - box.clientHeight / 2 + el.clientHeight / 2, behavior: 'smooth' })
     }
   }, [active])
 
   return (
     <div
       ref={ref}
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect() } }}
+      title="Play from here"
       className={cn(
-        'flex gap-3 items-start px-3 py-2.5 rounded-xl transition-colors duration-300',
-        active ? 'bg-[var(--rose-soft)]' : ''
+        'flex gap-3 items-start px-3 py-2.5 rounded-xl transition-colors duration-300 cursor-pointer',
+        active ? 'bg-[var(--rose-soft)]' : 'hover:bg-[var(--rose-soft)]/60'
       )}
     >
       <HostAvatar speaker={line.speaker} size={32} active={active} />
@@ -218,6 +226,84 @@ function parseScript(raw: string): DialogueLine[] {
 }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5]
+
+// Speech runs about 130 words a minute; used to show times and to map the seek bar to lines
+const WORDS_PER_SECOND = 130 / 60
+
+const formatTime = (seconds: number) => {
+  const s = Math.max(0, Math.round(seconds))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+function SeekBar({ starts, total, current, speed, onSeek }: {
+  starts: number[]
+  total: number
+  current: number
+  speed: number
+  onSeek: (lineIndex: number) => void
+}) {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [dragFraction, setDragFraction] = useState<number | null>(null)
+
+  const lineAt = (fraction: number) => {
+    const target = fraction * total
+    let index = 0
+    while (index + 1 < starts.length && starts[index + 1] <= target) index++
+    return index
+  }
+  const fractionFrom = (clientX: number) => {
+    const rect = trackRef.current!.getBoundingClientRect()
+    return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+  }
+
+  const playedFraction = total > 0 && current >= 0 ? (starts[current] ?? total) / total : 0
+  const shownFraction = dragFraction ?? playedFraction
+  const shownSeconds = dragFraction !== null ? starts[lineAt(dragFraction)] ?? 0 : starts[current] ?? 0
+
+  return (
+    <div className="mt-3">
+      <div
+        ref={trackRef}
+        role="slider"
+        tabIndex={0}
+        aria-label="Seek"
+        aria-valuemin={0}
+        aria-valuemax={Math.max(0, starts.length - 1)}
+        aria-valuenow={Math.max(0, current)}
+        aria-valuetext={`Line ${Math.max(0, current) + 1} of ${starts.length}`}
+        className="group relative h-5 flex items-center cursor-pointer touch-none select-none"
+        onPointerDown={e => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          setDragFraction(fractionFrom(e.clientX))
+        }}
+        onPointerMove={e => { if (dragFraction !== null) setDragFraction(fractionFrom(e.clientX)) }}
+        onPointerUp={e => {
+          if (dragFraction === null) return
+          const index = lineAt(fractionFrom(e.clientX))
+          setDragFraction(null)
+          onSeek(index)
+        }}
+        onPointerCancel={() => setDragFraction(null)}
+        onKeyDown={e => {
+          if (e.key === 'ArrowRight') { e.preventDefault(); onSeek(Math.min(starts.length - 1, Math.max(0, current) + 1)) }
+          if (e.key === 'ArrowLeft') { e.preventDefault(); onSeek(Math.max(0, current - 1)) }
+        }}
+      >
+        <div className="w-full h-1.5 bg-th-pink/15 rounded-full overflow-hidden">
+          <div className={cn('h-full bg-[var(--pink)] rounded-full', dragFraction === null && 'transition-[width] duration-300')} style={{ width: `${shownFraction * 100}%` }} />
+        </div>
+        <div
+          className={cn('absolute w-3.5 h-3.5 -ml-[7px] rounded-full bg-[var(--pink)] shadow-fn transition-transform', dragFraction !== null ? 'scale-125' : 'scale-0 group-hover:scale-100 [@media(hover:none)]:scale-100')}
+          style={{ left: `${shownFraction * 100}%` }}
+        />
+      </div>
+      <div className="flex justify-between text-[11px] tabular-nums text-[var(--text-secondary)] -mt-0.5">
+        <span>{formatTime(shownSeconds / speed)}</span>
+        <span>{formatTime(total / speed)}</span>
+      </div>
+    </div>
+  )
+}
 type SourceMode = 'type' | 'topic' | 'file' | 'knowledge'
 
 export default function PodcastReviewPage() {
@@ -608,15 +694,46 @@ ${brief}`
     }
   }
 
-  const handleRestart = () => {
-    setProgress(0)
-    startFrom(0)
+  const goToLine = (lineIndex: number) => {
+    const index = Math.min(Math.max(0, lineIndex), script.length - 1)
+    if (index < 0) return
+    if (isPlayingRef.current) {
+      startFrom(index)
+    } else {
+      setCurrentLine(index)
+      setProgress(index / script.length)
+      prefetch(index)
+    }
+  }
+
+  // Like Spotify: back goes to the start of the current line first, then to the line before
+  const lineStartedAt = useRef(0)
+  useEffect(() => { lineStartedAt.current = Date.now() }, [currentLine])
+  const handlePrevious = () => {
+    if (currentLine < 0) return goToLine(script.length - 1)
+    const restartCurrent = isPlayingRef.current && Date.now() - lineStartedAt.current > 3000
+    goToLine(restartCurrent ? currentLine : currentLine - 1)
+  }
+  const handleNext = () => {
+    if (currentLine < 0 || currentLine >= script.length - 1) return
+    goToLine(currentLine + 1)
   }
 
   const hasScript = script.length > 0
   const estimatedDuration = hasScript ? Math.max(1, Math.round(script.reduce((acc, l) => acc + l.text.split(' ').length, 0) / 130)) : 0
   const canGenerate = !isGenerating && !isWritingMore && !((inputMode === 'type' && !freeText.trim()) || (inputMode === 'topic' && topics.length === 0) || (inputMode === 'file' && !myFiles.some(i => i.id === selectedItemId)) || (inputMode === 'knowledge' && savedKnowledge.length === 0))
   const activeSpeaker = currentLine >= 0 ? script[currentLine]?.speaker : null
+  // Estimated start time of every line, plus the episode's total length
+  const { lineStarts, totalSeconds } = useMemo(() => {
+    const starts: number[] = []
+    let total = 0
+    for (const l of script) {
+      starts.push(total)
+      total += l.text.split(/\s+/).length / WORDS_PER_SECOND + 0.4
+    }
+    return { lineStarts: starts, totalSeconds: total }
+  }, [script])
+  const seekLine = currentLine < 0 && progress >= 1 ? script.length : currentLine
 
   const SOURCES: { id: SourceMode; label: string; icon: Icon }[] = [
     { id: 'type', label: 'Topic', icon: PencilSimple },
@@ -727,42 +844,43 @@ ${brief}`
                     )}
                   </div>
 
-                  <div className="mt-3 h-1.5 bg-th-pink/15 rounded-full overflow-hidden">
-                    <motion.div className="h-full bg-[var(--pink)] rounded-full" animate={{ width: `${progress * 100}%` }} transition={{ duration: 0.3 }} />
-                  </div>
+                  <SeekBar starts={lineStarts} total={totalSeconds} current={seekLine} speed={speed} onSeek={goToLine} />
                 </div>
 
-                <div className="px-5 py-4 flex items-center justify-between gap-3 border-t border-[var(--border)]">
-                  <div className="flex gap-1">
-                    {SPEEDS.map(s => (
-                      <button
-                        key={s}
-                        onClick={() => setSpeed(s)}
-                        className={cn('px-2 py-1 rounded-lg text-[11.5px] font-medium transition-colors', speed === s ? 'bg-[var(--pink)] text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--rose-soft)]')}
-                      >
-                        {s}x
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2.5">
+                <div className="px-5 py-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-[var(--border)]">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={toggleMusic}
-                      className={cn('btn-icon w-10 h-10 border rounded-full flex items-center justify-center', musicOn ? 'border-[var(--pink)]/40 text-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] text-[var(--text-secondary)]')}
+                      className={cn('btn-icon w-10 h-10 rounded-full flex items-center justify-center', musicOn ? 'text-[var(--pink)]' : 'text-[var(--text-secondary)]')}
                       aria-label={musicOn ? 'Turn off background music' : 'Turn on background music'}
                       aria-pressed={musicOn}
                       title={musicOn ? 'Background music on' : 'Background music off'}
                     >
-                      {musicOn ? <MusicNotes size={16} weight="fill" /> : <MusicNotesSimple size={16} />}
+                      {musicOn ? <MusicNotes size={18} weight="fill" /> : <MusicNotesSimple size={18} />}
                     </button>
-                    <button onClick={handleRestart} className="btn-icon w-10 h-10 border border-[var(--border)] rounded-full flex items-center justify-center" aria-label="Restart episode">
-                      <RotateCcw size={16} />
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <button onClick={handlePrevious} className="btn-icon w-11 h-11 rounded-full flex items-center justify-center" aria-label="Previous line">
+                      <SkipBack size={22} weight="fill" />
                     </button>
                     <button
                       onClick={handlePlay}
                       aria-label={isPlaying ? 'Pause' : 'Play'}
-                      className="w-12 h-12 rounded-full bg-[var(--pink)] flex items-center justify-center text-white shadow-fn hover:brightness-105 active:scale-95 transition-all"
+                      className="w-14 h-14 rounded-full bg-[var(--pink)] flex items-center justify-center text-white shadow-fn hover:brightness-105 active:scale-95 transition-all"
                     >
-                      {isPlaying ? <Pause size={22} weight="fill" /> : <Play size={22} weight="fill" className="translate-x-px" />}
+                      {isPlaying ? <Pause size={24} weight="fill" /> : <Play size={24} weight="fill" className="translate-x-px" />}
+                    </button>
+                    <button onClick={handleNext} disabled={currentLine < 0 || currentLine >= script.length - 1} className="btn-icon w-11 h-11 rounded-full flex items-center justify-center disabled:opacity-35" aria-label="Next line">
+                      <SkipForward size={22} weight="fill" />
+                    </button>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}
+                      className="min-w-[48px] h-8 px-2.5 rounded-full border border-[var(--border)] text-[12px] font-semibold tabular-nums hover:bg-[var(--rose-soft)] transition-colors"
+                      aria-label={`Playback speed ${speed}x. Tap to change.`}
+                    >
+                      {speed}x
                     </button>
                   </div>
                 </div>
@@ -773,8 +891,8 @@ ${brief}`
                   <h3 className="font-heading font-semibold text-[15px]">Transcript</h3>
                   {currentLine >= 0 && <span className="text-[12px] text-[var(--text-secondary)]">Line {currentLine + 1} of {script.length}{isWritingMore ? '+' : ''}</span>}
                 </div>
-                <div className="p-2 sm:p-3 space-y-0.5 max-h-[520px] overflow-y-auto custom-scrollbar">
-                  {script.map((line, i) => <TranscriptLine key={i} line={line} active={currentLine === i} />)}
+                <div className="relative p-2 sm:p-3 space-y-0.5 max-h-[520px] overflow-y-auto custom-scrollbar">
+                  {script.map((line, i) => <TranscriptLine key={i} line={line} active={currentLine === i} onSelect={() => goToLine(i)} />)}
                   {isWritingMore && (
                     <p className="flex items-center gap-2 px-3 py-3 text-[12.5px] text-[var(--text-secondary)]">
                       <Loader2 size={14} className="animate-spin text-[var(--pink)]" /> Writing the rest of the episode. It will keep playing on its own.
