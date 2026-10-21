@@ -113,7 +113,7 @@ function OptionDropdown({ icon: OptionIcon, placeholder, value, options, onSelec
   icon: Icon
   placeholder: string
   value: string
-  options: { id: string; label: string; color?: string }[]
+  options: { id: string; label: string; hint?: string; color?: string }[]
   onSelect: (id: string) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -155,7 +155,10 @@ function OptionDropdown({ icon: OptionIcon, placeholder, value, options, onSelec
                 {o.color
                   ? <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: o.color }} />
                   : <OptionIcon size={14} className="text-[var(--pink)] shrink-0" />}
-                <span className="truncate">{o.label}</span>
+                <span className="min-w-0">
+                  <span className="block truncate">{o.label}</span>
+                  {o.hint && <span className="block truncate text-[11px] font-normal text-[var(--text-secondary)]">{o.hint}</span>}
+                </span>
               </button>
             ))}
           </motion.div>
@@ -788,7 +791,7 @@ ${brief}`
             ? <OptionDropdown icon={FileText} placeholder="Choose an uploaded file" value={selectedItemId} onSelect={setSelectedItemId} options={myFiles.map(i => ({ id: i.id, label: i.file_name }))} />
             : <EmptySource text="Upload a PDF or document in Study Box to use it here." />)}
           {inputMode === 'knowledge' && (savedKnowledge.length > 0
-            ? <OptionDropdown icon={Bookmark} placeholder="Choose a saved reference" value={selectedKnowledgeId} onSelect={setSelectedKnowledgeId} options={savedKnowledge.map(k => ({ id: k.id, label: k.title }))} />
+            ? <OptionDropdown icon={Bookmark} placeholder="Choose a saved reference" value={selectedKnowledgeId} onSelect={setSelectedKnowledgeId} options={savedKnowledge.map(k => ({ id: k.id, label: k.title, hint: k.source }))} />
             : <EmptySource text="Save references in Knowledge Garden to use them here." />)}
 
           <button onClick={generatePodcast} disabled={!canGenerate} className="btn-primary w-full mt-3 py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-50">

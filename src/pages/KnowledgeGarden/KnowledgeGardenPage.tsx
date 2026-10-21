@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Leaf, MagnifyingGlass, ArrowSquareOut, BookOpen, Trash, Plus, ShieldCheck } from '@phosphor-icons/react'
+import { Leaf, MagnifyingGlass, ArrowSquareOut, BookOpen, Trash, Plus, ShieldCheck, CircleNotch } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { useStudyBoxStore, findReferenceArticle } from '@/stores/studyBoxStore'
 import { useViewerStore } from '@/stores/viewerStore'
@@ -16,7 +16,7 @@ type SavedRef = { id: string; title: string; description: string; source: string
 // Saved references from Search → Trusted Sources. Each one also lives in the Study Box References folder as a full article.
 export default function KnowledgeGardenPage() {
   const navigate = useNavigate()
-  const { savedKnowledge, items, removeKnowledge } = useStudyBoxStore()
+  const { savedKnowledge, items, removeKnowledge, writingArticlesFor } = useStudyBoxStore()
   const openMaterial = useViewerStore(s => s.openMaterial)
   const { knowledgeGardenName, aiAssistantName } = usePersonalization()
   const [category, setCategory] = useState('all')
@@ -28,6 +28,7 @@ export default function KnowledgeGardenPage() {
   const openArticle = (ref: SavedRef) => {
     const article = findReferenceArticle(items, ref)
     if (article) openMaterial(article)
+    else if (writingArticlesFor.includes(ref.id)) toast(`${aiAssistantName} is still writing this article. It'll be ready in a moment.`, 'info')
     else window.open(ref.url, '_blank', 'noreferrer')
   }
 
@@ -97,7 +98,11 @@ export default function KnowledgeGardenPage() {
                   </p>
                   <p className="text-[12.5px] text-[var(--text-secondary)] mt-2 line-clamp-3 flex-1">{ref.description}</p>
                   <div className="flex items-center gap-1 mt-3 -mb-1">
-                    <button onClick={() => openArticle(ref)} className="text-xs font-medium text-[var(--pink)] hover:underline mr-auto">Study article</button>
+                    {writingArticlesFor.includes(ref.id) ? (
+                      <span className="text-xs text-[var(--text-secondary)] mr-auto flex items-center gap-1.5"><CircleNotch size={12} className="animate-spin text-[var(--pink)]" /> Writing article</span>
+                    ) : (
+                      <button onClick={() => openArticle(ref)} className="text-xs font-medium text-[var(--pink)] hover:underline mr-auto">Study article</button>
+                    )}
                     <a href={ref.url} target="_blank" rel="noreferrer" className="btn-icon p-1.5" title="Open source" aria-label="Open source website"><ArrowSquareOut size={16} /></a>
                     <button onClick={async () => { if (await confirmDialog({ title: 'Remove this reference?', message: 'It will be removed from your garden, along with its study article in the References folder.', confirmLabel: 'Remove', danger: true })) { removeKnowledge(ref.id); toast('Reference removed', 'success') } }} className="btn-icon p-1.5 hover:text-[var(--error)]" title="Remove" aria-label="Remove reference"><Trash size={16} /></button>
                   </div>
