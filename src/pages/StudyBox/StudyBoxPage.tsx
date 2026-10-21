@@ -35,6 +35,49 @@ const TYPE_OPTIONS = [['all', 'All types'], ['pdf', 'PDF'], ['docx', 'Word'], ['
 const displayName = (item: StudyBoxItem) =>
   item.file_name.replace(/^\[(Reference|Case Study|Pathophysiology)\] /, '').replace(/\.txt$/, '')
 
+// What kind of material this is, shown as a small label on its card
+function materialKind(item: StudyBoxItem): string {
+  if (item.file_name.startsWith('[Reference]')) return 'Reference'
+  if (item.file_name.startsWith('[Case Study]')) return 'Case study'
+  if (item.file_name.startsWith('[Pathophysiology]')) return 'Pathophysiology'
+  return { pdf: 'PDF', docx: 'Word', pptx: 'Slides', image: 'Photo', txt: 'Text' }[item.file_type] || 'File'
+}
+
+// First readable lines of a material for its card preview
+function previewText(item: StudyBoxItem): string {
+  const raw = item.summary || item.extracted_text || ''
+  if (!raw || raw.startsWith('[SYSTEM MESSAGE')) return ''
+  return raw
+    .replace(/^(SOURCE|URL):.*$/gim, '')
+    .replace(/[#*_`>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 320)
+}
+
+// Card thumbnail: the photo itself, or a little sheet of paper with the material's opening lines
+function MaterialPreview({ item }: { item: StudyBoxItem }) {
+  if (item.preview_image) {
+    return <img src={item.preview_image} alt={item.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+  }
+  const text = previewText(item)
+  return (
+    <div className={`w-full h-full flex justify-center bg-gradient-to-br ${tintFor(item.id)}`}>
+      <div className="relative w-[74%] mt-[9%] rounded-t-md bg-[#FFFDF9] shadow-[0_2px_10px_rgba(120,60,75,0.12)] px-3 pt-3 overflow-hidden group-hover:-translate-y-1 transition-transform duration-300">
+        <p className="text-[9px] font-semibold text-[#4a3a3f] leading-tight line-clamp-2 mb-1.5">{displayName(item)}</p>
+        {text ? (
+          <p className="text-[7.5px] leading-[1.45] text-[#8a7a7f] line-clamp-6">{text}</p>
+        ) : (
+          <div className="space-y-1.5 pt-0.5">
+            {[100, 92, 96, 70, 88].map((w, i) => <div key={i} className="h-[3px] rounded-full bg-[#ecdfe2]" style={{ width: `${w}%` }} />)}
+          </div>
+        )}
+        <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-[#FFFDF9] to-transparent" />
+      </div>
+    </div>
+  )
+}
+
 // Icon for a material: photo, saved web reference, slides, or document
 function ItemTypeIcon({ item, ...props }: { item: StudyBoxItem } & IconProps) {
   if (item.file_type === 'image') return <ImageIcon {...props} />
@@ -401,13 +444,10 @@ export default function StudyBoxPage() {
                   onClick={() => setSelectedItem(item)}
                 >
                   <div className="aspect-[16/10] relative overflow-hidden">
-                    {item.preview_image ? (
-                      <img src={item.preview_image} alt={item.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${tintFor(item.id)}`}>
-                        <ItemTypeIcon item={item} size={34} weight="light" className="text-th-pink/70 group-hover:scale-110 transition-transform duration-300" />
-                      </div>
-                    )}
+                    <MaterialPreview item={item} />
+                    <span className="absolute bottom-2 left-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-th-card/90 text-[10.5px] font-medium text-[var(--text-secondary)] shadow-sm">
+                      <ItemTypeIcon item={item} size={11} /> {materialKind(item)}
+                    </span>
 
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleItemSelection(item.id) }}
