@@ -33,7 +33,7 @@ const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY
 const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY
 
 const ELEVENLABS_VOICES = {
-  DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'pNInz6obpgDQGcFmaJgB', // Adam
+  DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'iP95p4xoKVk53GtZA4qT', // Chris
   NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || 'EXAVITQu4vr4xnSDxMaL', // Sarah
 }
 
@@ -103,8 +103,8 @@ async function handleRequest(req, res) {
 
     } else if (path === '/api/elevenlabs') {
       if (!ELEVENLABS_API_KEY) throw new Error('VITE_ELEVENLABS_API_KEY not set')
-      const { text, speaker, stability = 0.5, similarity_boost = 0.75 } = body
-      const voiceId = ELEVENLABS_VOICES[speaker]
+      const { text, speaker, voice_id, previous_text, next_text } = body
+      const voiceId = typeof voice_id === 'string' && /^[A-Za-z0-9]{20}$/.test(voice_id) ? voice_id : ELEVENLABS_VOICES[speaker]
       if (!voiceId) throw new Error(`Unknown speaker: ${speaker}`)
       const apiRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: 'POST',
@@ -115,8 +115,11 @@ async function handleRequest(req, res) {
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_flash_v2_5',
-          voice_settings: { stability, similarity_boost, style: 0.0, use_speaker_boost: true },
+          // Turbo: natural, expressive delivery while still quick enough for conversation
+          model_id: 'eleven_turbo_v2_5',
+          previous_text: previous_text || undefined,
+          next_text: next_text || undefined,
+          voice_settings: { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
         }),
       })
       if (!apiRes.ok) {

@@ -2,13 +2,18 @@
 // Routes through /api/elevenlabs Vercel proxy so the API key stays server-side.
 // Playback helpers below fall back to the Web Speech API if the proxy call fails.
 
+import { getVoiceChoice } from '@/lib/voices'
+
 export type ElevenLabsSpeaker = 'DOC_UNO' | 'NURSE_FLORENCE'
 
 export interface ElevenLabsSynthOptions {
   text: string
   speaker: ElevenLabsSpeaker
-  stability?: number
-  similarityBoost?: number
+  /** Override the host's chosen voice (used for previews) */
+  voiceId?: string
+  /** Surrounding sentences, so a reply spoken in pieces keeps a natural flow */
+  previousText?: string
+  nextText?: string
 }
 
 /**
@@ -18,8 +23,9 @@ export interface ElevenLabsSynthOptions {
 export async function synthesizeSpeechElevenLabs({
   text,
   speaker,
-  stability = 0.5,
-  similarityBoost = 0.75,
+  voiceId,
+  previousText,
+  nextText,
 }: ElevenLabsSynthOptions): Promise<string | null> {
   try {
     const response = await fetch('/api/elevenlabs', {
@@ -28,8 +34,9 @@ export async function synthesizeSpeechElevenLabs({
       body: JSON.stringify({
         text,
         speaker,
-        stability,
-        similarity_boost: similarityBoost,
+        voice_id: voiceId || getVoiceChoice(speaker),
+        previous_text: previousText,
+        next_text: nextText,
       }),
     })
 
@@ -195,7 +202,9 @@ export async function speakLong(text: string, speaker: ElevenLabsSpeaker, rate =
   if (chunks.length <= 1) return speak(text, speaker, rate, stillWanted)
   const clips = new Map<number, Promise<string | null>>()
   const fetchClip = (i: number) => {
-    if (i < chunks.length && !clips.has(i)) clips.set(i, synthesizeSpeechElevenLabs({ text: chunks[i], speaker }))
+    if (i < chunks.length && !clips.has(i)) {
+      clips.set(i, synthesizeSpeechElevenLabs({ text: chunks[i], speaker, previousText: chunks[i - 1], nextText: chunks[i + 1] }))
+    }
   }
   const release = () => clips.forEach(p => p.then(url => { if (url) URL.revokeObjectURL(url) }))
   fetchClip(0)
