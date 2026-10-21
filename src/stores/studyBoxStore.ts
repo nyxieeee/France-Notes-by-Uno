@@ -37,6 +37,7 @@ interface StudyBoxState {
   fetchFolders: () => Promise<void>
   createFolder: (title: string, color?: string, description?: string) => Promise<Topic>
   deleteFolder: (id: string) => Promise<void>
+  renameFolder: (id: string, title: string) => Promise<void>
   moveItems: (ids: string[], topicId: string | null) => Promise<void>
   addGeneratedItem: (title: string, content: string, type: 'case-study' | 'pathophysiology') => Promise<void>
   getFilteredItems: () => StudyBoxItem[]
@@ -84,6 +85,10 @@ export const isCustomFolder = (id: string) => !BUILT_IN_TOPICS.some(t => t.id ==
 
 const FOLDER_COLORS = ['#F2B8C6', '#F6CBA8', '#B9DCC4', '#B8C9EE', '#D7C2EE', '#F3DFA2', '#AFDCE0']
 const foldersCacheKey = (userId: string) => `fn-study-folders-${userId}`
+
+// Folders that need storing: her own, plus built-in subjects she has renamed (stored under the built-in id)
+const storedFolders = (topics: Topic[]) =>
+  topics.filter(t => isCustomFolder(t.id) || BUILT_IN_TOPICS.find(b => b.id === t.id)?.title !== t.title)
 
 const referenceTitle = (result: { title: string; source: string }) => {
   const title = result.title.trim()
@@ -360,7 +365,11 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       // study_folders table not created yet: keep folders on this device
       try { custom = JSON.parse(localStorage.getItem(foldersCacheKey(userId)) || '[]') } catch { custom = [] }
     }
-    const all = [...BUILT_IN_TOPICS, ...custom.filter(c => !BUILT_IN_TOPICS.some(b => b.id === c.id))]
+    const renamed = new Map(custom.filter(c => !isCustomFolder(c.id)).map(c => [c.id, c.title]))
+    const all = [
+      ...BUILT_IN_TOPICS.map(b => renamed.has(b.id) ? { ...b, title: renamed.get(b.id)! } : b),
+      ...custom.filter(c => isCustomFolder(c.id)),
+    ]
     set({ topics: all, allTopics: all })
   },
 
@@ -378,7 +387,7 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       created_at: new Date().toISOString(),
     }
     set((state) => ({ topics: [...state.topics, folder], allTopics: [...state.topics, folder] }))
-    localStorage.setItem(foldersCacheKey(userId), JSON.stringify(get().topics.filter(t => isCustomFolder(t.id))))
+    localStorage.setItem(foldersCacheKey(userId), JSON.stringify(storedFolders(get().topics)))
     if (session?.user) {
       const { error } = await supabase.from('study_folders').insert([folder])
       if (error) console.warn('Folder saved on this device only:', error.message)
@@ -397,10 +406,33 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       items: state.items.map(i => i.topic_id === id ? { ...i, topic_id: null } : i),
       selectedTopic: state.selectedTopic === id ? null : state.selectedTopic,
     }))
-    localStorage.setItem(foldersCacheKey(userId), JSON.stringify(get().topics.filter(t => isCustomFolder(t.id))))
+    localStorage.setItem(foldersCacheKey(userId), JSON.stringify(storedFolders(get().topics)))
     if (session?.user) {
       await supabase.from('study_materials').update({ topic_id: null }).eq('user_id', userId).eq('topic_id', id)
       await supabase.from('study_folders').delete().eq('id', id)
+    }
+  },
+
+  renameFolder: async (id: string, title: string) => {
+    const name = title.trim()
+    const folder = get().topics.find(t => t.id === id)
+    if (!name || !folder || folder.title === name) return
+    if (get().topics.some(t => t.id !== id && t.title.toLowerCase() === name.toLowerCase())) {
+      throw new Error(`You already have a folder called “${name}”.`)
+    }
+    const { data: { session } } = await supabase.auth.getSession()
+    const userId = session?.user?.id || 'guest'
+    set((state) => {
+      const topics = state.topics.map(t => t.id === id ? { ...t, title: name } : t)
+      return { topics, allTopics: topics }
+    })
+    localStorage.setItem(foldersCacheKey(userId), JSON.stringify(storedFolders(get().topics)))
+    if (session?.user) {
+      const renamed = get().topics.find(t => t.id === id)!
+      const { error } = await supabase.from('study_folders').upsert([{
+        id, user_id: userId, title: name, description: renamed.description || '', color: renamed.color, created_at: renamed.created_at || new Date().toISOString(),
+      }])
+      if (error) console.warn('Folder name saved on this device only:', error.message)
     }
   },
 
@@ -440,6 +472,7 @@ async function addItemSteps(file: File, topicId?: string): Promise<StudyBoxItem>
     extractedText = await extractTextFromFile(file)
   } catch (error) {
     console.error('Failed to extract text', error)
+    // eslint-disable-next-line preserve-caught-error -- the build target has no Error cause; the original is logged above
     throw new Error(`Couldn't read “${file.name}”. It may be damaged, password-protected or an unsupported format.`)
   }
   if (!extractedText.trim()) {

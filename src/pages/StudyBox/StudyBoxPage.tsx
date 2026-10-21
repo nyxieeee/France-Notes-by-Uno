@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStudyBoxStore, REFERENCES_TOPIC_ID, UNSORTED_TOPIC_ID, isCustomFolder } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import type { StudyBoxItem, Topic } from '@/types'
 import {
   UploadSimple as Upload, FileText, MagnifyingGlass as Search, Funnel as Filter, Trash as Trash2, Heart, Camera,
   Image as ImageIcon, Sparkle as Sparkles, Brain as BrainCircuit, BookOpen,
   CircleNotch as Loader2, DownloadSimple as Download, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink,
-  Globe, X, Archive as ArchiveIcon, Folder, CaretRight, Printer, PresentationChart, Books, Check,
-  FolderSimplePlus, FolderOpen, Tray,
+  Globe, X, Archive as ArchiveIcon, Folder, Printer, PresentationChart, Books, Check,
+  FolderSimplePlus, FolderOpen, Tray, ArrowLeft, PencilSimple,
 } from '@phosphor-icons/react'
 import type { IconProps } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
@@ -61,12 +61,25 @@ export default function StudyBoxPage() {
     addGeneratedItem,
     createFolder,
     deleteFolder,
+    renameFolder,
     moveItems,
   } = useStudyBoxStore()
 
   // Files waiting for a destination folder (from a card, the selection bar or the detail view)
   const [moveIds, setMoveIds] = useState<string[] | null>(null)
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false)
+  const [renaming, setRenaming] = useState<Topic | null>(null)
+
+  // The open folder lives in the URL (?folder=…) so Back, the iPad back swipe and the sidebar link all return to the folder list
+  const [searchParams, setSearchParams] = useSearchParams()
+  const folderParam = searchParams.get('folder')
+  useEffect(() => { setSelectedTopic(folderParam) }, [folderParam, setSelectedTopic])
+  const openFolder = (id: string | null, replace = false) => {
+    const next = new URLSearchParams(searchParams)
+    if (id) next.set('folder', id)
+    else next.delete('folder')
+    setSearchParams(next, { replace })
+  }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const filteredItems = getFilteredItems()
@@ -291,24 +304,42 @@ export default function StudyBoxPage() {
 
       {/* Breadcrumb when inside a topic */}
       {activeTopic && (
-        <div className="flex items-center gap-1.5 text-sm mb-4">
-          <button onClick={() => setSelectedTopic(null)} className="text-[var(--text-secondary)] hover:text-[var(--pink)]">All folders</button>
-          <CaretRight size={13} className="text-[var(--text-secondary)]" />
-          <span className="font-semibold text-[var(--text)]">{activeTopic.title}</span>
-          <span className="text-[var(--text-secondary)]">· {displayedItems.length} material{displayedItems.length === 1 ? '' : 's'}</span>
+        <div className="mb-4">
+        <div className="flex items-center gap-1.5 text-sm">
+          <button
+            onClick={() => openFolder(null)}
+            className="flex items-center gap-1.5 pl-2.5 pr-3.5 py-1.5 rounded-full border border-[var(--border)] bg-[var(--card)] text-[13px] font-medium hover:text-[var(--pink)] hover:border-[var(--accent)] shrink-0"
+          >
+            <ArrowLeft size={15} /> All folders
+          </button>
+          <div className="ml-auto" />
+          {activeTopic.id !== UNSORTED_TOPIC_ID && (
+            <button
+              onClick={() => setRenaming(activeTopic)}
+              className="text-[12.5px] text-[var(--text-secondary)] hover:text-[var(--pink)] flex items-center gap-1 shrink-0"
+            >
+              <PencilSimple size={14} /> Rename
+            </button>
+          )}
           {isCustomFolder(activeTopic.id) && activeTopic.id !== UNSORTED_TOPIC_ID && (
             <button
               onClick={async () => {
                 if (await confirmDialog({ title: `Delete “${activeTopic.title}”?`, message: 'The folder is removed. Its files are kept and moved to Unsorted.', confirmLabel: 'Delete folder', danger: true })) {
+                  openFolder(null, true)
                   deleteFolder(activeTopic.id)
                   toast('Folder deleted', 'success')
                 }
               }}
-              className="ml-auto text-[12.5px] text-[var(--text-secondary)] hover:text-[var(--error)] flex items-center gap-1"
+              className="ml-3 text-[12.5px] text-[var(--text-secondary)] hover:text-[var(--error)] flex items-center gap-1 shrink-0"
             >
-              <Trash2 size={14} /> Delete folder
+              <Trash2 size={14} /> <span className="hidden sm:inline">Delete folder</span><span className="sm:hidden">Delete</span>
             </button>
           )}
+        </div>
+        <h2 className="font-heading font-semibold text-xl mt-3 flex items-baseline gap-2 min-w-0">
+          <span className="truncate">{activeTopic.title}</span>
+          <span className="text-sm font-normal text-[var(--text-secondary)] shrink-0">{displayedItems.length} material{displayedItems.length === 1 ? '' : 's'}</span>
+        </h2>
         </div>
       )}
 
@@ -320,7 +351,7 @@ export default function StudyBoxPage() {
             {topicFolders.map(({ topic, count }) => (
               <button
                 key={topic.id}
-                onClick={() => setSelectedTopic(topic.id)}
+                onClick={() => openFolder(topic.id)}
                 className="fn-card overflow-hidden text-left group hover:border-[var(--accent)]"
               >
                 <div className={`h-16 bg-gradient-to-br ${tintFor(topic.id)} flex items-center justify-center`}>
@@ -547,10 +578,31 @@ export default function StudyBoxPage() {
       </AnimatePresence>
 
       <AnimatePresence>
+        {renaming && (
+          <NewFolderDialog
+            heading="Rename folder"
+            submitLabel="Save"
+            initialTitle={renaming.title}
+            onClose={() => setRenaming(null)}
+            onCreate={async (title) => {
+              try {
+                await renameFolder(renaming.id, title)
+                setRenaming(null)
+                toast('Folder renamed', 'success')
+              } catch (err) {
+                toast(err instanceof Error ? err.message : 'Could not rename the folder.', 'error')
+                throw err
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {isNewFolderOpen && (
           <NewFolderDialog
             onClose={() => setIsNewFolderOpen(false)}
-            onCreate={async (title) => { const folder = await createFolder(title); setIsNewFolderOpen(false); setSelectedTopic(folder.id) }}
+            onCreate={async (title) => { const folder = await createFolder(title); setIsNewFolderOpen(false); openFolder(folder.id) }}
           />
         )}
       </AnimatePresence>
@@ -578,22 +630,28 @@ function DialogShell({ title, onClose, children }: { title: string; onClose: () 
   )
 }
 
-function NewFolderDialog({ onCreate, onClose }: { onCreate: (title: string) => Promise<void>; onClose: () => void }) {
-  const [title, setTitle] = useState('')
+function NewFolderDialog({ onCreate, onClose, heading = 'New folder', submitLabel = 'Create folder', initialTitle = '' }: {
+  onCreate: (title: string) => Promise<void>
+  onClose: () => void
+  heading?: string
+  submitLabel?: string
+  initialTitle?: string
+}) {
+  const [title, setTitle] = useState(initialTitle)
   const [saving, setSaving] = useState(false)
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || saving) return
     setSaving(true)
-    await onCreate(title)
+    try { await onCreate(title) } catch { setSaving(false) }
   }
   return (
-    <DialogShell title="New folder" onClose={onClose}>
+    <DialogShell title={heading} onClose={onClose}>
       <form onSubmit={submit} className="p-6 space-y-4">
-        <input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Midterms, Clinical rotation, NCM 112" maxLength={60} className="fn-input rounded-xl bg-[var(--card)] py-2.5 text-sm" />
+        <input autoFocus onFocus={e => e.currentTarget.select()} value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Midterms, Clinical rotation, NCM 112" maxLength={60} className="fn-input rounded-xl bg-[var(--card)] py-2.5 text-sm" />
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-secondary px-5 py-2.5 text-sm">Cancel</button>
-          <button type="submit" disabled={!title.trim() || saving} className="btn-primary px-5 py-2.5 text-sm disabled:opacity-50">Create folder</button>
+          <button type="submit" disabled={!title.trim() || saving} className="btn-primary px-5 py-2.5 text-sm disabled:opacity-50">{submitLabel}</button>
         </div>
       </form>
     </DialogShell>
