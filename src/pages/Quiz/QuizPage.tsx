@@ -12,6 +12,7 @@ import MarkdownText from '@/components/shared/MarkdownText'
 import type { QuestionType, QuizSetupConfig, Quiz, Topic } from '@/types'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { confirmDialog } from '@/stores/feedbackStore'
+import { useBackToClose } from '@/hooks/useBackToClose'
 
 // router location keys of quiz handoffs already applied this session
 const handledHandoffs = new Set<string>()
@@ -23,6 +24,7 @@ export default function QuizPage() {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [showHistory, setShowHistory] = useState(() => searchParams.get('view') === 'history')
+  useBackToClose(showHistory, () => setShowHistory(false))
 
   // "Quiz me on this" from another page starts a fresh setup, even if an old quiz is still open.
   // Each handoff is honored once, so coming back to this history entry later doesn't wipe a quiz.
@@ -789,6 +791,18 @@ function QuizEngine() {
               End
             </button>
           )}
+          <button
+            onClick={async () => {
+              if (await confirmDialog({ title: 'Leave this quiz?', message: "You'll go back to the quiz setup and this attempt won't be scored. Use End if you want your score.", confirmLabel: 'Leave', danger: true })) {
+                useQuizStore.getState().resetQuiz()
+              }
+            }}
+            className="btn-icon p-1.5 -mr-1 shrink-0"
+            aria-label="Leave quiz"
+            title="Leave quiz"
+          >
+            <X size={17} />
+          </button>
         </div>
         <div className="mt-3 h-1.5 bg-[var(--secondary-bg)] rounded-full overflow-hidden">
           <motion.div animate={{ width: `${progress}%` }} className="h-full bg-[var(--pink)] rounded-full" />

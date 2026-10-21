@@ -22,6 +22,7 @@ import { extractTextFromFile } from '@/lib/extractor'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { tintFor } from '@/lib/tints'
 import { confirmDialog, toast } from '@/stores/feedbackStore'
+import { useBackToClose } from '@/hooks/useBackToClose'
 
 const SORT_OPTIONS = [['newest', 'Newest first'], ['oldest', 'Oldest first'], ['az', 'Name A–Z']] as const
 // File types the text extractor can read (lib/extractor.ts)
@@ -122,6 +123,7 @@ export default function StudyBoxPage() {
   const [isCameraOpen, setIsCameraOpen] = useState(false)
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<StudyBoxItem | null>(null)
+  useBackToClose(!!selectedItem, () => setSelectedItem(null))
 
   const { isFrance, aiAssistantName, studyBoxName, greetingName } = usePersonalization()
   const { generatePresentation, generateReviewer, isGeneratingReviewer, isGeneratingPresentation } = useReviewerStore()

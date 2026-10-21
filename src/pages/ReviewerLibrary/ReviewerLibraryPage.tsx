@@ -18,6 +18,7 @@ import { exportToPDF, exportToDOCX, exportToPPTX, printFlashcards } from '@/lib/
 import type { Flashcard, PresentationSlide, ReviewerItem } from '@/types'
 import { tintFor } from '@/lib/tints'
 import { confirmDialog, toast } from '@/stores/feedbackStore'
+import { useBackToClose } from '@/hooks/useBackToClose'
 
 type Filter = 'all' | 'guides' | 'slides' | 'favorites'
 
@@ -36,6 +37,7 @@ export default function ReviewerLibraryPage() {
     selectedReviewer,
     setSelectedReviewer,
   } = useReviewerStore()
+  useBackToClose(!!selectedReviewer, () => setSelectedReviewer(null))
   const { topics } = useStudyBoxStore()
   const navigate = useNavigate()
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)

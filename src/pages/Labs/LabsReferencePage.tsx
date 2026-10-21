@@ -467,7 +467,7 @@ export default function LabsReferencePage() {
 
   return (
     <div className="page-container max-w-6xl">
-      <PageHeader icon={FlaskConical} title="Reference Lab Charts" subtitle="Normal ranges with what too low and too high look like. Star the labs you use most." />
+      <PageHeader back={{ label: 'Nursing Tools', to: '/nursing-tools' }} icon={FlaskConical} title="Reference Lab Charts" subtitle="Normal ranges with what too low and too high look like. Star the labs you use most." />
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-5 items-start">
         {/* Sidebar: search + categories */}

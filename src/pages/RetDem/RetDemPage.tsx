@@ -16,6 +16,7 @@ import { visionExtractText } from '@/lib/ai'
 import { extractTextFromFile } from '@/lib/extractor'
 import { toast } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { useBackToClose } from '@/hooks/useBackToClose'
 
 const SUGGESTED_PROCEDURES = ['Foley Catheter', 'IV Insertion', 'Wound Dressing', 'NG Tube Insertion', 'Blood Transfusion', 'Nasogastric Suction']
 
@@ -29,6 +30,7 @@ export default function RetDemPage() {
     uploadHistory, deleteHistoryFile
   } = useRetDemStore()
   const { isActive, isEvaluating, activeMode, reset } = useSimulationStore()
+  useBackToClose(!!activeProcedure, () => setActiveProcedure(null))
 
   useEffect(() => {
     // Clear an old finished report (it's saved in history), but keep a session that is still
@@ -135,6 +137,7 @@ export default function RetDemPage() {
           >
             <PageHeader
               icon={Stethoscope}
+              back={{ label: 'Clinical Simulations', to: '/simulations' }}
               title={retdemName}
               subtitle={isFrance ? 'Master your nursing procedures with step-by-step guides and rationales, babe!' : 'Master your nursing procedures with step-by-step guides and rationales.'}
               actions={

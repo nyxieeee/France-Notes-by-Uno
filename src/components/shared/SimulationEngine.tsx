@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { speak, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
-import { toast } from '@/stores/feedbackStore'
+import { toast, confirmDialog } from '@/stores/feedbackStore'
 
 let lastStartedSessionId = '';
 
@@ -21,7 +21,7 @@ export function SimulationEngine() {
 
 function SimulationSession() {
   const { isFrance, aiAssistantName } = usePersonalization()
-  const { activeMode, topic, difficulty, messages, addMessage, endSession, gradeSession, sourceName } = useSimulationStore()
+  const { activeMode, topic, difficulty, messages, addMessage, endSession, gradeSession, sourceName, reset } = useSimulationStore()
   const { user } = useAuthStore()
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -263,6 +263,14 @@ function SimulationSession() {
     doSend(input)
   }
 
+  // Leave without grading, back to the setup screen she came from
+  const handleLeave = async () => {
+    const hasAnswers = messages.some(m => m.role === 'user')
+    if (hasAnswers && !(await confirmDialog({ title: 'Leave this session?', message: "Your answers so far won't be graded. Use End & grade if you want a score.", confirmLabel: 'Leave', danger: true }))) return
+    stopPlayback()
+    reset()
+  }
+
   const handleEnd = () => {
     endSession()
     gradeSession()
@@ -275,6 +283,9 @@ function SimulationSession() {
     <div className="page-container max-w-4xl h-[calc(100dvh-80px)] flex flex-col pb-24 lg:pb-6">
       {/* Session header */}
       <div className="fn-card px-4 py-3 mb-3 flex items-center gap-3">
+        <button onClick={handleLeave} className="btn-icon p-2 -ml-1.5 shrink-0" aria-label="Leave session" title="Leave session">
+          <ArrowLeft size={18} />
+        </button>
         <div className="relative shrink-0">
           <img src={assistantAvatar} alt={aiAssistantName} className="w-11 h-11 rounded-full object-cover border border-th-pink/20" />
           <span className={cn('absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[var(--card)]', isSpeaking || isTyping ? 'bg-[var(--pink)] animate-pulse' : 'bg-[var(--success)]')} />

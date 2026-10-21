@@ -100,6 +100,7 @@ function RecitationSetup() {
     <div className="page-container max-w-5xl">
       <PageHeader
         icon={Mic}
+        back={{ label: 'Clinical Simulations', to: '/simulations' }}
         title={isFrance ? "France's Recitation Practice" : 'Recitation Mode'}
         subtitle={isFrance ? 'Prepare for clinicals by defending your knowledge out loud, babe.' : 'Prepare for clinicals by defending your knowledge out loud.'}
       />

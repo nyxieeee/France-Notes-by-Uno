@@ -8,6 +8,7 @@ import HandwritingCanvas from '@/components/notes/HandwritingCanvas'
 import PageHeader from '@/components/shared/PageHeader'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { useNotesStore } from '@/stores/notesStore'
+import { useBackToClose } from '@/hooks/useBackToClose'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import type { Note, HandwritingDrawing } from '@/types'
@@ -23,6 +24,7 @@ export default function NotesPage() {
   const [query, setQuery] = useState('')
   const [topicFilter, setTopicFilter] = useState<string>('all')
   const [activeId, setActiveId] = useState<string | null>((location.state as { openNoteId?: string } | null)?.openNoteId ?? null)
+  useBackToClose(activeId !== null, () => setActiveId(null))
 
   useEffect(() => { fetchNotes() }, [fetchNotes])
 

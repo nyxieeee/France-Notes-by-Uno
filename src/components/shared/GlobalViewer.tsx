@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { useViewerStore } from '@/stores/viewerStore'
+import { useBackToClose } from '@/hooks/useBackToClose'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { StudyBoxDetailModal } from '@/pages/StudyBox/StudyBoxPage'
 import { ReviewerDetail } from '@/pages/ReviewerLibrary/ReviewerLibraryPage'
@@ -14,6 +15,8 @@ export default function GlobalViewer() {
   const { topics, removeItem } = useStudyBoxStore()
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  useBackToClose(!!material, closeMaterial)
+  useBackToClose(!!reviewer, closeReviewer)
 
   // Moving to another page (e.g. starting a quiz from the viewer) closes it
   useEffect(() => { closeAll() }, [pathname, closeAll])

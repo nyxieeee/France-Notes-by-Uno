@@ -289,6 +289,7 @@ export default function DosageCalculatorPage() {
     <div className="page-container max-w-6xl">
       <PageHeader
         icon={Calculator}
+        back={{ label: 'Nursing Tools', to: '/nursing-tools' }}
         title="Dosage Calculator"
         subtitle={isFrance ? 'Safe and accurate dosing, babe. Always double-check your computations.' : `Accurate dose calculations with ${aiAssistantName}. Always verify before administering.`}
       />
