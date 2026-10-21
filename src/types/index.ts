@@ -179,7 +179,7 @@ export type KnowledgeSearchResult = {
   description: string
   source: string
   url: string
-  category: 'pharmacology' | 'pathophysiology' | 'interventions' | 'diseases' | 'guidelines'
+  category: string
   is_trusted: boolean
 }
 

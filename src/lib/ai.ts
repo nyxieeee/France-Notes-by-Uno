@@ -242,9 +242,13 @@ export interface GroundedSearchResult {
   source: string
   url: string
   search_url: string
-  category: 'nursing' | 'pharmacology' | 'research' | 'guidelines' | 'local'
+  category: ReferenceCategory
   is_trusted: boolean
 }
+
+// What a reference is about, shown as its label in Search and the Knowledge Garden
+export const REFERENCE_CATEGORIES = ['pharmacology', 'pathophysiology', 'diseases', 'nursing care', 'guidelines', 'research', 'philippines'] as const
+export type ReferenceCategory = typeof REFERENCE_CATEGORIES[number]
 
 export async function callGeminiGroundedSearch(
   query: string,
@@ -289,6 +293,7 @@ export async function callGeminiGroundedSearch(
 
   // If we got real grounding chunks, build structured results from them
   if (groundingChunks.length > 0) {
+    const usedSegments = new Set<string>()
     const results: GroundedSearchResult[] = groundingChunks
       .slice(0, 8)
       .map((chunk: any, index: number) => {
@@ -313,37 +318,39 @@ export async function callGeminiGroundedSearch(
         let hostname = urlObj?.hostname?.replace('www.', '') || 'Unknown Source'
         
         if (isVertexRedirect) {
-          // If it is a vertex redirect, use the web.title as the hostname if it is a domain, e.g. "nih.gov"
-          hostname = title.toLowerCase().includes('.gov') || title.toLowerCase().includes('.org') || title.toLowerCase().includes('.uk') || title.toLowerCase().includes('.edu')
-            ? title 
-            : 'Google Health Index'
+          // Google hides the real link behind a redirect; the chunk title is the site's domain, e.g. "mayoclinic.org"
+          hostname = /^[\w.-]+\.[a-z]{2,}$/i.test(title.trim()) ? title.trim().replace(/^www\./, '') : 'Web source'
         }
 
-        // Categorize based on URL/title
-        const lowerUrl = url.toLowerCase()
+        // First guess at the category from the site; the AI pass below refines it from the content
+        const site = `${url} ${hostname}`.toLowerCase()
         const lowerTitle = title.toLowerCase()
-        let category: GroundedSearchResult['category'] = 'research'
-        if (lowerUrl.includes('doh.gov.ph') || lowerUrl.includes('pna') || lowerTitle.includes('philippines')) {
-          category = 'local'
-        } else if (lowerUrl.includes('drugs.com') || lowerUrl.includes('fda') || lowerTitle.includes('drug') || lowerTitle.includes('pharmac')) {
+        let category: ReferenceCategory = 'research'
+        if (site.includes('doh.gov.ph') || site.includes('pna.org') || lowerTitle.includes('philippines')) {
+          category = 'philippines'
+        } else if (site.includes('drugs.com') || site.includes('fda.gov') || site.includes('medlineplus.gov/druginfo')) {
           category = 'pharmacology'
-        } else if (lowerUrl.includes('who.int') || lowerUrl.includes('cdc.gov') || lowerUrl.includes('nice.org') || lowerTitle.includes('guideline')) {
+        } else if (site.includes('who.int') || site.includes('cdc.gov') || site.includes('nice.org')) {
           category = 'guidelines'
-        } else if (lowerUrl.includes('nurseslabs') || lowerUrl.includes('ana') || lowerUrl.includes('ncsbn') || lowerTitle.includes('nurs')) {
-          category = 'nursing'
+        } else if (site.includes('nurseslabs') || site.includes('ncsbn') || site.includes('nursing')) {
+          category = 'nursing care'
+        } else if (site.includes('mayoclinic') || site.includes('clevelandclinic') || site.includes('medlineplus')) {
+          category = 'diseases'
         }
 
-        // Trust flag
-        const trustedDomains = ['who.int', 'cdc.gov', 'nih.gov', 'ncbi.nlm.nih.gov', 'pubmed', 'mayo', 'cochrane', 'bmj.com', 'jama', 'nejm', 'doh.gov.ph', 'medscape', 'drugs.com', 'fda.gov', 'ana', 'ncsbn']
-        const is_trusted = trustedDomains.some(d => lowerUrl.includes(d))
+        // Trust flag (checked against the site name too, since redirect links hide the domain)
+        const trustedDomains = ['who.int', 'cdc.gov', 'nih.gov', 'ncbi.nlm.nih.gov', 'pubmed', 'medlineplus', 'mayoclinic', 'clevelandclinic', 'cochrane', 'bmj.com', 'jamanetwork', 'nejm', 'doh.gov.ph', 'medscape', 'drugs.com', 'fda.gov', 'ncsbn', 'nursingworld.org', '.edu', 'nhs.uk']
+        const is_trusted = trustedDomains.some(d => site.includes(d))
 
-        // Find relevant AI description for this chunk
-        const support = groundingSupports.find((s: any) =>
-          s.groundingChunkIndices?.includes(index)
-        )
-        const description = support
-          ? aiText.substring(support.segment?.startIndex || 0, support.segment?.endIndex || 200).trim()
-          : `Evidence-based reference from ${hostname} on: ${query}`
+        // The answer sentences Google tied to this source; prefer ones not already used by an earlier result
+        const segments = groundingSupports
+          .filter((s: any) => s.groundingChunkIndices?.includes(index))
+          .map((s: any) => (s.segment?.text || aiText.substring(s.segment?.startIndex || 0, s.segment?.endIndex || 0)).trim())
+          .filter(Boolean)
+        const fresh = segments.filter((t: string) => !usedSegments.has(t))
+        const picked = (fresh.length ? fresh : segments).slice(0, 2)
+        picked.forEach((t: string) => usedSegments.add(t))
+        const description = picked.length ? picked.join(' ') : `Reference from ${hostname} on ${query}.`
 
         return {
           title,
@@ -361,16 +368,18 @@ export async function callGeminiGroundedSearch(
     if (results.length > 0) {
       try {
         const titlesPrompt = `
-          Analyze these medical search results. Extract or infer the actual, specific, professional article title for each result based on its description snippet and source.
-          Make them sound like real, descriptive medical/nursing article titles (e.g. "Pathophysiology and Stages of Chronic Kidney Disease" instead of "nih.gov"). Do NOT include the source domain name in the generated title.
-          
+          Analyze these medical search results for a nursing student. For each result give:
+          - "title": the specific, professional article title it most likely has, based on its snippet and source (e.g. "Pathophysiology and Stages of Chronic Kidney Disease", never just "nih.gov"). Do not include the domain name.
+          - "category": exactly one of ${REFERENCE_CATEGORIES.map(c => `"${c}"`).join(', ')}. Use "pharmacology" for drugs and chemotherapy agents, "pathophysiology" for disease mechanisms, "diseases" for overviews of a condition, "nursing care" for nursing assessment and interventions, "guidelines" for official recommendations, "research" only for studies and journal articles, "philippines" for Philippine sources.
+          - "summary": one or two sentences on what THIS source covers. Make every summary different from the others.
+
           Search Query: "${query}"
-          
+
           Results:
           ${results.map((r, i) => `Result ${i + 1}: [Source: ${r.source}] [Snippet: ${r.description}]`).join('\n')}
-          
+
           Output strictly in JSON format matching this schema:
-          { "titles": ["Title for Result 1", "Title for Result 2", ...] }
+          { "results": [{ "title": "...", "category": "...", "summary": "..." }, ...] }
         `
         const responseText = await callGemini(
           [{ role: 'user', content: titlesPrompt }],
@@ -380,13 +389,15 @@ export async function callGeminiGroundedSearch(
           true
         )
         const parsed = JSON.parse(responseText)
-        if (parsed && Array.isArray(parsed.titles)) {
-          parsed.titles.forEach((t: string, idx: number) => {
-            if (results[idx] && t) {
-              results[idx].title = t.trim()
-            }
-          })
-        }
+        const items: { title?: string; category?: string; summary?: string }[] = Array.isArray(parsed?.results) ? parsed.results : []
+        items.forEach((item, idx) => {
+          const r = results[idx]
+          if (!r) return
+          if (item.title?.trim()) r.title = item.title.trim()
+          if (item.summary?.trim()) r.description = item.summary.trim()
+          const cat = item.category?.toLowerCase().trim()
+          if (cat && (REFERENCE_CATEGORIES as readonly string[]).includes(cat)) r.category = cat as ReferenceCategory
+        })
       } catch (e) {
         console.error("Error post-processing titles:", e)
         // Fallback: clean up
