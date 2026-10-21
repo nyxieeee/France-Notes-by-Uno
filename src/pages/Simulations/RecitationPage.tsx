@@ -3,7 +3,7 @@ import { Microphone as Mic, FileText, BookOpen, Globe, CheckCircle as CheckCircl
 import PageHeader from '@/components/shared/PageHeader'
 import { useSimulationStore } from '@/stores/simulationStore'
 import type { DifficultyMode } from '@/stores/simulationStore'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, isReferenceArticle, findReferenceArticle } from '@/stores/studyBoxStore'
 import { cn } from '@/lib/utils'
 import { unlockAudio } from '@/lib/elevenLabsTts'
 import { SimulationEngine } from '@/components/shared/SimulationEngine'
@@ -42,7 +42,7 @@ function RecitationSetup() {
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState<string | null>(null)
 
   // Files that have extracted text
-  const filesWithContent = items.filter(i => i.extracted_text && i.extracted_text.trim().length > 50)
+  const filesWithContent = items.filter(i => !isReferenceArticle(i) && i.extracted_text && i.extracted_text.trim().length > 50)
 
   const getSourcePayload = (): { sourceText: string | null; sourceName: string | null } => {
     if (sourceType === 'file' && selectedFileId) {
@@ -58,7 +58,8 @@ function RecitationSetup() {
       const ref = savedKnowledge.find(k => k.id === selectedKnowledgeId)
       if (ref) {
         return {
-          sourceText: `${ref.title}\n\n${ref.description}\n\nSource: ${ref.source}`,
+          // Use the full study article written when it was saved, not just the short summary
+          sourceText: findReferenceArticle(items, ref)?.extracted_text?.substring(0, 8000) || `${ref.title}\n\n${ref.description}\n\nSource: ${ref.source}`,
           sourceName: ref.title
         }
       }
@@ -78,7 +79,7 @@ function RecitationSetup() {
 
   const sources = [
     { id: 'none' as SourceType, label: 'General knowledge', desc: `${examinerName} picks the questions`, icon: Globe },
-    { id: 'file' as SourceType, label: 'Uploaded file', desc: 'Your Study Box notes', icon: FileText },
+    { id: 'file' as SourceType, label: 'Your file', desc: 'Notes you uploaded to Study Box', icon: FileText },
     { id: 'knowledge' as SourceType, label: 'Saved reference', desc: 'From Knowledge Garden', icon: BookOpen },
   ]
 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { TrendUp as TrendingUp, CaretRight as ChevronRight, Heart } from '@phosphor-icons/react'
 import { useQuizStore } from '@/stores/quizStore'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, isReferenceArticle } from '@/stores/studyBoxStore'
 import { useNotesStore } from '@/stores/notesStore'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -22,7 +22,7 @@ export default function ProgressCard() {
     : 0
 
   const breakdown = [
-    { label: 'Study Materials', value: items.length },
+    { label: 'Study Materials', value: items.filter(i => !isReferenceArticle(i)).length },
     { label: 'Quizzes', value: scored.length },
     { label: 'Simulations', value: history.length },
     { label: 'Notes', value: notes.length },

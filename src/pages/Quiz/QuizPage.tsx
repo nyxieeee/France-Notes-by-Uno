@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuizStore } from '@/stores/quizStore'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
-import { Brain as BrainCircuit, Target, Clock, ArrowRight, ArrowLeft, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Question as HelpCircle, Sparkle as Sparkles, ArrowCounterClockwise as RotateCcw, Layout, Check, Plus, CaretDown as ChevronDown, FileText, Stethoscope, ListNumbers as ListOrdered, ToggleLeft, MagnifyingGlass as Search, PencilSimple as Edit3, BookOpen, ClockCounterClockwise as History, Trash as Trash2, CloudArrowDown as DownloadCloud, FileArrowDown as FileDown, X } from '@phosphor-icons/react'
+import { useStudyBoxStore, isReferenceArticle, materialDisplayName } from '@/stores/studyBoxStore'
+import { Globe, Brain as BrainCircuit, Target, Clock, ArrowRight, ArrowLeft, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Question as HelpCircle, Sparkle as Sparkles, ArrowCounterClockwise as RotateCcw, Layout, Check, Plus, CaretDown as ChevronDown, FileText, Stethoscope, ListNumbers as ListOrdered, ToggleLeft, MagnifyingGlass as Search, PencilSimple as Edit3, BookOpen, ClockCounterClockwise as History, Trash as Trash2, CloudArrowDown as DownloadCloud, FileArrowDown as FileDown, X } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
@@ -478,9 +478,12 @@ function QuizSetup({ onStart, recent, onShowHistory }: { onStart: (config: QuizS
                         )}
                       >
                         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', active ? 'bg-[var(--pink)] text-white' : 'bg-[var(--rose-soft)] text-[var(--pink)]')}>
-                          {active ? <Check size={15} weight="bold" /> : <FileText size={15} />}
+                          {active ? <Check size={15} weight="bold" /> : isReferenceArticle(item) ? <Globe size={15} /> : <FileText size={15} />}
                         </div>
-                        <span className="text-[13px] font-medium truncate">{item.file_name}</span>
+                        <span className="min-w-0">
+                          <span className="block text-[13px] font-medium truncate">{materialDisplayName(item)}</span>
+                          {isReferenceArticle(item) && <span className="block text-[11px] text-[var(--text-secondary)]">Saved reference</span>}
+                        </span>
                       </button>
                     )
                   })}

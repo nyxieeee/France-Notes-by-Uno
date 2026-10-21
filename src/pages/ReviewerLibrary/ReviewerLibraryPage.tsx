@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useReviewerStore } from '@/stores/reviewerStore'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, isReferenceArticle, materialDisplayName } from '@/stores/studyBoxStore'
 import { useNavigate } from 'react-router-dom'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import {
@@ -291,7 +291,7 @@ function GenerateReviewerModal({ onClose }: { onClose: () => void }) {
             <div>
               <p className="text-[13px] font-medium mb-2">Source</p>
               <div className="flex p-1 rounded-full bg-[var(--bg)] border border-[var(--border)] mb-3">
-                {([['uploaded', 'My files'], ['topic', 'A subject topic']] as const).map(([id, label]) => (
+                {([['uploaded', 'My Study Box'], ['topic', 'A subject topic']] as const).map(([id, label]) => (
                   <button
                     key={id}
                     type="button"
@@ -318,7 +318,7 @@ function GenerateReviewerModal({ onClose }: { onClose: () => void }) {
                 </p>
               ) : (
                 <div className="max-h-56 overflow-y-auto custom-scrollbar border border-[var(--border)] rounded-xl p-1.5 space-y-0.5">
-                  {items.map(item => {
+                  {[...items].sort((a, b) => Number(isReferenceArticle(a)) - Number(isReferenceArticle(b))).map(item => {
                     const checked = selectedUploadIds.includes(item.id)
                     return (
                       <button
@@ -331,8 +331,8 @@ function GenerateReviewerModal({ onClose }: { onClose: () => void }) {
                           {checked && <Check size={11} weight="bold" />}
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-[13px] font-medium truncate">{item.file_name}</span>
-                          <span className="block text-[11px] text-[var(--text-secondary)] truncate">{topics.find(t => t.id === item.topic_id)?.title || 'General'}</span>
+                          <span className="block text-[13px] font-medium truncate">{materialDisplayName(item)}</span>
+                          <span className="block text-[11px] text-[var(--text-secondary)] truncate">{isReferenceArticle(item) ? 'Saved reference' : topics.find(t => t.id === item.topic_id)?.title || 'General'}</span>
                         </span>
                       </button>
                     )

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, isReferenceArticle } from '@/stores/studyBoxStore'
 import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
@@ -68,7 +68,7 @@ export default function XboxAchievementNotifier() {
     { id: 'first_step', icon: Footprints, label: 'First Step', desc: 'Started first reviewer', unlocked: reviewers.length > 0 },
     { id: 'quiz_whiz', icon: Target, label: 'Quiz Whiz', desc: 'Got 100% on any quiz', unlocked: quizzes.some(q => q.score !== null && q.score === 100) },
     { id: 'clinical_explorer', icon: FirstAidKit, label: 'Clinical Explorer', desc: 'Generated a RetDem procedure', unlocked: procedures.length > 0 },
-    { id: 'scholar', icon: Books, label: 'Scholar', unlocked: items.length >= 5, desc: 'Uploaded 5+ notes' },
+    { id: 'scholar', icon: Books, label: 'Scholar', unlocked: items.filter(i => !isReferenceArticle(i)).length >= 5, desc: 'Uploaded 5+ notes' },
     { id: 'pathology_master', icon: Exam, label: 'Pathology Master', unlocked: quizzes.filter(q => q.completed).length >= 3, desc: 'Completed 3+ quizzes' },
     { id: 'board_topnotcher', icon: Trophy, label: 'Board Topnotcher', unlocked: quizzes.length > 0 && (quizzes.reduce((acc, q) => acc + (q.score || 0), 0) / quizzes.length) >= 85, desc: 'Average quiz score >= 85%' },
     { id: 'night_duty', icon: MoonStars, label: 'Night Duty', unlocked: reminders.some(r => r.reminder_type === 'duty'), desc: 'Active duty reminder set' },

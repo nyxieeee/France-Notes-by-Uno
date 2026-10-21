@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { BookOpen, Books as Library, CaretRight as ChevronRight, Plus, Sparkle as Sparkles } from '@phosphor-icons/react'
+import { Globe, BookOpen, Books as Library, CaretRight as ChevronRight, Plus, Sparkle as Sparkles } from '@phosphor-icons/react'
 import { formatRelativeDate } from '@/lib/utils'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, isReferenceArticle, materialDisplayName } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useViewerStore } from '@/stores/viewerStore'
 import { tintFor } from '@/lib/tints'
@@ -23,9 +23,9 @@ export default function ContinueLearning() {
     })),
     ...getRecentItems(4).map(item => ({
       id: `m-${item.id}`,
-      kind: 'Material' as const,
-      title: item.file_name.replace(/\.[^.]+$/, ''),
-      subtitle: topics.find(t => t.id === item.topic_id)?.title || 'Study material',
+      kind: isReferenceArticle(item) ? 'Reference' as const : 'Material' as const,
+      title: materialDisplayName(item),
+      subtitle: isReferenceArticle(item) ? 'Saved reference' : topics.find(t => t.id === item.topic_id)?.title || 'Study material',
       date: item.created_at,
       open: () => openMaterial(item),
     })),
@@ -57,7 +57,7 @@ export default function ContinueLearning() {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {cards.map(card => {
-            const Icon = card.kind === 'Reviewer' ? Library : BookOpen
+            const Icon = card.kind === 'Reviewer' ? Library : card.kind === 'Reference' ? Globe : BookOpen
             return (
               <button key={card.id} onClick={card.open} className="fn-card overflow-hidden text-left group hover:border-[var(--accent)]">
                 <div className={`h-20 bg-gradient-to-br ${tintFor(card.id)} flex items-center justify-center relative`}>

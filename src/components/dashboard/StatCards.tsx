@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { BookOpen, Brain as BrainCircuit, Books as Library, Fire as Flame } from '@phosphor-icons/react'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, isReferenceArticle } from '@/stores/studyBoxStore'
 import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useStudyActivity } from '@/hooks/useStudyActivity'
@@ -12,7 +12,7 @@ export default function StatCards() {
   const { streak } = useStudyActivity()
 
   const stats = [
-    { icon: BookOpen, label: 'Study Materials', value: items.length, caption: 'uploaded', to: '/study-box' },
+    { icon: BookOpen, label: 'Study Materials', value: items.filter(i => !isReferenceArticle(i)).length, caption: 'uploaded', to: '/study-box' },
     { icon: BrainCircuit, label: 'Quizzes', value: quizzes.filter(q => q.completed).length, caption: 'completed', to: '/quiz' },
     { icon: Library, label: 'Reviewers', value: reviewers.length, caption: 'generated', to: '/reviewer-library' },
     { icon: Flame, label: 'Study Streak', value: streak, caption: streak === 1 ? 'day' : 'days', to: '/planner', hot: streak > 0 },

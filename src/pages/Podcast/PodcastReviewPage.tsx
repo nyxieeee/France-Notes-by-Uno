@@ -8,7 +8,7 @@ import { generateCompletion } from '@/lib/ai'
 import { synthesizeSpeechElevenLabs, playClip, speakWithBrowser, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
 import { toast, confirmDialog } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, isReferenceArticle, findReferenceArticle } from '@/stores/studyBoxStore'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
 
@@ -228,7 +228,8 @@ export default function PodcastReviewPage() {
   const [inputMode, setInputMode] = useState<SourceMode>('type')
   const [freeText, setFreeText] = useState('')
   const [selectedTopicId, setSelectedTopicId] = useState(topics[0]?.id || '')
-  const [selectedItemId, setSelectedItemId] = useState(items[0]?.id || '')
+  const myFiles = items.filter(i => !isReferenceArticle(i))
+  const [selectedItemId, setSelectedItemId] = useState(myFiles[0]?.id || '')
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState(savedKnowledge[0]?.id || '')
 
   // Episode state
@@ -387,7 +388,8 @@ export default function PodcastReviewPage() {
       return { title: itemObj?.file_name || 'Uploaded File', sourceText: itemObj?.extracted_text || itemObj?.summary, sourceType: 'Uploaded File' }
     } else {
       const kObj = savedKnowledge.find(k => k.id === selectedKnowledgeId)
-      const text = kObj ? `Title: ${kObj.title}\nSource: ${kObj.source}\nSummary/Description: ${kObj.description}` : undefined
+      const article = kObj ? findReferenceArticle(items, kObj)?.extracted_text : undefined
+      const text = kObj ? article || `Title: ${kObj.title}\nSource: ${kObj.source}\nSummary/Description: ${kObj.description}` : undefined
       return { title: kObj?.title || 'Knowledge Reference', sourceText: text, sourceType: 'Saved Reference' }
     }
   }
@@ -597,7 +599,7 @@ ${brief}`
 
   const hasScript = script.length > 0
   const estimatedDuration = hasScript ? Math.max(1, Math.round(script.reduce((acc, l) => acc + l.text.split(' ').length, 0) / 130)) : 0
-  const canGenerate = !isGenerating && !isWritingMore && !((inputMode === 'type' && !freeText.trim()) || (inputMode === 'topic' && topics.length === 0) || (inputMode === 'file' && items.length === 0) || (inputMode === 'knowledge' && savedKnowledge.length === 0))
+  const canGenerate = !isGenerating && !isWritingMore && !((inputMode === 'type' && !freeText.trim()) || (inputMode === 'topic' && topics.length === 0) || (inputMode === 'file' && !myFiles.some(i => i.id === selectedItemId)) || (inputMode === 'knowledge' && savedKnowledge.length === 0))
   const activeSpeaker = currentLine >= 0 ? script[currentLine]?.speaker : null
 
   const SOURCES: { id: SourceMode; label: string; icon: Icon }[] = [
@@ -649,8 +651,8 @@ ${brief}`
           {inputMode === 'topic' && (topics.length > 0
             ? <OptionDropdown icon={Folder} placeholder="Choose a Study Box folder" value={selectedTopicId} onSelect={setSelectedTopicId} options={topics.map(t => ({ id: t.id, label: t.title, color: t.color }))} />
             : <EmptySource text="No Study Box folders yet." />)}
-          {inputMode === 'file' && (items.length > 0
-            ? <OptionDropdown icon={FileText} placeholder="Choose an uploaded file" value={selectedItemId} onSelect={setSelectedItemId} options={items.map(i => ({ id: i.id, label: i.file_name }))} />
+          {inputMode === 'file' && (myFiles.length > 0
+            ? <OptionDropdown icon={FileText} placeholder="Choose an uploaded file" value={selectedItemId} onSelect={setSelectedItemId} options={myFiles.map(i => ({ id: i.id, label: i.file_name }))} />
             : <EmptySource text="Upload a PDF or document in Study Box to use it here." />)}
           {inputMode === 'knowledge' && (savedKnowledge.length > 0
             ? <OptionDropdown icon={Bookmark} placeholder="Choose a saved reference" value={selectedKnowledgeId} onSelect={setSelectedKnowledgeId} options={savedKnowledge.map(k => ({ id: k.id, label: k.title }))} />

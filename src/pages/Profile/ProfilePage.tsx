@@ -4,7 +4,7 @@ import Cropper from 'react-easy-crop'
 import type { Area, Point } from 'react-easy-crop'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, isReferenceArticle } from '@/stores/studyBoxStore'
 import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
@@ -125,13 +125,14 @@ export default function ProfilePage() {
 
   // Calculate dynamic stats
   const completedQuizzes = quizzes.filter(q => q.completed).length
+  const uploads = items.filter(i => !isReferenceArticle(i))
   const favoritesCount = items.filter(item => item.is_favorite).length + reviewers.filter(r => r.is_favorite).length
 
   const badgesList: { icon: Icon; label: string; desc: string; unlocked: boolean }[] = [
     { icon: Footprints, label: 'First Step', desc: 'Created your first reviewer', unlocked: reviewers.length > 0 },
     { icon: Target, label: 'Quiz Whiz', desc: 'Scored 100% on a quiz', unlocked: quizzes.some(q => q.score !== null && q.score === 100) },
     { icon: FirstAidKit, label: 'Clinical Explorer', desc: 'Generated a RetDem procedure', unlocked: procedures.length > 0 },
-    { icon: Books, label: 'Scholar', desc: `Uploaded 5+ files to ${studyBoxName}`, unlocked: items.length >= 5 },
+    { icon: Books, label: 'Scholar', desc: `Uploaded 5+ files to ${studyBoxName}`, unlocked: uploads.length >= 5 },
     { icon: Exam, label: 'Pathology Master', desc: 'Completed 3+ quizzes', unlocked: completedQuizzes >= 3 },
     { icon: Trophy, label: 'Board Topnotcher', desc: 'Average quiz score of 85% or more', unlocked: quizzes.length > 0 && (quizzes.reduce((acc, q) => acc + (q.score || 0), 0) / quizzes.length) >= 85 },
     { icon: MoonStars, label: 'Night Duty', desc: 'Added a clinical duty to the planner', unlocked: reminders.some(r => r.reminder_type === 'duty') },
@@ -150,7 +151,7 @@ export default function ProfilePage() {
 
   const isDirty = editForm.full_name !== (user?.full_name || '') || editForm.school !== (user?.school || '') || editForm.year_level !== (user?.year_level || '')
 
-  const assistantNote = items.length === 0 ? (
+  const assistantNote = uploads.length === 0 ? (
     isFrance
       ? "Babe, I haven't seen your materials in the Study Box yet! Upload your notes so I can turn them into reviewers. I believe in you."
       : "I haven't seen any study materials in your Study Box yet. Upload your nursing notes and I'll turn them into study guides."
@@ -164,8 +165,8 @@ export default function ProfilePage() {
       : `You have ${reviewers.length} study guide${reviewers.length > 1 ? 's' : ''}. Try a quiz or a clinical simulation next to test your recall.`
   ) : (
     isFrance
-      ? `${greetingName}, you've uploaded ${items.length} note${items.length > 1 ? 's' : ''} to your Study Box! Let's turn them into reviewers next.`
-      : `${greetingName}, you have ${items.length} note${items.length > 1 ? 's' : ''} in your Study Box. Generate a study guide from them next.`
+      ? `${greetingName}, you've uploaded ${uploads.length} note${uploads.length > 1 ? 's' : ''} to your Study Box! Let's turn them into reviewers next.`
+      : `${greetingName}, you have ${uploads.length} note${uploads.length > 1 ? 's' : ''} in your Study Box. Generate a study guide from them next.`
   )
 
   return (

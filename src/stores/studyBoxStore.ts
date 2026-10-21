@@ -99,6 +99,13 @@ const referenceTitle = (result: { title: string; source: string }) => {
 }
 export const referenceFileName = (result: { title: string; source: string }) => `[Reference] ${referenceTitle(result)}.txt`
 
+// Articles written from Knowledge Garden references live in the Study Box but aren't her uploads
+export const isReferenceArticle = (item: StudyBoxItem) =>
+  item.topic_id === REFERENCES_TOPIC_ID || !!item.tags?.includes('knowledge-garden') || item.file_name.startsWith('[Reference]')
+
+/** File name without the "[Reference] " prefix or extension, for showing in lists */
+export const materialDisplayName = (item: StudyBoxItem) => item.file_name.replace(/^\[Reference\]\s*/, '').replace(/\.[^.]+$/, '')
+
 // The Study Box article generated when a reference was saved to the Knowledge Garden
 export function findReferenceArticle(items: StudyBoxItem[], ref: { title: string; source: string }) {
   const name = referenceFileName(ref)
