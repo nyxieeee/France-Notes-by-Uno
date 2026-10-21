@@ -19,7 +19,7 @@ export interface ElevenLabsSynthOptions {
 // Voices read "Doc" as "document" and can stumble on "Dr.", so say both as "Doctor"
 export function spokenText(text: string): string {
   return text
-    .replace(/\bDoc\b\.?/g, 'Doctor')
+    .replace(/\bDoc\b/g, 'Doctor')
     .replace(/\bDr\.\s*/g, 'Doctor ')
 }
 
