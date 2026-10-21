@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Leaf, MagnifyingGlass, ArrowSquareOut, BookOpen, Trash, Plus, ShieldCheck } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { useStudyBoxStore, findReferenceArticle } from '@/stores/studyBoxStore'
+import { useViewerStore } from '@/stores/viewerStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import { tintFor } from '@/lib/tints'
@@ -16,6 +17,7 @@ type SavedRef = { id: string; title: string; description: string; source: string
 export default function KnowledgeGardenPage() {
   const navigate = useNavigate()
   const { savedKnowledge, items, removeKnowledge } = useStudyBoxStore()
+  const openMaterial = useViewerStore(s => s.openMaterial)
   const { knowledgeGardenName, aiAssistantName } = usePersonalization()
   const [category, setCategory] = useState('all')
 
@@ -25,7 +27,7 @@ export default function KnowledgeGardenPage() {
 
   const openArticle = (ref: SavedRef) => {
     const article = findReferenceArticle(items, ref)
-    if (article) navigate('/study-box', { state: { openItemId: article.id } })
+    if (article) openMaterial(article)
     else window.open(ref.url, '_blank', 'noreferrer')
   }
 

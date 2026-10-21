@@ -9,6 +9,7 @@ import {
   Presentation, Brain, CaretLeft, CaretRight, CaretDown, Check, ListChecks, CircleNotch, Folder, Cards,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
+import { quizStateFor } from '@/lib/reviewers'
 import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate } from '@/lib/utils'
@@ -23,12 +24,6 @@ type Filter = 'all' | 'guides' | 'slides' | 'favorites'
 const isDeck = (r: ReviewerItem) => (r.content.slides?.length ?? 0) > 0
 
 // Shared quiz hand-off: quiz on the reviewer's summary and key points
-const quizStateFor = (r: ReviewerItem) => ({
-  preSelectedTopic: r.title,
-  preSelectedText: r.content.summary + '\n\n' + (r.content.key_points?.length ? r.content.key_points.join('\n') : ''),
-  preSelectedName: r.source_file,
-})
-
 export default function ReviewerLibraryPage() {
   const { isFrance } = usePersonalization()
   const {
@@ -362,7 +357,7 @@ function GenerateReviewerModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-function ReviewerDetail({ reviewer, onClose, topicTitle, onQuiz }: {
+export function ReviewerDetail({ reviewer, onClose, topicTitle, onQuiz }: {
   reviewer: ReviewerItem
   onClose: () => void
   topicTitle: string

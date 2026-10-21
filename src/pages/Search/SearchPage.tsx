@@ -10,6 +10,7 @@ import PageHeader from '@/components/shared/PageHeader'
 import { toast } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useViewerStore } from '@/stores/viewerStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useNotesStore } from '@/stores/notesStore'
 import { useQuizStore } from '@/stores/quizStore'
@@ -89,7 +90,8 @@ export default function SearchPage() {
   const [openQuestion, setOpenQuestion] = useState<string | null>(null)
 
   const { items, topics, savedKnowledge, saveKnowledge, removeKnowledge } = useStudyBoxStore()
-  const { reviewers, setSelectedReviewer } = useReviewerStore()
+  const { reviewers } = useReviewerStore()
+  const { openMaterial, openReviewer } = useViewerStore()
   const { notes } = useNotesStore()
   const { quizzes } = useQuizStore()
   const sources = useTrustedSourceSearch()
@@ -134,7 +136,7 @@ export default function SearchPage() {
         title: i.file_name.replace(/\.[^.]+$/, ''),
         snippet: excerpt(i.summary || i.extracted_text || '', term),
         meta: `${topicName(i.topic_id) || 'Study material'} · ${formatRelativeDate(i.created_at)}`,
-        open: () => navigate('/study-box', { state: { openItemId: i.id } }),
+        open: () => openMaterial(i),
       }))
     const reviewerHits: Hit[] = reviewers
       .filter(r => matches(r.title, r.source_file, r.content?.summary, ...(r.content?.key_points || [])))
@@ -143,7 +145,7 @@ export default function SearchPage() {
         title: r.title,
         snippet: excerpt(r.content?.summary || (r.content?.key_points || []).join(' ') || '', term),
         meta: `Reviewer · ${formatRelativeDate(r.created_at)}`,
-        open: () => { setSelectedReviewer(r); navigate('/reviewer-library') },
+        open: () => openReviewer(r),
       }))
     const noteHits: Hit[] = notes
       .filter(n => matches(n.title, n.kind === 'handwriting' ? '' : n.content))

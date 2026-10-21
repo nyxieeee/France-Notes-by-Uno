@@ -1,15 +1,16 @@
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { BookOpen, Books as Library, CaretRight as ChevronRight, Plus, Sparkle as Sparkles } from '@phosphor-icons/react'
 import { formatRelativeDate } from '@/lib/utils'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
+import { useViewerStore } from '@/stores/viewerStore'
 import { tintFor } from '@/lib/tints'
 
 
 export default function ContinueLearning() {
-  const navigate = useNavigate()
   const { getRecentItems, topics } = useStudyBoxStore()
-  const { reviewers, setSelectedReviewer } = useReviewerStore()
+  const { reviewers } = useReviewerStore()
+  const { openMaterial, openReviewer } = useViewerStore()
 
   const cards = [
     ...reviewers.slice(0, 4).map(r => ({
@@ -18,7 +19,7 @@ export default function ContinueLearning() {
       title: r.title,
       subtitle: r.source_file,
       date: r.created_at,
-      open: () => { setSelectedReviewer(r); navigate('/reviewer-library') },
+      open: () => openReviewer(r),
     })),
     ...getRecentItems(4).map(item => ({
       id: `m-${item.id}`,
@@ -26,7 +27,7 @@ export default function ContinueLearning() {
       title: item.file_name.replace(/\.[^.]+$/, ''),
       subtitle: topics.find(t => t.id === item.topic_id)?.title || 'Study material',
       date: item.created_at,
-      open: () => navigate('/study-box', { state: { openItemId: item.id } }),
+      open: () => openMaterial(item),
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())

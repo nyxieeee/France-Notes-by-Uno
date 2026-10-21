@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStudyBoxStore, REFERENCES_TOPIC_ID, UNSORTED_TOPIC_ID, isCustomFolder } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
+import { useViewerStore } from '@/stores/viewerStore'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import type { StudyBoxItem, Topic } from '@/types'
 import {
@@ -82,6 +83,7 @@ export default function StudyBoxPage() {
   }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const openReviewer = useViewerStore(s => s.openReviewer)
   const filteredItems = getFilteredItems()
 
   // Filter panel state
@@ -153,27 +155,29 @@ export default function StudyBoxPage() {
   const handleGeneratePresentation = async () => {
     if (selectedItemIds.length === 0) return
     const firstItem = items.find(i => i.id === selectedItemIds[0])
+    let created
     try {
-      await generatePresentation(selectedItemIds, firstItem?.topic_id || undefined)
+      created = await generatePresentation(selectedItemIds, firstItem?.topic_id || undefined)
     } catch (err) {
       toast(errorMessage(err, "Couldn't make the slides. Please try again."), 'error')
       return
     }
     clearSelection()
-    navigate('/reviewer-library')
+    openReviewer(created)
   }
 
   const handleGenerateReviewer = async () => {
     if (selectedItemIds.length === 0) return
     const firstItem = items.find(i => i.id === selectedItemIds[0])
+    let created
     try {
-      await generateReviewer(selectedItemIds, firstItem?.topic_id || undefined)
+      created = await generateReviewer(selectedItemIds, firstItem?.topic_id || undefined)
     } catch (err) {
       toast(errorMessage(err, "Couldn't make the reviewer. Please try again."), 'error')
       return
     }
     clearSelection()
-    navigate('/reviewer-library')
+    openReviewer(created)
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -756,12 +760,12 @@ function FilterGroup({ label, options, value, onChange }: {
   )
 }
 
-function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate, onMove }: {
+export function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate, onMove }: {
   item: StudyBoxItem,
   onClose: () => void,
   topics: Topic[],
   removeItem: (id: string) => void,
-  onMove: () => void,
+  onMove?: () => void,
   navigate: any
 }) {
   const storeItem = useStudyBoxStore(state => state.items.find(i => i.id === item.id))
@@ -775,25 +779,29 @@ function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigate, onMo
   const { generateReviewer, generatePresentation, isGeneratingReviewer, isGeneratingPresentation } = useReviewerStore()
 
   const handleModalGenerateReviewer = async () => {
+    let created
     try {
-      await generateReviewer([currentItem.id], currentItem.topic_id || undefined)
+      created = await generateReviewer([currentItem.id], currentItem.topic_id || undefined)
     } catch (err) {
       toast(errorMessage(err, "Couldn't make the reviewer. Please try again."), 'error')
       return
     }
     onClose()
-    navigate('/reviewer-library')
+    // Show the new reviewer right here instead of sending her to the Reviewer Library
+    useViewerStore.getState().openReviewer(created)
   }
 
   const handleModalGeneratePresentation = async () => {
+    let created
     try {
-      await generatePresentation([currentItem.id], currentItem.topic_id || undefined)
+      created = await generatePresentation([currentItem.id], currentItem.topic_id || undefined)
     } catch (err) {
       toast(errorMessage(err, "Couldn't make the slides. Please try again."), 'error')
       return
     }
     onClose()
-    navigate('/reviewer-library')
+    // Show the new reviewer right here instead of sending her to the Reviewer Library
+    useViewerStore.getState().openReviewer(created)
   }
 
   const handleDownloadSummary = () => {
@@ -1279,7 +1287,7 @@ body {
           <button onClick={async () => { if (await confirmDialog({ title: 'Delete this material?', message: 'This file and its study guide will be removed.', confirmLabel: 'Delete', danger: true })) { handleDelete(); toast('File deleted', 'success') } }} className="btn-icon p-2 hover:text-[var(--error)] shrink-0" title="Delete" aria-label="Delete">
             <Trash2 size={18} />
           </button>
-          <button onClick={onMove} className="btn-icon p-2 shrink-0" title="Move to folder" aria-label="Move to folder"><FolderOpen size={18} /></button>
+          {onMove && <button onClick={onMove} className="btn-icon p-2 shrink-0" title="Move to folder" aria-label="Move to folder"><FolderOpen size={18} /></button>}
           <button onClick={handlePrint} className="btn-icon p-2 shrink-0" title="Print" aria-label="Print"><Printer size={18} /></button>
           <button onClick={handleDownloadFullPDF} className="btn-icon p-2 shrink-0" title="Download as PDF" aria-label="Download as PDF"><Download size={18} /></button>
           <div className="flex-1" />
