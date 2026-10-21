@@ -5,6 +5,7 @@ import { generateJSON, DOC_UNO_SYSTEM_PROMPT, generateCompletion } from '@/lib/a
 import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
+import { readImageFile } from './profileMediaStore'
 
 interface StudyBoxState {
   items: StudyBoxItem[]
@@ -532,12 +533,8 @@ async function addItemSteps(file: File, topicId?: string): Promise<StudyBoxItem>
   let previewImage: string | null = null
   if (fileType === 'image') {
     try {
-      previewImage = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.readAsDataURL(file)
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = error => reject(error)
-      })
+      // Phone photos are several MB; a 1600px copy is plenty to view and keeps Study Box fast
+      previewImage = await readImageFile(file, 1600)
     } catch (e) {
       console.error('Failed to read image as base64 preview', e)
     }

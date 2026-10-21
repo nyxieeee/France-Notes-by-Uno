@@ -5,8 +5,13 @@
 -- on an existing database: tables are only created if missing, and columns the
 -- app needs are added if an older table lacks them. Nothing is dropped.
 --
--- Every table is private per user via Row Level Security: a signed-in user can
--- only read and write rows where user_id = their own auth id.
+-- Security (see the section at the end):
+--   * Row Level Security is enabled AND forced on every table: a signed-in user
+--     can only read, add, change or delete rows whose user_id is their own id.
+--   * Separate policies per action; updates can't move a row to another user.
+--   * Signed-out visitors (anon) have no access at all; signed-in users get only
+--     select/insert/update/delete. user_id defaults to the signed-in user.
+--   * Size limits on large text/image columns so the database can't be flooded.
 --
 -- Profile details (full name, school, year level, avatar) live in the Supabase
 -- auth user's metadata, so there is no separate profiles table.
@@ -225,23 +230,91 @@ create index if not exists podcast_episodes_user_created_idx on public.podcast_e
 create index if not exists dosage_calculations_user_created_idx on public.dosage_calculations (user_id, created_at desc);
 create index if not exists study_folders_user_created_idx on public.study_folders (user_id, created_at);
 
--- ── Row Level Security: each user only sees their own rows ──────────────────
+-- ── Security ────────────────────────────────────────────────────────────────
+do $$
+declare
+  t text;
+  tables text[] := array[
+    'study_materials', 'saved_knowledge', 'reviewers', 'quizzes', 'reminders', 'notes',
+    'retdem_procedures', 'retdem_upload_history', 'simulation_sessions', 'chat_messages',
+    'podcast_episodes', 'dosage_calculations', 'saved_labs', 'study_folders', 'profile_media'
+  ];
+begin
+  foreach t in array tables loop
+    -- Row Level Security on, and enforced even for the table owner
+    execute format('alter table public.%I enable row level security', t);
+    execute format('alter table public.%I force row level security', t);
+
+    -- New rows belong to whoever is signed in unless the app says otherwise (policies still check it)
+    execute format('alter table public.%I alter column user_id set default auth.uid()', t);
+
+    -- No access for signed-out visitors; signed-in users get only the four row operations
+    execute format('revoke all on table public.%I from anon, public', t);
+    execute format('revoke all on table public.%I from authenticated', t);
+    execute format('grant select, insert, update, delete on table public.%I to authenticated', t);
+
+    -- One policy per action. (select auth.uid()) is evaluated once per query, not per row.
+    execute format('drop policy if exists "Users manage their own rows" on public.%I', t);
+    execute format('drop policy if exists "Read own rows" on public.%I', t);
+    execute format('drop policy if exists "Add own rows" on public.%I', t);
+    execute format('drop policy if exists "Change own rows" on public.%I', t);
+    execute format('drop policy if exists "Delete own rows" on public.%I', t);
+    execute format('create policy "Read own rows" on public.%I for select to authenticated using ((select auth.uid()) = user_id)', t);
+    execute format('create policy "Add own rows" on public.%I for insert to authenticated with check ((select auth.uid()) = user_id)', t);
+    execute format('create policy "Change own rows" on public.%I for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id)', t);
+    execute format('create policy "Delete own rows" on public.%I for delete to authenticated using ((select auth.uid()) = user_id)', t);
+  end loop;
+end $$;
+
+-- Size limits (characters). NOT VALID: existing rows are left alone, new and changed rows are checked.
+do $$
+declare
+  c record;
+begin
+  for c in select * from (values
+    ('study_materials', 'study_materials_extracted_text_size', 'length(extracted_text) <= 5000000'),
+    ('study_materials', 'study_materials_preview_image_size', 'length(preview_image) <= 4000000'),
+    ('study_materials', 'study_materials_summary_size', 'length(summary) <= 500000'),
+    ('study_materials', 'study_materials_file_name_size', 'length(file_name) <= 500'),
+    ('notes', 'notes_content_size', 'length(content) <= 1000000'),
+    ('notes', 'notes_drawing_size', 'pg_column_size(drawing) <= 20000000'),
+    ('chat_messages', 'chat_messages_content_size', 'length(content) <= 200000'),
+    ('reviewers', 'reviewers_content_size', 'pg_column_size(content) <= 5000000'),
+    ('quizzes', 'quizzes_questions_size', 'pg_column_size(questions) <= 5000000'),
+    ('retdem_upload_history', 'retdem_upload_history_text_size', 'length(text) <= 2000000'),
+    ('podcast_episodes', 'podcast_episodes_id_size', 'length(id) <= 200'),
+    ('podcast_episodes', 'podcast_episodes_script_size', 'pg_column_size(script) <= 2000000'),
+    ('dosage_calculations', 'dosage_calculations_id_size', 'length(id) <= 200'),
+    ('study_folders', 'study_folders_id_size', 'length(id) <= 200'),
+    ('study_folders', 'study_folders_title_size', 'length(title) <= 200'),
+    ('profile_media', 'profile_media_avatar_size', 'length(avatar_original) <= 4000000'),
+    ('profile_media', 'profile_media_cover_size', 'length(cover_image) <= 4000000 and length(cover_original) <= 4000000')
+  ) as v(tbl, name, expr)
+  loop
+    if not exists (select 1 from pg_constraint where conname = c.name) then
+      execute format('alter table public.%I add constraint %I check (%s) not valid', c.tbl, c.name, c.expr);
+    end if;
+  end loop;
+end $$;
+
+-- ── Realtime: changes made on one device show up on her other devices ───────
+-- Realtime respects the Row Level Security policies above, so each user only
+-- receives events for their own rows.
 do $$
 declare
   t text;
 begin
-  foreach t in array array[
-    'study_materials', 'saved_knowledge', 'reviewers', 'quizzes', 'reminders', 'notes',
-    'retdem_procedures', 'retdem_upload_history', 'simulation_sessions', 'chat_messages',
-    'podcast_episodes', 'dosage_calculations', 'saved_labs', 'study_folders', 'profile_media'
-  ]
-  loop
-    execute format('alter table public.%I enable row level security', t);
-    execute format('drop policy if exists "Users manage their own rows" on public.%I', t);
-    execute format(
-      'create policy "Users manage their own rows" on public.%I for all to authenticated '
-      'using (auth.uid() = user_id) with check (auth.uid() = user_id)',
-      t
-    );
-  end loop;
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    foreach t in array array[
+      'study_materials', 'study_folders', 'saved_knowledge', 'reviewers', 'quizzes',
+      'reminders', 'notes', 'retdem_procedures'
+    ] loop
+      if not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+      ) then
+        execute format('alter publication supabase_realtime add table public.%I', t);
+      end if;
+    end loop;
+  end if;
 end $$;

@@ -14,8 +14,13 @@ import { useQuizStore } from '@/stores/quizStore'
 import { useChatStore } from '@/stores/chatStore'
 import { useNotesStore } from '@/stores/notesStore'
 import { useSimulationStore } from '@/stores/simulationStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 
 export default function AppShell() {
+  const userId = useAuthStore(s => s.user?.id)
+  useRealtimeSync(userId)
+
   useEffect(() => {
     useStudyBoxStore.getState().fetchItems()
     useStudyBoxStore.getState().fetchSavedKnowledge()
