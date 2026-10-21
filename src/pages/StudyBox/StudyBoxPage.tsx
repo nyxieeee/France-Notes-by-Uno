@@ -871,7 +871,7 @@ export function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigat
   const handleStartQuiz = () => {
     navigate('/quiz', {
       state: {
-        preSelectedTopic: currentItem.file_name.split('.')[0],
+        preSelectedTopic: displayName(currentItem),
         preSelectedText: currentItem.extracted_text,
         preSelectedName: currentItem.file_name
       }

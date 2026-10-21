@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { jsPDF } from 'jspdf'
 import { cn, getScoreColor, getScoreLabel, checkAnswerCorrectness, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
-import type { QuestionType, QuizSetupConfig, Quiz, Topic } from '@/types'
+import type { QuestionType, QuizSetupConfig, Quiz, Topic, StudyBoxItem } from '@/types'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { confirmDialog } from '@/stores/feedbackStore'
 import { useBackToClose } from '@/hooks/useBackToClose'
@@ -369,11 +369,30 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   )
 }
 
+function SourceOption({ item, active, onPick }: { item: StudyBoxItem; active: boolean; onPick: (item: StudyBoxItem) => void }) {
+  const reference = isReferenceArticle(item)
+  return (
+    <button
+      onClick={() => onPick(item)}
+      className={cn(
+        'flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-colors',
+        active ? 'border-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]'
+      )}
+    >
+      <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', active ? 'bg-[var(--pink)] text-white' : 'bg-[var(--rose-soft)] text-[var(--pink)]')}>
+        {active ? <Check size={15} weight="bold" /> : reference ? <Globe size={15} /> : <FileText size={15} />}
+      </div>
+      <span className="text-[13px] font-medium truncate">{materialDisplayName(item)}</span>
+    </button>
+  )
+}
+
 function QuizSetup({ onStart, recent, onShowHistory }: { onStart: (config: QuizSetupConfig) => void; recent: Quiz[]; onShowHistory: () => void }) {
   const { isFrance, aiAssistantName } = usePersonalization()
   const { topics, items, savedKnowledge } = useStudyBoxStore()
   const location = useLocation()
   const [showAllFiles, setShowAllFiles] = useState(false)
+  const [showAllRefs, setShowAllRefs] = useState(false)
 
   // Topics that have either uploaded files or saved knowledge references
   let activeTopics = topics.filter(topic =>
@@ -395,7 +414,7 @@ function QuizSetup({ onStart, recent, onShowHistory }: { onStart: (config: QuizS
   const preSelectedName = location.state?.preSelectedName as string | undefined
 
   const initialTopic = preSelectedTopic || (preSelectedItems.length > 0
-    ? (preSelectedItems.length === 1 ? preSelectedItems[0].file_name.split('.')[0] : `${preSelectedItems.length} Notes Combined`)
+    ? (preSelectedItems.length === 1 ? materialDisplayName(preSelectedItems[0]) : `${preSelectedItems.length} Notes Combined`)
     : (activeTopics[0]?.title || 'General Nursing'))
 
   const initialSourceText = preSelectedText || (preSelectedItems.length > 0
@@ -428,7 +447,13 @@ function QuizSetup({ onStart, recent, onShowHistory }: { onStart: (config: QuizS
     })
   }
 
-  const files = showAllFiles ? items : items.slice(0, 6)
+  // Her own uploads and saved Knowledge Garden references are offered separately
+  const myFiles = items.filter(i => !isReferenceArticle(i))
+  const refArticles = items.filter(isReferenceArticle)
+  const files = showAllFiles ? myFiles : myFiles.slice(0, 6)
+  const refs = showAllRefs ? refArticles : refArticles.slice(0, 4)
+  const pickMaterial = (item: StudyBoxItem) =>
+    setConfig({ ...config, topic: materialDisplayName(item), sourceText: item.extracted_text, sourceName: item.file_name })
   const selectedTimer = TIMERS.find(t => t.type === config.timer_type && (t.type === 'untimed' || t.value === config.timer_value)) || TIMERS[0]
   const selectedType = QUESTION_TYPES.find(t => t.id === config.question_type) || QUESTION_TYPES[0]
   const usingFile = !!config.sourceName && items.some(i => i.file_name === config.sourceName)
@@ -462,35 +487,33 @@ function QuizSetup({ onStart, recent, onShowHistory }: { onStart: (config: QuizS
             <p className="text-xs font-medium text-[var(--text-secondary)] mb-2">Topic</p>
             <CustomTopicDropdown topics={topics} value={usingFile ? '' : config.topic} onChange={pickTopic} />
 
-            {items.length > 0 && (
+            {myFiles.length > 0 && (
               <>
-                <p className="text-xs font-medium text-[var(--text-secondary)] mt-4 mb-2">Or a specific file</p>
+                <p className="text-xs font-medium text-[var(--text-secondary)] mt-4 mb-2">Or one of your files</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {files.map(item => {
-                    const active = config.sourceName === item.file_name
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setConfig({ ...config, topic: item.file_name, sourceText: item.extracted_text, sourceName: item.file_name })}
-                        className={cn(
-                          'flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-colors',
-                          active ? 'border-[var(--pink)] bg-[var(--rose-soft)]' : 'border-[var(--border)] hover:bg-[var(--rose-soft)]'
-                        )}
-                      >
-                        <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', active ? 'bg-[var(--pink)] text-white' : 'bg-[var(--rose-soft)] text-[var(--pink)]')}>
-                          {active ? <Check size={15} weight="bold" /> : isReferenceArticle(item) ? <Globe size={15} /> : <FileText size={15} />}
-                        </div>
-                        <span className="min-w-0">
-                          <span className="block text-[13px] font-medium truncate">{materialDisplayName(item)}</span>
-                          {isReferenceArticle(item) && <span className="block text-[11px] text-[var(--text-secondary)]">Saved reference</span>}
-                        </span>
-                      </button>
-                    )
-                  })}
+                  {files.map(item => (
+                    <SourceOption key={item.id} item={item} active={config.sourceName === item.file_name} onPick={pickMaterial} />
+                  ))}
                 </div>
-                {items.length > 6 && (
+                {myFiles.length > 6 && (
                   <button onClick={() => setShowAllFiles(s => !s)} className="mt-2 text-xs font-medium text-[var(--pink)] hover:underline">
-                    {showAllFiles ? 'Show fewer' : `Show all ${items.length} files`}
+                    {showAllFiles ? 'Show fewer' : `Show all ${myFiles.length} files`}
+                  </button>
+                )}
+              </>
+            )}
+
+            {refArticles.length > 0 && (
+              <>
+                <p className="text-xs font-medium text-[var(--text-secondary)] mt-4 mb-2">Or a saved reference</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {refs.map(item => (
+                    <SourceOption key={item.id} item={item} active={config.sourceName === item.file_name} onPick={pickMaterial} />
+                  ))}
+                </div>
+                {refArticles.length > 4 && (
+                  <button onClick={() => setShowAllRefs(s => !s)} className="mt-2 text-xs font-medium text-[var(--pink)] hover:underline">
+                    {showAllRefs ? 'Show fewer' : `Show all ${refArticles.length} references`}
                   </button>
                 )}
               </>
