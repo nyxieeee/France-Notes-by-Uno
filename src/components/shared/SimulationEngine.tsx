@@ -8,8 +8,12 @@ import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { usePersonalization } from '@/hooks/usePersonalization'
-import { speak, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { speakLong, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { motion } from 'framer-motion'
 import { toast, confirmDialog } from '@/stores/feedbackStore'
+
+// Pause after she stops talking before her spoken answer is sent
+const AUTO_SEND_MS = 3500
 
 let lastStartedSessionId = '';
 
@@ -37,6 +41,11 @@ function SimulationSession() {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const spokenIdsRef = useRef<Set<string>>(new Set())
   const speechRunRef = useRef(0)
+  // True from when she starts answering until she sends or stops; Safari ends recognition on
+  // its own after a pause, so we restart it while this is set
+  const wantListeningRef = useRef(false)
+  // When the spoken answer will be sent automatically (shown as a countdown)
+  const [autoSendAt, setAutoSendAt] = useState<number | null>(null)
 
   // Speech-recognition callbacks are registered once, so they read live values through refs
   const voiceModeRef = useRef(voiceMode)
@@ -56,19 +65,26 @@ function SimulationSession() {
     setIsListening(value)
   }
 
-  const stopVoiceRecognition = useCallback(() => {
+  const cancelAutoSend = useCallback(() => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current)
       silenceTimerRef.current = null
     }
+    setAutoSendAt(null)
+  }, [])
+
+  const stopVoiceRecognition = useCallback(() => {
+    wantListeningRef.current = false
+    cancelAutoSend()
     // Always stop, whatever React state says, so the mic never hears the AI's own voice
     try { recognitionRef.current?.stop() } catch { /* not running */ }
     setListening(false)
     setInterimText('')
-  }, [])
+  }, [cancelAutoSend])
 
   const startVoiceRecognition = useCallback(() => {
     if (!recognitionRef.current || listeningRef.current || busyRef.current) return
+    wantListeningRef.current = true
     try {
       setInterimText('')
       recognitionRef.current.start()
@@ -85,7 +101,7 @@ function SimulationSession() {
     setBlockedReply(null)
     setIsSpeaking(true)
     busyRef.current = true
-    const result = await speak(text, speaker, 1, () => speechRunRef.current === run)
+    const result = await speakLong(text, speaker, 1, () => speechRunRef.current === run)
     if (speechRunRef.current !== run) return
     setIsSpeaking(false)
     busyRef.current = false
@@ -109,10 +125,14 @@ function SimulationSession() {
         role: m.role as 'system' | 'user' | 'assistant',
         content: m.content
       }))
+      // Spoken replies need to be short; a long monologue is tiring to listen to
+      const spoken = voiceModeRef.current
+        ? '\n\nVOICE MODE: Your reply is read aloud. Keep every turn to at most 3 short sentences (about 60 words), ask exactly ONE question, and never use lists, headings or symbols.'
+        : ''
       if (isFirst) {
-        chatHistory.push({ role: 'system', content: systemPrompt })
+        chatHistory.push({ role: 'system', content: systemPrompt + spoken })
       } else {
-        chatHistory.unshift({ role: 'system', content: systemPrompt })
+        chatHistory.unshift({ role: 'system', content: systemPrompt + spoken })
       }
 
       const response = await generateChatCompletion(chatHistory, 'recitation')
@@ -138,6 +158,7 @@ function SimulationSession() {
   const doSend = useCallback((text: string) => {
     if (!text.trim()) return
     stopVoiceRecognition()
+    inputRef.current = ''
     addMessage('user', text.trim())
     setInput('')
     setInterimText('')
@@ -165,28 +186,47 @@ function SimulationSession() {
           }
         }
         setInterimText(interimTranscript)
+        // Still talking: hold off sending
+        if (interimTranscript && silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current)
+          silenceTimerRef.current = null
+          setAutoSendAt(null)
+        }
         if (finalTranscript) {
           const textSoFar = `${inputRef.current} ${finalTranscript.trim()}`.trim()
           inputRef.current = textSoFar
           setInput(textSoFar)
-          // Voice mode sends after a pause; with voice off, dictation only fills the box
+          // Voice mode sends after a real pause; with voice off, dictation only fills the box
           if (voiceModeRef.current) {
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+            setAutoSendAt(Date.now())
             silenceTimerRef.current = setTimeout(() => {
               silenceTimerRef.current = null
+              setAutoSendAt(null)
               if (inputRef.current.trim()) doSendRef.current(inputRef.current)
-            }, 1500)
+            }, AUTO_SEND_MS)
           }
         }
       }
 
-      recognition.onerror = () => {
-        setListening(false)
+      recognition.onerror = (event: any) => {
+        if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
+          wantListeningRef.current = false
+          toast('Allow microphone access for this site to answer out loud.', 'error')
+        }
         setInterimText('')
       }
       recognition.onend = () => {
-        setListening(false)
         setInterimText('')
+        // Safari stops after a pause; keep listening until she sends or taps stop
+        if (wantListeningRef.current && !busyRef.current) {
+          setTimeout(() => {
+            if (!wantListeningRef.current || busyRef.current) return
+            try { recognition.start() } catch { /* already running */ }
+          }, 150)
+          return
+        }
+        setListening(false)
       }
     }
 
@@ -237,6 +277,8 @@ function SimulationSession() {
     setInput('')
     inputRef.current = ''
     setInterimText('')
+    cancelAutoSend()
+    wantListeningRef.current = true
     try {
       recognitionRef.current.start()
       setListening(true)
@@ -361,8 +403,19 @@ function SimulationSession() {
       </div>
 
       {/* Voice status */}
-      <div className="h-9 flex items-center px-1 text-[12.5px] text-[var(--text-secondary)]">
-        {blockedReply && !isSpeaking ? (
+      <div className="min-h-[44px] flex items-center px-1 text-[12.5px] text-[var(--text-secondary)]">
+        {autoSendAt && isListening ? (
+          <div className="w-full flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="flex items-center gap-1.5 text-[var(--text)]"><Send size={13} className="text-[var(--pink)]" /> Sending your answer… keep talking to add more</p>
+              <div className="mt-1.5 h-1 rounded-full bg-th-pink/15 overflow-hidden">
+                <motion.div key={autoSendAt} className="h-full bg-[var(--pink)] rounded-full" initial={{ width: '100%' }} animate={{ width: '0%' }} transition={{ duration: AUTO_SEND_MS / 1000, ease: 'linear' }} />
+              </div>
+            </div>
+            <button onClick={cancelAutoSend} className="px-3 py-1.5 rounded-full border border-[var(--border)] text-[12px] font-medium hover:bg-[var(--rose-soft)] shrink-0">Not yet</button>
+            <button onClick={() => doSend(inputRef.current)} className="px-3 py-1.5 rounded-full bg-[var(--pink)] text-white text-[12px] font-medium shrink-0">Send now</button>
+          </div>
+        ) : blockedReply && !isSpeaking ? (
           <button
             onClick={() => { unlockAudio(); speakMessage(blockedReply) }}
             className="flex items-center gap-1.5 text-[var(--pink)] font-medium hover:underline"
@@ -370,13 +423,17 @@ function SimulationSession() {
             <Volume2 size={15} /> Tap to hear {aiAssistantName}&rsquo;s reply
           </button>
         ) : isSpeaking ? (
-          <span className="flex items-center gap-1.5 text-[var(--pink)]"><Volume2 size={15} className="animate-pulse" /> {aiAssistantName} is speaking</span>
+          <span className="flex items-center gap-1.5 text-[var(--pink)]"><Volume2 size={15} className="animate-pulse" /> {aiAssistantName} is speaking · tap the mic to answer</span>
         ) : isListening ? (
-          <span className="flex items-center gap-1.5 min-w-0"><Mic size={15} className="text-[var(--success)] animate-pulse shrink-0" /> Listening{interimText && <span className="italic truncate">&ldquo;{interimText}&rdquo;</span>}</span>
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span className="relative flex w-2.5 h-2.5 shrink-0"><span className="absolute inset-0 rounded-full bg-[var(--success)] animate-ping opacity-60" /><span className="relative w-2.5 h-2.5 rounded-full bg-[var(--success)]" /></span>
+            <span className="shrink-0">Listening, take your time</span>
+            {interimText && <span className="italic truncate">&ldquo;{interimText}&rdquo;</span>}
+          </span>
         ) : isTyping ? (
           <span className="flex items-center gap-1.5"><Loader2 size={15} className="animate-spin text-[var(--pink)]" /> {aiAssistantName} is thinking</span>
         ) : (
-          <span>{voiceMode && speechSupported ? 'Tap the mic to answer out loud, or type below.' : 'Type your answer below.'}</span>
+          <span>{voiceMode && speechSupported ? 'Tap the mic and answer out loud. It sends after you pause, or type below.' : 'Type your answer below.'}</span>
         )}
       </div>
 
@@ -399,7 +456,7 @@ function SimulationSession() {
         <div className="flex-1 relative">
           <textarea
             value={input + (isListening && interimText && !input ? interimText : '')}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => { cancelAutoSend(); setInput(e.target.value); inputRef.current = e.target.value }}
             placeholder={isListening ? 'Speak now...' : voiceMode ? 'Speak or type your answer...' : 'Type your response here...'}
             className="w-full bg-transparent px-2 py-2.5 text-[15px] outline-none resize-none block max-h-32"
             rows={1}

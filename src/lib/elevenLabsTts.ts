@@ -171,3 +171,43 @@ export async function speak(text: string, speaker: ElevenLabsSpeaker, rate = 1, 
   }
   return speakWithBrowser(text, speaker, rate)
 }
+
+/** Split a reply into short spoken chunks (a sentence or two each) */
+function speechChunks(text: string, max = 220): string[] {
+  const plain = text.replace(/[#*_`>]/g, '').replace(/\s+/g, ' ').trim()
+  const sentences = plain.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g) || [plain]
+  const chunks: string[] = []
+  let current = ''
+  for (const s of sentences.map(x => x.trim()).filter(Boolean)) {
+    if (current && (current + ' ' + s).length > max) { chunks.push(current); current = s }
+    else current = current ? `${current} ${s}` : s
+  }
+  if (current) chunks.push(current)
+  return chunks
+}
+
+/**
+ * Speak a longer reply sentence by sentence: the first sentence starts playing as soon as it is
+ * ready while the next one is being voiced, instead of waiting for audio of the whole reply.
+ */
+export async function speakLong(text: string, speaker: ElevenLabsSpeaker, rate = 1, stillWanted: () => boolean = () => true): Promise<PlaybackResult> {
+  const chunks = speechChunks(text)
+  if (chunks.length <= 1) return speak(text, speaker, rate, stillWanted)
+  const clips = new Map<number, Promise<string | null>>()
+  const fetchClip = (i: number) => {
+    if (i < chunks.length && !clips.has(i)) clips.set(i, synthesizeSpeechElevenLabs({ text: chunks[i], speaker }))
+  }
+  const release = () => clips.forEach(p => p.then(url => { if (url) URL.revokeObjectURL(url) }))
+  fetchClip(0)
+  fetchClip(1)
+  for (let i = 0; i < chunks.length; i++) {
+    const url = await clips.get(i)!
+    clips.delete(i)
+    if (!stillWanted()) { if (url) URL.revokeObjectURL(url); release(); return 'stopped' }
+    fetchClip(i + 2)
+    let result: PlaybackResult = url ? await playClip(url, rate) : 'error'
+    if (result === 'error') result = await speakWithBrowser(chunks[i], speaker, rate)
+    if (result !== 'ended') { release(); return result }
+  }
+  return 'ended'
+}
