@@ -12,6 +12,7 @@ import MarkdownText from '@/components/shared/MarkdownText'
 import type { QuestionType, QuizSetupConfig, Quiz, Topic, StudyBoxItem } from '@/types'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { confirmDialog } from '@/stores/feedbackStore'
+import { downloadName } from '@/lib/fileNames'
 import { useBackToClose } from '@/hooks/useBackToClose'
 
 // router location keys of quiz handoffs already applied this session
@@ -146,7 +147,7 @@ export default function QuizPage() {
         </div>
       `)
 
-      pdf.save(`${quiz.title.replace(/\s+/g, '_')}_Quiz_Results.pdf`)
+      pdf.save(downloadName(quiz.title, 'Quiz Results', 'pdf'))
     } catch (err) {
       console.error('PDF Export error:', err)
     }
@@ -252,7 +253,7 @@ export default function QuizPage() {
         </div>
       `)
 
-      pdf.save(`${isFrance ? 'France_Notes' : 'Clinical_Notes'}_All_Quizzes.pdf`)
+      pdf.save(downloadName(`Quiz History ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`, null, 'pdf'))
     } catch (err) {
       console.error('PDF Export error:', err)
     }

@@ -21,6 +21,7 @@ import { generateCompletion } from '@/lib/ai'
 import { extractTextFromFile } from '@/lib/extractor'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { tintFor } from '@/lib/tints'
+import { downloadName } from '@/lib/fileNames'
 import { confirmDialog, toast } from '@/stores/feedbackStore'
 import { useBackToClose } from '@/hooks/useBackToClose'
 
@@ -859,7 +860,7 @@ export function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigat
     // 2. Set beautiful PDF options
     const opt = {
       margin:       [10, 10, 10, 10], // Margin top, left, bottom, right in mm
-      filename:     `${currentItem.file_name.split('.')[0]}_Doc_Unos_Love_Notes.pdf`,
+      filename:     downloadName(currentItem.file_name, 'Notes', 'pdf'),
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { 
         scale: 2.5, 
@@ -1067,7 +1068,6 @@ body {
 
   const handleDownloadFullPDF = () => {
     const content = buildPrintContent()
-    const assistantName = isFrance ? 'Doc Uno' : aiAssistantName
 
     // Render from an HTML string: html2pdf lays it out in its own off-screen container.
     // (Capturing a hidden opacity:0 element produced blank pages.)
@@ -1075,7 +1075,7 @@ body {
 
     const opt = {
       margin: [8, 8, 8, 8],
-      filename: `${getDocTitle().replace(/\s+/g, '_')}_${assistantName.replace(/\s+/g, '_')}.pdf`,
+      filename: downloadName(getDocTitle(), 'Study Guide', 'pdf'),
       image: { type: 'jpeg', quality: 0.95 },
       html2canvas: { scale: 2, useCORS: true, logging: false, width: 800 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }

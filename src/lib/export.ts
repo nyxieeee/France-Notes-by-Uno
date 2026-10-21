@@ -4,6 +4,9 @@ import type { ReviewerItem } from '@/types'
 import { useAuthStore } from '@/stores/authStore'
 import { isFranceUser } from '@/lib/personalization'
 import { toast } from '@/stores/feedbackStore'
+import { cleanDeckTitle, downloadName } from '@/lib/fileNames'
+
+export { cleanDeckTitle }
 
 export const exportToPDF = async (reviewer: ReviewerItem) => {
   const { user } = useAuthStore.getState()
@@ -136,7 +139,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
       </div>
     `)
 
-    pdf.save(`${reviewer.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_Study_Guide.pdf`)
+    pdf.save(downloadName(reviewer.title, 'Study Guide', 'pdf'))
   } catch (err) {
     console.error("PDF Export error:", err)
     toast("Couldn't create the PDF. Please try again.", 'error')
@@ -218,9 +221,62 @@ export const exportToDOCX = async (reviewer: ReviewerItem) => {
   const url = window.URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `${reviewer.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.docx`
+  link.download = downloadName(reviewer.title, 'Study Guide', 'docx')
   link.click()
   window.URL.revokeObjectURL(url)
+}
+
+// Widescreen 13.33 x 7.5 in, matching every position below
+const SLIDE_W = 13.333
+const SLIDE_H = 7.5
+const CONTENT_X = 1.25
+const CONTENT_W = 10.85
+
+// Rough text measuring (Arial) so blocks are sized to their text instead of overflowing
+const linesFor = (text: string, fontSize: number, widthIn: number) => {
+  const charsPerLine = Math.max(10, Math.floor((widthIn * 72) / (fontSize * 0.47)))
+  return text.split('\n').reduce((n, part) => n + Math.max(1, Math.ceil(part.length / charsPerLine)), 0)
+}
+const heightFor = (lines: number, fontSize: number, spacing = 1.3) => (lines * fontSize * spacing) / 72
+
+interface SlideChunk { title: string; paragraph?: string; bullets: string[]; notes?: string }
+
+// Pick the largest font that fits; split very long slides into "(continued)" slides
+const AVAILABLE_H = 4.7
+
+function fitSize(paragraph: string | undefined, bullets: string[]): number | null {
+  for (const size of [20, 19, 18, 17, 16, 15, 14, 13]) {
+    const pH = paragraph ? heightFor(linesFor(paragraph, size, CONTENT_W), size) + 0.25 : 0
+    const bH = bullets.reduce((h, b) => h + heightFor(linesFor(b, size, CONTENT_W - 0.4), size, 1.25) + 0.08, 0)
+    if (pH + bH <= AVAILABLE_H) return size
+  }
+  return null
+}
+
+function layoutSlide(title: string, paragraph: string | undefined, bullets: string[], notes?: string): { chunk: SlideChunk; size: number }[] {
+  const available = AVAILABLE_H
+  const whole = fitSize(paragraph, bullets)
+  if (whole) return [{ chunk: { title, paragraph, bullets, notes }, size: whole }]
+  // Still too long at 13pt: keep the paragraph on the first slide and move bullets onward
+  const size = 13
+  const out: { chunk: SlideChunk; size: number }[] = []
+  let used = paragraph ? heightFor(linesFor(paragraph, size, CONTENT_W), size) + 0.25 : 0
+  let current: string[] = []
+  let first = true
+  for (const b of bullets) {
+    const h = heightFor(linesFor(b, size, CONTENT_W - 0.4), size, 1.25) + 0.08
+    if (used + h > available && current.length > 0) {
+      out.push({ chunk: { title: first ? title : `${title} (continued)`, paragraph: first ? paragraph : undefined, bullets: current, notes: first ? notes : undefined }, size })
+      first = false
+      current = []
+      used = 0
+    }
+    current.push(b)
+    used += h
+  }
+  out.push({ chunk: { title: first ? title : `${title} (continued)`, paragraph: first ? paragraph : undefined, bullets: current, notes: first ? notes : undefined }, size })
+  // Each split slide holds less, so give it the largest size that fits
+  return out.map(({ chunk }) => ({ chunk, size: fitSize(chunk.paragraph, chunk.bullets) ?? size }))
 }
 
 export const exportToPPTX = async (reviewer: ReviewerItem) => {
@@ -229,7 +285,7 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
   try {
     const pptxgen = (await import('pptxgenjs')).default
     const pptx = new pptxgen()
-    pptx.layout = 'LAYOUT_16x9'
+    pptx.layout = 'LAYOUT_WIDE'
 
     const { user } = useAuthStore.getState()
     const isFrance = isFranceUser(user)
@@ -241,154 +297,80 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     const borderColor = 'F3D8DE'
     const titleTextColor = '5B4636'
     const bodyTextColor = '8C6A74'
+    const deckTitle = cleanDeckTitle(reviewer.title)
+    const footerText = isFrance ? "Doc Uno's Reviewer" : 'France Notes'
+
+    const addFrame = (slide: ReturnType<typeof pptx.addSlide>) => {
+      slide.background = { color: bgColor }
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.4, h: SLIDE_H, fill: { color: binderColor }, line: { color: binderColor } })
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.8, y: 0.55, w: SLIDE_W - 1.4, h: SLIDE_H - 1.1, rectRadius: 0.12,
+        fill: { color: cardBgColor }, line: { color: borderColor, width: 1.25 },
+      })
+    }
 
     // 1. Cover Slide
     const coverSlide = pptx.addSlide()
-    
-    // Set base background
-    coverSlide.addShape(pptx.ShapeType.rect, {
-      x: 0, y: 0, w: '100%', h: '100%',
-      fill: { color: bgColor }
+    addFrame(coverSlide)
+    const coverSize = deckTitle.length > 90 ? 30 : deckTitle.length > 55 ? 36 : 42
+    coverSlide.addText(deckTitle, {
+      x: CONTENT_X, y: 1.7, w: CONTENT_W, h: 2.6,
+      fontSize: coverSize, bold: true, color: titleTextColor, fontFace: 'Arial', valign: 'bottom', fit: 'shrink',
+    })
+    coverSlide.addShape(pptx.ShapeType.rect, { x: CONTENT_X, y: 4.55, w: 1.2, h: 0.06, fill: { color: binderColor }, line: { color: binderColor } })
+    const sourceLabel = cleanDeckTitle(reviewer.source_file || '')
+    if (sourceLabel && sourceLabel !== deckTitle) {
+      coverSlide.addText(`Based on ${sourceLabel}`, {
+        x: CONTENT_X, y: 4.8, w: CONTENT_W, h: 0.6,
+        fontSize: 15, color: bodyTextColor, fontFace: 'Arial', valign: 'top', fit: 'shrink',
+      })
+    }
+    coverSlide.addText(isFrance ? 'Prepared with love by Doc Uno for France' : 'Clinical Lecture Series · Prepared by Nurse Florence', {
+      x: CONTENT_X, y: 5.9, w: CONTENT_W, h: 0.4,
+      fontSize: 12, italic: true, color: bodyTextColor, fontFace: 'Arial',
     })
 
-    // Left binder notebook strip
-    coverSlide.addShape(pptx.ShapeType.rect, {
-      x: 0, y: 0, w: 0.4, h: 7.5,
-      fill: { color: binderColor }
-    })
+    // 2. Content slides, each sized to its text
+    const chunks = reviewer.content.slides.flatMap(slideData => layoutSlide(
+      (slideData.title || '').replace(/^\s*slide\s*\d+\s*[:.\-–—]\s*/i, '').trim(),
+      slideData.paragraph?.trim() || undefined,
+      (slideData.bullet_points || []).map(b => b.trim()).filter(Boolean),
+      slideData.presenter_notes,
+    ))
 
-    // Main Cover Card (looks like a clean, premium note card)
-    coverSlide.addShape(pptx.ShapeType.rect, {
-      x: 0.8, y: 0.6, w: 11.7, h: 6.3,
-      fill: { color: cardBgColor },
-      line: { color: borderColor, width: 1.5 }
-    })
-
-    // Decorative stethoscope emoji
-    coverSlide.addText(isFrance ? "" : "", {
-      x: 9.5, y: 0.9, w: 2.5,
-      fontSize: 18,
-      align: 'right'
-    })
-
-    // Cover title
-    coverSlide.addText(reviewer.title, {
-      x: 1.3, y: 1.8, w: 10.7, h: 1.6,
-      fontSize: 30,
-      bold: true,
-      color: titleTextColor,
-      fontFace: 'Arial'
-    })
-
-    // Source description
-    coverSlide.addText(`Clinical Resource: ${reviewer.source_file}`, {
-      x: 1.3, y: 3.6, w: 10.7,
-      fontSize: 13,
-      bold: true,
-      color: bodyTextColor,
-      fontFace: 'Arial'
-    })
-
-    // Sweet footer note
-    coverSlide.addText(
-      isFrance 
-        ? 'Prepared with love by Doc Uno for France' 
-        : 'Clinical Lecture Series • Prepared by Nurse Florence',
-      {
-        x: 1.3, y: 5.6, w: 10.7,
-        fontSize: 12,
-        italic: true,
-        color: bodyTextColor,
-        fontFace: 'Arial'
-      }
-    )
-
-    // 2. Individual content slides
-    reviewer.content.slides.forEach((slideData) => {
+    chunks.forEach(({ chunk, size }, index) => {
       const slide = pptx.addSlide()
+      addFrame(slide)
 
-      // Background
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 0, y: 0, w: '100%', h: '100%',
-        fill: { color: bgColor }
+      slide.addText(chunk.title, {
+        x: CONTENT_X, y: 0.8, w: CONTENT_W, h: 0.85,
+        fontSize: chunk.title.length > 60 ? 22 : 26, bold: true, color: titleTextColor, fontFace: 'Arial', valign: 'middle', fit: 'shrink',
       })
+      slide.addShape(pptx.ShapeType.rect, { x: CONTENT_X, y: 1.72, w: CONTENT_W, h: 0.025, fill: { color: borderColor }, line: { color: borderColor } })
 
-      // Left binder notebook strip
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 0, y: 0, w: 0.4, h: 7.5,
-        fill: { color: binderColor }
-      })
-
-      // Inner content card
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 0.8, y: 0.6, w: 11.7, h: 6.3,
-        fill: { color: cardBgColor },
-        line: { color: borderColor, width: 1.5 }
-      })
-
-      // Slide Title
-      slide.addText(slideData.title, {
-        x: 1.3, y: 0.9, w: 10.7, h: 0.6,
-        fontSize: 22,
-        bold: true,
-        color: titleTextColor,
-        fontFace: 'Arial'
-      })
-
-      // Title divider line
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 1.3, y: 1.6, w: 10.7, h: 0.03,
-        fill: { color: borderColor }
-      })
-
-      // Paragraph explanation (prose)
-      let contentY = 1.9
-      if (slideData.paragraph) {
-        slide.addText(slideData.paragraph, {
-          x: 1.3, y: contentY, w: 10.7, h: 1.2,
-          fontSize: 12,
-          fontFace: 'Arial',
-          color: bodyTextColor,
-          lineSpacing: 18,
-          valign: 'top',
-          wrap: true,
+      let y = 1.95
+      if (chunk.paragraph) {
+        const h = heightFor(linesFor(chunk.paragraph, size, CONTENT_W), size) + 0.1
+        slide.addText(chunk.paragraph, {
+          x: CONTENT_X, y, w: CONTENT_W, h,
+          fontSize: size, fontFace: 'Arial', color: bodyTextColor, valign: 'top', lineSpacingMultiple: 1.15, margin: 0,
         })
-        contentY += 1.4
+        y += h + 0.15
       }
-
-      // Content bullet points
-      if (slideData.bullet_points && slideData.bullet_points.length > 0) {
-        const bullets = slideData.bullet_points.map((pt: string) => {
-          return { text: pt, options: { bullet: true, color: titleTextColor, fontSize: 13 } }
-        })
-
-        const bulletHeight = Math.max(4.4 - (contentY - 1.9), 2.0)
-        slide.addText(bullets, {
-          x: 1.3, y: contentY, w: 10.7, h: bulletHeight,
-          fontSize: 13,
-          fontFace: 'Arial',
-          lineSpacing: 22,
-          valign: 'top'
-        })
+      if (chunk.bullets.length > 0) {
+        slide.addText(
+          chunk.bullets.map(b => ({ text: b, options: { bullet: { indent: 18 }, paraSpaceAfter: 6 } })),
+          { x: CONTENT_X, y, w: CONTENT_W, h: Math.max(0.5, 6.35 - y), fontSize: size, fontFace: 'Arial', color: titleTextColor, valign: 'top', lineSpacingMultiple: 1.1, margin: 0 },
+        )
       }
+      if (chunk.notes) slide.addNotes(chunk.notes)
 
-      // Presenter Notes
-      if (slideData.presenter_notes) {
-        slide.addNotes(slideData.presenter_notes)
-      }
-
-      // Footer branding
-      slide.addText(isFrance ? "Doc Uno's Reviewer" : "France Notes", {
-        x: 9.0, y: 6.4, w: 3.0,
-        fontSize: 9,
-        color: bodyTextColor,
-        align: 'right',
-        fontFace: 'Arial'
-      })
+      slide.addText(footerText, { x: CONTENT_X, y: 6.5, w: 6, h: 0.3, fontSize: 9, color: bodyTextColor, fontFace: 'Arial' })
+      slide.addText(`${index + 2}`, { x: SLIDE_W - 2.2, y: 6.5, w: 1.0, h: 0.3, fontSize: 9, color: bodyTextColor, fontFace: 'Arial', align: 'right' })
     })
 
     // 3. Save / Download presentation
-    await pptx.writeFile({ fileName: `${reviewer.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_Slides.pptx` })
+    await pptx.writeFile({ fileName: downloadName(deckTitle, 'Slides', 'pptx') })
   } catch (err) {
     console.error("Failed to export PPTX slide deck:", err)
     toast("Couldn't create the PowerPoint file. Please try again.", 'error')

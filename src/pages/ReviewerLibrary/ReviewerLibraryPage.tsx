@@ -14,7 +14,7 @@ import PageHeader from '@/components/shared/PageHeader'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
-import { exportToPDF, exportToDOCX, exportToPPTX, printFlashcards } from '@/lib/export'
+import { exportToPDF, exportToDOCX, exportToPPTX, printFlashcards, cleanDeckTitle } from '@/lib/export'
 import type { Flashcard, PresentationSlide, ReviewerItem } from '@/types'
 import { tintFor } from '@/lib/tints'
 import { confirmDialog, toast } from '@/stores/feedbackStore'
@@ -131,7 +131,7 @@ export default function ReviewerLibraryPage() {
                   </button>
                 </div>
                 <div className="p-4 flex-1 flex flex-col">
-                  <h3 className="font-heading font-semibold text-[15px] leading-snug line-clamp-2 group-hover:text-[var(--pink)] transition-colors">{reviewer.title.replace(/^AI (Review|PPTX) — /, '')}</h3>
+                  <h3 className="font-heading font-semibold text-[15px] leading-snug line-clamp-2 group-hover:text-[var(--pink)] transition-colors">{cleanDeckTitle(reviewer.title)}</h3>
                   <p className="text-[11.5px] text-[var(--text-secondary)] mt-1 flex items-center gap-1 truncate">
                     <Folder size={12} className="shrink-0" /> {getTopicTitle(reviewer.topic_id)} · {formatRelativeDate(reviewer.created_at)}
                   </p>
@@ -415,7 +415,7 @@ export function ReviewerDetail({ reviewer, onClose, topicTitle, onQuiz }: {
             {deck ? <Presentation size={22} weight="duotone" /> : <BookOpen size={22} weight="duotone" />}
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="font-heading font-semibold text-[16px] leading-snug line-clamp-2">{reviewer.title.replace(/^AI (Review|PPTX) — /, '')}</h2>
+            <h2 className="font-heading font-semibold text-[16px] leading-snug line-clamp-2">{cleanDeckTitle(reviewer.title)}</h2>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5 truncate">{topicTitle} · {formatRelativeDate(reviewer.created_at)} · from {reviewer.source_file}</p>
           </div>
           <button onClick={onClose} className="btn-icon p-2 -mr-1" aria-label="Close"><X size={18} /></button>
@@ -571,7 +571,7 @@ function SlideViewer({ slides }: { slides: PresentationSlide[] }) {
       <div className="aspect-[16/9] w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-fn overflow-hidden flex flex-col">
         <div className="h-1.5 bg-[var(--pink)]" />
         <div className="flex-1 p-6 sm:p-9 overflow-y-auto">
-          <h4 className="font-heading font-semibold text-xl sm:text-2xl text-[var(--pink)] mb-4">{currentSlide.title}</h4>
+          <h4 className="font-heading font-semibold text-xl sm:text-2xl text-[var(--pink)] mb-4">{currentSlide.title.replace(/^\s*slide\s*\d+\s*[:.\-–—]\s*/i, '')}</h4>
           {currentSlide.paragraph && <p className="text-sm sm:text-[15px] leading-relaxed mb-3">{currentSlide.paragraph}</p>}
           <ul className="space-y-2.5">
             {currentSlide.bullet_points.map((pt, idx) => (

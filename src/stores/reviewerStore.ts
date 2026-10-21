@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { ReviewerItem } from '@/types'
 import { generateJSON } from '@/lib/ai'
 import { getPersonalizationConfig } from '@/lib/personalization'
-import { useStudyBoxStore } from './studyBoxStore'
+import { useStudyBoxStore, materialDisplayName } from './studyBoxStore'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
 
@@ -182,8 +182,8 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
         const selectedItems = allItems.filter(item => sourceItemIds.includes(item.id))
         if (selectedItems.length === 0) throw new Error("No source items found")
         sourceText = selectedItems.map(item => `--- DOCUMENT: ${item.file_name} ---\n${item.extracted_text}`).join('\n\n')
-        sourceFilesLabel = selectedItems.map(item => item.file_name).join(', ')
-        titleSuffix = selectedItems.length > 1 ? 'Combined PPTX' : selectedItems[0].file_name.split('.')[0]
+        sourceFilesLabel = selectedItems.map(item => materialDisplayName(item)).join(', ')
+        titleSuffix = selectedItems.length > 1 ? `${materialDisplayName(selectedItems[0])} and ${selectedItems.length - 1} more` : materialDisplayName(selectedItems[0])
       } else if (topicId) {
         const allTopics = useStudyBoxStore.getState().topics
         const selectedTopic = allTopics.find(t => t.id === topicId)
@@ -205,6 +205,8 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
         ${aestheticRule}
         Output strictly as a JSON object: { "slides": [ { "title": "Slide Title", "paragraph": "2-3 sentence detailed explanation that introduces and explains the concept in prose form so the student can read and understand it without relying on bullet points alone", "bullet_points": ["point 1", "point 2"], "presenter_notes": "..." } ] }
         CRITICAL: Every slide MUST include both a "paragraph" field (a detailed prose explanation) AND "bullet_points" (key takeaways). The paragraph comes first to explain the concept thoroughly, then bullet points summarize the high-yield points.
+        FIT ON THE SLIDE: keep each "paragraph" under 70 words and give 3 to 6 bullet points of at most 20 words each. When a concept needs more, split it across two slides instead of crowding one.
+        TITLES: short and descriptive, without numbering. Never start a title with "Slide 1:" or similar.
         Generate as many highly detailed and comprehensive slides as necessary to exhaustively cover all of the information, data, definitions, clinical logic, and steps in the source material without omitting any details or summarizing heavily. There is no slide limit.
       `
 
@@ -220,7 +222,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
 
       const newPresentationData = {
         topic_id: topicId || null,
-        title: `AI PPTX — ${titleSuffix}`,
+        title: titleSuffix,
         source_file: sourceFilesLabel,
         is_favorite: false,
         user_id: session.user.id,
