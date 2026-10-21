@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, CircleNotch as Loader2, ShieldWarning as ShieldAlert, SpeakerHigh as Volume2, Headphones, Check, ArrowUpRight, Warning, ArrowLeft, StopCircle } from '@phosphor-icons/react'
+import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, CircleNotch as Loader2, ShieldWarning as ShieldAlert, SpeakerHigh as Volume2, Headphones, Check, ArrowUpRight, Warning, ArrowLeft, StopCircle, ArrowClockwise, Target } from '@phosphor-icons/react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { generateChatCompletion } from '@/lib/ai'
-import { getRecitationPrompt, getRetDemPrompt } from '@/lib/simulationPrompts'
+import { getRecitationPrompt, getRetDemPrompt, weakPointsBrief } from '@/lib/simulationPrompts'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -316,6 +317,18 @@ function SimulationSession() {
 
       {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar fn-card p-4 sm:p-6 space-y-5">
+        {/* Session brief: what's being tested and how it's scored */}
+        <div className="rounded-xl bg-[var(--rose-soft)] border border-th-pink/15 p-4">
+          <p className="text-[12px] font-medium text-[var(--pink)] mb-1.5">
+            {sourceName?.startsWith('Weak points') ? 'Focused review of what you missed last time' : activeMode === 'retdem' ? 'Return demonstration' : 'Oral recitation'}
+          </p>
+          <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+            {activeMode === 'retdem'
+              ? 'Talk through each step as if you were performing it, and give the rationale. '
+              : 'Answer the way you would to your clinical instructor, and explain your reasoning. '}
+            You'll be scored on <strong className="text-[var(--text)]">accuracy</strong>, <strong className="text-[var(--text)]">safety</strong>, <strong className="text-[var(--text)]">reasoning</strong> and <strong className="text-[var(--text)]">confidence</strong>. Tap <strong className="text-[var(--text)]">End &amp; grade</strong> whenever you're ready for feedback.
+          </p>
+        </div>
         {messages.map(m => (
           <div key={m.id} className={cn('flex gap-3 max-w-[88%] sm:max-w-[80%]', m.role === 'user' ? 'ml-auto flex-row-reverse' : '')}>
             <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-th-pink/15">
@@ -419,7 +432,8 @@ function SimulationSession() {
 
 function SimulationReport() {
   const { isFrance, aiAssistantName } = usePersonalization()
-  const { scores, feedback, reset, gradingFailed, gradeSession, topic, sourceName } = useSimulationStore()
+  const { scores, feedback, reset, gradingFailed, gradeSession, topic, sourceName, sourceText, difficulty, activeMode, startSession } = useSimulationStore()
+  const navigate = useNavigate()
   const examinerName = isFrance ? 'Doc Uno' : aiAssistantName
   const examinerAvatar = isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'
 
@@ -491,14 +505,32 @@ function SimulationReport() {
         )}
       </div>
 
-      <div className="mt-8 flex justify-center">
-        <button onClick={reset} className="btn-primary px-8 py-3 text-sm">Return to Simulation Hub</button>
+      <div className="mt-8 flex flex-col sm:flex-row justify-center gap-2">
+        <button
+          onClick={() => { unlockAudio(); startSession(activeMode, topic || 'General Nursing', difficulty, sourceText, sourceName) }}
+          className="btn-primary px-6 py-3 text-sm flex items-center justify-center gap-2"
+        >
+          <ArrowClockwise size={16} /> Practice again
+        </button>
+        {(feedback.missed.length > 0 || feedback.safetyViolations.length > 0) && (
+          <button
+            onClick={() => {
+              unlockAudio()
+              startSession('recitation', topic || 'General Nursing', difficulty, weakPointsBrief(topic || 'General Nursing', feedback), `Weak points: ${sourceName || topic || 'review'}`)
+              navigate('/recitation')
+            }}
+            className="btn-secondary px-6 py-3 text-sm flex items-center justify-center gap-2"
+          >
+            <Target size={16} /> Drill my weak points
+          </button>
+        )}
+        <button onClick={reset} className="btn-secondary px-6 py-3 text-sm">Back to hub</button>
       </div>
     </div>
   )
 }
 
-function ScoreRing({ value }: { value: number }) {
+export function ScoreRing({ value }: { value: number }) {
   const r = 34
   const c = 2 * Math.PI * r
   return (
@@ -515,7 +547,7 @@ function ScoreRing({ value }: { value: number }) {
   )
 }
 
-function ScoreBar({ label, score }: { label: string; score: number }) {
+export function ScoreBar({ label, score }: { label: string; score: number }) {
   return (
     <div>
       <div className="flex justify-between text-[12px] mb-1">
@@ -535,7 +567,7 @@ const TONES = {
   error: { text: 'text-[var(--error)]', chip: 'bg-th-error/10 text-[var(--error)]' },
 }
 
-function FeedbackList({ title, icon: ToneIcon, tone, items }: { title: string; icon: typeof Check; tone: keyof typeof TONES; items: string[] }) {
+export function FeedbackList({ title, icon: ToneIcon, tone, items }: { title: string; icon: typeof Check; tone: keyof typeof TONES; items: string[] }) {
   return (
     <section className={cn('fn-card p-5', tone === 'error' && 'border-th-error/30')}>
       <h3 className={cn('font-heading font-semibold text-[15px] mb-3', tone === 'error' && TONES.error.text)}>{title}</h3>
