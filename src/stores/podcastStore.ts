@@ -1,6 +1,19 @@
 import { create } from 'zustand'
-import { synthesizeSpeech, playClip, speakWithBrowser, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
-import { startBackgroundMusic, stopBackgroundMusic, getMusicPreference, setMusicPreference } from '@/lib/backgroundMusic'
+import {
+  synthesizeSpeech,
+  playClip,
+  speakWithBrowser,
+  stopPlayback,
+  unlockAudio,
+  getAudioCurrentTime,
+  setPlaybackRate,
+} from '@/lib/elevenLabsTts'
+import {
+  startBackgroundMusic,
+  stopBackgroundMusic,
+  getMusicPreference,
+  setMusicPreference,
+} from '@/lib/backgroundMusic'
 import { toast } from '@/stores/feedbackStore'
 
 export interface DialogueLine {
@@ -17,11 +30,28 @@ export interface PodcastEpisode {
   created_at: string
 }
 
+export const WORDS_PER_SECOND = 130 / 60
+
+export function computeLineStarts(script: DialogueLine[]): { starts: number[]; totalSeconds: number } {
+  const starts: number[] = []
+  let elapsed = 0
+  for (const line of script) {
+    starts.push(elapsed)
+    elapsed += Math.max(1.5, line.text.split(/\s+/).filter(Boolean).length / WORDS_PER_SECOND)
+  }
+  const last = script[script.length - 1]
+  const totalSeconds = starts.length > 0
+    ? starts[starts.length - 1] + Math.max(1.5, (last ? last.text.split(/\s+/).filter(Boolean).length : 0) / WORDS_PER_SECOND)
+    : 0
+  return { starts, totalSeconds }
+}
+
 // ─── Module-Level Playback Engine (Persists across page navigation) ───────────
 let playRunId = 0
 let isPlayingActive = false
 let activeSpeed = 1
 let lineStartedAt = 0
+let tickTimer: ReturnType<typeof setInterval> | null = null
 const clipCache = new Map<number, Promise<string | null>>()
 
 function resetClips() {
@@ -34,6 +64,32 @@ function prefetch(index: number) {
   const line = state.script[index]
   if (!line || clipCache.has(index)) return
   clipCache.set(index, synthesizeSpeech({ text: line.text, speaker: line.speaker }))
+}
+
+function startTickTimer() {
+  stopTickTimer()
+  tickTimer = setInterval(() => {
+    const { script, currentLine, speed, lineStarts, totalSeconds, isPlaying } = usePodcastStore.getState()
+    if (!isPlaying || currentLine < 0 || currentLine >= script.length) return
+
+    const base = lineStarts[currentLine] ?? 0
+    const audioTime = getAudioCurrentTime()
+    const lineTime = audioTime > 0 ? audioTime : Math.max(0, ((Date.now() - lineStartedAt) / 1000) * speed)
+    const currentSec = Math.min(totalSeconds, base + lineTime)
+    const prog = totalSeconds > 0 ? currentSec / totalSeconds : 0
+
+    usePodcastStore.setState({
+      elapsedSeconds: currentSec,
+      progress: prog,
+    })
+  }, 150)
+}
+
+function stopTickTimer() {
+  if (tickTimer) {
+    clearInterval(tickTimer)
+    tickTimer = null
+  }
 }
 
 async function runPlayback(startIndex: number, run: number) {
@@ -49,11 +105,14 @@ async function runPlayback(startIndex: number, run: number) {
 
     const line = usePodcastStore.getState().script[lineIndex]
     lineStartedAt = Date.now()
+
+    const { lineStarts, totalSeconds } = usePodcastStore.getState()
+    const currentBase = lineStarts[lineIndex] ?? 0
+
     usePodcastStore.setState({
       currentLine: lineIndex,
-      progress: usePodcastStore.getState().script.length > 0
-        ? lineIndex / usePodcastStore.getState().script.length
-        : 0,
+      elapsedSeconds: currentBase,
+      progress: totalSeconds > 0 ? currentBase / totalSeconds : 0,
     })
 
     prefetch(lineIndex)
@@ -71,10 +130,11 @@ async function runPlayback(startIndex: number, run: number) {
     if (result === 'error') {
       result = await speakWithBrowser(line.text, line.speaker, activeSpeed)
     }
-    if (playRunId !== run) return
+    if (result === 'stopped' || playRunId !== run) return
 
     if (result === 'blocked') {
       isPlayingActive = false
+      stopTickTimer()
       usePodcastStore.setState({ isPlaying: false })
       stopBackgroundMusic()
       toast('Tap play again to start the audio.', 'info')
@@ -83,6 +143,7 @@ async function runPlayback(startIndex: number, run: number) {
 
     if (result === 'error') {
       isPlayingActive = false
+      stopTickTimer()
       usePodcastStore.setState({ isPlaying: false })
       stopBackgroundMusic()
       toast("Audio isn't available right now. You can still read the transcript.", 'error')
@@ -91,7 +152,8 @@ async function runPlayback(startIndex: number, run: number) {
   }
 
   isPlayingActive = false
-  usePodcastStore.setState({ isPlaying: false, currentLine: -1, progress: 1 })
+  stopTickTimer()
+  usePodcastStore.setState({ isPlaying: false, progress: 1 })
   stopBackgroundMusic()
 }
 
@@ -100,16 +162,19 @@ interface PodcastState {
   episodeTitle: string
   episodeTopic: string
   script: DialogueLine[]
+  lineStarts: number[]
+  totalSeconds: number
+  elapsedSeconds: number
   isWritingMore: boolean
   isPlaying: boolean
   currentLine: number
   speed: number
   musicOn: boolean
   progress: number
-  isDismissed: boolean // Dismiss the floating mini player until next episode play
+  isDismissed: boolean
 
   // Actions
-  setScript: (script: DialogueLine[] | ((prev: DialogueLine[]) => DialogueLine[])) => void
+  setScript: (scriptOrFn: DialogueLine[] | ((prev: DialogueLine[]) => DialogueLine[])) => void
   setEpisodeTitle: (title: string) => void
   setEpisodeTopic: (topic: string) => void
   setActiveEpisodeId: (id: string | null) => void
@@ -136,6 +201,9 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
   episodeTitle: '',
   episodeTopic: '',
   script: [],
+  lineStarts: [],
+  totalSeconds: 0,
+  elapsedSeconds: 0,
   isWritingMore: false,
   isPlaying: false,
   currentLine: -1,
@@ -145,9 +213,15 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
   isDismissed: false,
 
   setScript: (scriptOrFn) => {
-    set(state => ({
-      script: typeof scriptOrFn === 'function' ? scriptOrFn(state.script) : scriptOrFn,
-    }))
+    set(state => {
+      const nextScript = typeof scriptOrFn === 'function' ? scriptOrFn(state.script) : scriptOrFn
+      const { starts, totalSeconds } = computeLineStarts(nextScript)
+      return {
+        script: nextScript,
+        lineStarts: starts,
+        totalSeconds,
+      }
+    })
   },
 
   setEpisodeTitle: (title) => set({ episodeTitle: title }),
@@ -158,6 +232,7 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
 
   setSpeed: (newSpeed) => {
     activeSpeed = newSpeed
+    setPlaybackRate(newSpeed)
     set({ speed: newSpeed })
   },
 
@@ -176,8 +251,17 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
     playRunId++
     const run = playRunId
     isPlayingActive = true
-    set({ isPlaying: true, isDismissed: false })
+
+    const base = get().lineStarts[lineIndex] ?? 0
+    set({
+      isPlaying: true,
+      isDismissed: false,
+      currentLine: lineIndex,
+      elapsedSeconds: base,
+    })
+
     if (get().musicOn) startBackgroundMusic()
+    startTickTimer()
     runPlayback(lineIndex, run)
   },
 
@@ -187,7 +271,7 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
     if (isPlaying) {
       get().stopAll()
     } else {
-      const startIdx = currentLine < 0 || currentLine >= script.length ? 0 : currentLine
+      const startIdx = Math.max(0, Math.min(currentLine < 0 ? 0 : currentLine, script.length - 1))
       get().startFrom(startIdx)
     }
   },
@@ -199,21 +283,27 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
   stopAll: () => {
     playRunId++
     isPlayingActive = false
+    stopTickTimer()
     set({ isPlaying: false })
     stopPlayback()
     stopBackgroundMusic()
   },
 
   goToLine: (lineIndex: number) => {
-    const { script } = get()
+    const { script, lineStarts, totalSeconds } = get()
     const index = Math.min(Math.max(0, lineIndex), script.length - 1)
     if (index < 0) return
+
+    const base = lineStarts[index] ?? 0
+    lineStartedAt = Date.now()
+
     if (isPlayingActive) {
       get().startFrom(index)
     } else {
       set({
         currentLine: index,
-        progress: script.length > 0 ? index / script.length : 0,
+        elapsedSeconds: base,
+        progress: totalSeconds > 0 ? base / totalSeconds : 0,
       })
       prefetch(index)
     }
@@ -235,14 +325,18 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
   loadEpisode: (ep: PodcastEpisode) => {
     get().stopAll()
     resetClips()
+    const { starts, totalSeconds } = computeLineStarts(ep.script)
     set({
       activeEpisodeId: ep.id,
       episodeTitle: ep.title,
       episodeTopic: ep.topic || ep.title,
       script: ep.script,
+      lineStarts: starts,
+      totalSeconds,
+      elapsedSeconds: 0,
       isWritingMore: false,
       isPlaying: false,
-      currentLine: -1,
+      currentLine: 0,
       progress: 0,
       isDismissed: false,
     })
@@ -258,6 +352,9 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
     resetClips()
     set({
       script: [],
+      lineStarts: [],
+      totalSeconds: 0,
+      elapsedSeconds: 0,
       episodeTitle: '',
       episodeTopic: '',
       activeEpisodeId: null,
@@ -269,4 +366,3 @@ export const usePodcastStore = create<PodcastState>()((set, get) => ({
     })
   },
 }))
-

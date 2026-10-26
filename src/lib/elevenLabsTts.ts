@@ -125,6 +125,21 @@ export function stopPlayback() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
 }
 
+/** Update the playback speed of the currently playing audio */
+export function setPlaybackRate(rate: number) {
+  if (sharedAudio) {
+    sharedAudio.playbackRate = rate
+  }
+}
+
+/** Current time in seconds of the active audio element */
+export function getAudioCurrentTime(): number {
+  if (sharedAudio && !sharedAudio.paused && !isNaN(sharedAudio.currentTime)) {
+    return sharedAudio.currentTime
+  }
+  return 0
+}
+
 /** Play an object URL on the shared element. Resolves when it ends or can't play. */
 export function playClip(url: string, rate = 1): Promise<PlaybackResult> {
   stopPlayback()

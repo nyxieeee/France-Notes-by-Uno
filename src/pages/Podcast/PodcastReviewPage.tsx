@@ -266,6 +266,7 @@ function SeekBar({ starts, total, current, speed, onSeek }: {
   speed: number
   onSeek: (lineIndex: number) => void
 }) {
+  const elapsedSeconds = usePodcastStore(s => s.elapsedSeconds)
   const trackRef = useRef<HTMLDivElement>(null)
   const [dragFraction, setDragFraction] = useState<number | null>(null)
 
@@ -280,9 +281,9 @@ function SeekBar({ starts, total, current, speed, onSeek }: {
     return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
   }
 
-  const playedFraction = total > 0 && current >= 0 ? (starts[current] ?? total) / total : 0
-  const shownFraction = dragFraction ?? playedFraction
-  const shownSeconds = dragFraction !== null ? starts[lineAt(dragFraction)] ?? 0 : starts[current] ?? 0
+  const currentSeconds = dragFraction !== null ? dragFraction * total : elapsedSeconds
+  const shownFraction = total > 0 ? Math.min(1, Math.max(0, currentSeconds / total)) : 0
+  const shownSeconds = currentSeconds
 
   return (
     <div className="mt-3">
@@ -314,7 +315,7 @@ function SeekBar({ starts, total, current, speed, onSeek }: {
         }}
       >
         <div className="w-full h-1.5 bg-th-pink/15 rounded-full overflow-hidden">
-          <div className={cn('h-full bg-[var(--pink)] rounded-full', dragFraction === null && 'transition-[width] duration-300')} style={{ width: `${shownFraction * 100}%` }} />
+          <div className={cn('h-full bg-[var(--pink)] rounded-full', dragFraction === null && 'transition-[width] duration-75')} style={{ width: `${shownFraction * 100}%` }} />
         </div>
         <div
           className={cn('absolute w-3.5 h-3.5 -ml-[7px] rounded-full bg-[var(--pink)] shadow-fn transition-transform', dragFraction !== null ? 'scale-125' : 'scale-0 group-hover:scale-100 [@media(hover:none)]:scale-100')}
@@ -322,8 +323,8 @@ function SeekBar({ starts, total, current, speed, onSeek }: {
         />
       </div>
       <div className="flex justify-between text-[11px] tabular-nums text-[var(--text-secondary)] -mt-0.5">
-        <span>{formatTime(shownSeconds / speed)}</span>
-        <span>{formatTime(total / speed)}</span>
+        <span>{formatTime(shownSeconds)}</span>
+        <span>{formatTime(total)}</span>
       </div>
     </div>
   )
@@ -340,6 +341,8 @@ export default function PodcastReviewPage() {
     script,
     episodeTitle,
     activeEpisodeId,
+    lineStarts,
+    totalSeconds,
     isWritingMore,
     isPlaying,
     currentLine,
@@ -462,11 +465,7 @@ export default function PodcastReviewPage() {
   }
 
 
-  useEffect(() => {
-    return () => {
-      stopAllPlayback()
-    }
-  }, [])
+// Playback persists across page navigation
 
   const getSelectedSourceDetails = (): { title: string; sourceText?: string; sourceType: string } => {
     if (inputMode === 'type') {
@@ -613,16 +612,6 @@ ${brief}`
   const estimatedDuration = hasScript ? Math.max(1, Math.round(script.reduce((acc, l) => acc + l.text.split(' ').length, 0) / 130)) : 0
   const canGenerate = !isGenerating && !isWritingMore && !((inputMode === 'type' && !freeText.trim()) || (inputMode === 'topic' && topics.length === 0) || (inputMode === 'file' && !myFiles.some(i => i.id === selectedItemId)) || (inputMode === 'knowledge' && savedKnowledge.length === 0))
   const activeSpeaker = currentLine >= 0 ? script[currentLine]?.speaker : null
-  // Estimated start time of every line, plus the episode's total length
-  const { lineStarts, totalSeconds } = useMemo(() => {
-    const starts: number[] = []
-    let total = 0
-    for (const l of script) {
-      starts.push(total)
-      total += l.text.split(/\s+/).length / WORDS_PER_SECOND + 0.4
-    }
-    return { lineStarts: starts, totalSeconds: total }
-  }, [script])
   const seekLine = currentLine < 0 && progress >= 1 ? script.length : currentLine
 
   const SOURCES: { id: SourceMode; label: string; icon: Icon }[] = [

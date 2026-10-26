@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -9,13 +9,11 @@ import {
   ArrowsOutSimple,
   X,
   MusicNotes,
-  Clock,
 } from '@phosphor-icons/react'
 import { usePodcastStore } from '@/stores/podcastStore'
 import { cn } from '@/lib/utils'
 
 const SPEEDS = [0.75, 1, 1.25, 1.5]
-const WORDS_PER_SECOND = 130 / 60
 
 function formatTime(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds))
@@ -60,6 +58,9 @@ export default function FloatingPodcastPlayer() {
     speed,
     musicOn,
     isDismissed,
+    elapsedSeconds,
+    totalSeconds,
+    lineStarts,
     togglePlay,
     goToLine,
     handlePrevious,
@@ -73,30 +74,13 @@ export default function FloatingPodcastPlayer() {
   const [dragFraction, setDragFraction] = useState<number | null>(null)
   const barRef = useRef<HTMLDivElement>(null)
 
-  // Hide on /podcast page or when there is no episode or dismissed
-  const isPodcastPage = location.pathname === '/podcast'
+  // Strictly hide on Nursepod main page (/podcast-review)
+  const isPodcastPage = location.pathname.includes('podcast')
   const hasEpisode = script.length > 0
   const isVisible = hasEpisode && !isPodcastPage && !isDismissed
 
-  const lineStarts = useMemo(() => {
-    const starts: number[] = []
-    let elapsed = 0
-    for (const line of script) {
-      starts.push(elapsed)
-      elapsed += Math.max(1.5, line.text.split(/\s+/).filter(Boolean).length / WORDS_PER_SECOND)
-    }
-    return starts
-  }, [script])
-
-  const totalSeconds = useMemo(() => {
-    if (lineStarts.length === 0) return 0
-    const last = script[script.length - 1]
-    return lineStarts[lineStarts.length - 1] + Math.max(1.5, (last ? last.text.split(/\s+/).filter(Boolean).length : 0) / WORDS_PER_SECOND)
-  }, [lineStarts, script])
-
-  const playedFraction = totalSeconds > 0 && currentLine >= 0 ? (lineStarts[currentLine] ?? totalSeconds) / totalSeconds : 0
-  const shownFraction = dragFraction ?? playedFraction
-  const currentSeconds = shownFraction * totalSeconds
+  const currentSeconds = dragFraction !== null ? dragFraction * totalSeconds : elapsedSeconds
+  const shownFraction = totalSeconds > 0 ? currentSeconds / totalSeconds : 0
 
   const seekFromClientX = (clientX: number) => {
     if (!barRef.current || totalSeconds === 0) return
@@ -134,10 +118,7 @@ export default function FloatingPodcastPlayer() {
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className="fixed z-50 bottom-20 right-4 sm:bottom-6 sm:right-6 w-[330px] max-w-[calc(100vw-32px)] select-none touch-none"
       >
-        <div className="fn-card p-3.5 bg-th-card/95 backdrop-blur-xl border border-[var(--border)] shadow-2xl rounded-2xl relative overflow-hidden group">
-          {/* Subtle Pink Header Glow */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--pink)] via-th-pink/60 to-[var(--pink)]" />
-
+        <div className="fn-card p-3.5 bg-th-card/95 backdrop-blur-xl border border-[var(--border)] shadow-xl rounded-2xl relative overflow-hidden group">
           {/* Drag Handle Bar */}
           <div className="flex items-center justify-between mb-2">
             <div className="cursor-grab active:cursor-grabbing flex-1 py-1 flex items-center justify-center">
@@ -145,7 +126,7 @@ export default function FloatingPodcastPlayer() {
             </div>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => navigate('/podcast')}
+                onClick={() => navigate('/podcast-review')}
                 className="btn-icon p-1 text-[var(--text-secondary)] hover:text-[var(--pink)]"
                 title="Expand to Full Player"
                 aria-label="Expand to Full Player"
@@ -168,7 +149,7 @@ export default function FloatingPodcastPlayer() {
 
           {/* Episode Info Row */}
           <div
-            onClick={() => navigate('/podcast')}
+            onClick={() => navigate('/podcast-review')}
             className="flex items-center gap-3 cursor-pointer group-hover:opacity-95 transition-opacity"
           >
             <div className="relative w-11 h-11 shrink-0 rounded-xl overflow-hidden border border-th-pink/20 shadow-sm bg-[var(--rose-soft)]">
@@ -177,7 +158,6 @@ export default function FloatingPodcastPlayer() {
                 alt={speakerName}
                 className="w-full h-full object-cover"
                 onError={e => {
-                  // Fallback placeholder if image not loaded
                   ;(e.currentTarget as HTMLElement).style.display = 'none'
                 }}
               />
@@ -205,7 +185,7 @@ export default function FloatingPodcastPlayer() {
             </div>
           </div>
 
-          {/* Mini Progress / Seek Bar */}
+          {/* Real-Time Progress / Seek Bar */}
           <div className="mt-3">
             <div
               ref={barRef}
@@ -214,19 +194,38 @@ export default function FloatingPodcastPlayer() {
               aria-valuemin={0}
               aria-valuemax={totalSeconds}
               aria-valuenow={currentSeconds}
+              onPointerDown={e => {
+                e.currentTarget.setPointerCapture(e.pointerId)
+                if (!barRef.current || totalSeconds === 0) return
+                const rect = barRef.current.getBoundingClientRect()
+                setDragFraction(Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)))
+              }}
+              onPointerMove={e => {
+                if (dragFraction !== null && barRef.current && totalSeconds > 0) {
+                  const rect = barRef.current.getBoundingClientRect()
+                  setDragFraction(Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)))
+                }
+              }}
+              onPointerUp={e => {
+                if (dragFraction !== null) {
+                  setDragFraction(null)
+                  seekFromClientX(e.clientX)
+                }
+              }}
+              onPointerCancel={() => setDragFraction(null)}
               onClick={e => seekFromClientX(e.clientX)}
-              className="relative h-2 rounded-full bg-[var(--rose-soft)] cursor-pointer group/bar flex items-center"
+              className="relative h-2 rounded-full bg-[var(--rose-soft)] cursor-pointer group/bar flex items-center touch-none select-none"
             >
               <div
-                className="h-full rounded-full bg-[var(--pink)] transition-[width] duration-150"
+                className="h-full rounded-full bg-[var(--pink)] transition-[width] duration-75"
                 style={{ width: `${Math.min(100, Math.max(0, shownFraction * 100))}%` }}
               />
               <div
-                className="absolute w-3 h-3 rounded-full bg-white border-2 border-[var(--pink)] shadow-md -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity"
+                className="absolute w-3.5 h-3.5 rounded-full bg-white border-2 border-[var(--pink)] shadow-md -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity"
                 style={{ left: `${Math.min(100, Math.max(0, shownFraction * 100))}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)] mt-1 px-0.5 font-medium">
+            <div className="flex items-center justify-between text-[10px] tabular-nums text-[var(--text-secondary)] mt-1 px-0.5 font-medium">
               <span>{formatTime(currentSeconds)}</span>
               <span>{formatTime(totalSeconds)}</span>
             </div>
@@ -256,11 +255,15 @@ export default function FloatingPodcastPlayer() {
 
               <button
                 onClick={togglePlay}
-                className="w-9 h-9 rounded-full bg-[var(--pink)] hover:opacity-95 text-white flex items-center justify-center shadow-md shadow-pink-500/20 active:scale-95 transition-transform"
+                className="w-10 h-10 rounded-full bg-[var(--pink)] hover:opacity-95 text-white flex items-center justify-center shadow-md shadow-pink-500/20 active:scale-95 transition-transform"
                 title={isPlaying ? 'Pause' : 'Play'}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
               >
-                {isPlaying ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" className="translate-x-0.5" />}
+                {isPlaying ? (
+                  <Pause size={18} weight="fill" />
+                ) : (
+                  <Play size={18} weight="fill" />
+                )}
               </button>
 
               <button
@@ -293,4 +296,3 @@ export default function FloatingPodcastPlayer() {
     </AnimatePresence>
   )
 }
-
