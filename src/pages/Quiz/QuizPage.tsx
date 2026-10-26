@@ -273,7 +273,7 @@ export default function QuizPage() {
                 <AlertCircle size={28} weight="duotone" />
               </div>
               <h2 className="font-heading font-semibold text-lg">Quiz couldn't be generated</h2>
-              <p className="text-sm text-[var(--text-secondary)] mt-1.5">{generationError}</p>
+              <p className="text-sm text-[var(--text-secondary)] mt-1.5 whitespace-pre-line">{generationError}</p>
               <div className="flex justify-center gap-2 mt-6">
                 <button onClick={resetQuiz} className="btn-secondary px-5 py-2.5 text-sm flex items-center gap-2"><ArrowLeft size={15} /> Back to setup</button>
                 {lastConfig && (

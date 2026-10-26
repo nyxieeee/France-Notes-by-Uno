@@ -1,14 +1,19 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, CircleNotch as Loader2, ShieldWarning as ShieldAlert, SpeakerHigh as Volume2, Headphones, Check, ArrowUpRight, Warning, ArrowLeft, StopCircle } from '@phosphor-icons/react'
+import { Microphone as Mic, MicrophoneSlash as MicOff, PaperPlaneRight as Send, User, CircleNotch as Loader2, ShieldWarning as ShieldAlert, SpeakerHigh as Volume2, Headphones, Check, ArrowUpRight, Warning, ArrowLeft, StopCircle, ArrowClockwise, Target, WarningCircle as WarningCircleIcon } from '@phosphor-icons/react'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { generateChatCompletion } from '@/lib/ai'
-import { getRecitationPrompt, getRetDemPrompt } from '@/lib/simulationPrompts'
+import { getRecitationPrompt, getRetDemPrompt, weakPointsBrief } from '@/lib/simulationPrompts'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import { usePersonalization } from '@/hooks/usePersonalization'
-import { speak, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { speakLong, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
+import { motion } from 'framer-motion'
 import { toast, confirmDialog } from '@/stores/feedbackStore'
+
+// Pause after she stops talking before her spoken answer is sent
+const AUTO_SEND_MS = 3500
 
 let lastStartedSessionId = '';
 
@@ -36,6 +41,13 @@ function SimulationSession() {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const spokenIdsRef = useRef<Set<string>>(new Set())
   const speechRunRef = useRef(0)
+  // True from when she starts answering until she sends or stops; Safari ends recognition on
+  // its own after a pause, so we restart it while this is set
+  const wantListeningRef = useRef(false)
+  // When the spoken answer will be sent automatically (shown as a countdown)
+  const [autoSendAt, setAutoSendAt] = useState<number | null>(null)
+  // Set when a reply couldn't be fetched; shows a retry instead of a fake examiner message
+  const [turnFailed, setTurnFailed] = useState<{ isFirst: boolean } | null>(null)
 
   // Speech-recognition callbacks are registered once, so they read live values through refs
   const voiceModeRef = useRef(voiceMode)
@@ -55,19 +67,26 @@ function SimulationSession() {
     setIsListening(value)
   }
 
-  const stopVoiceRecognition = useCallback(() => {
+  const cancelAutoSend = useCallback(() => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current)
       silenceTimerRef.current = null
     }
+    setAutoSendAt(null)
+  }, [])
+
+  const stopVoiceRecognition = useCallback(() => {
+    wantListeningRef.current = false
+    cancelAutoSend()
     // Always stop, whatever React state says, so the mic never hears the AI's own voice
     try { recognitionRef.current?.stop() } catch { /* not running */ }
     setListening(false)
     setInterimText('')
-  }, [])
+  }, [cancelAutoSend])
 
   const startVoiceRecognition = useCallback(() => {
     if (!recognitionRef.current || listeningRef.current || busyRef.current) return
+    wantListeningRef.current = true
     try {
       setInterimText('')
       recognitionRef.current.start()
@@ -84,7 +103,7 @@ function SimulationSession() {
     setBlockedReply(null)
     setIsSpeaking(true)
     busyRef.current = true
-    const result = await speak(text, speaker, 1, () => speechRunRef.current === run)
+    const result = await speakLong(text, speaker, 1, () => speechRunRef.current === run)
     if (speechRunRef.current !== run) return
     setIsSpeaking(false)
     busyRef.current = false
@@ -97,6 +116,7 @@ function SimulationSession() {
   }, [speaker, startVoiceRecognition, stopVoiceRecognition])
 
   const runTurn = useCallback(async (isFirst = false) => {
+    setTurnFailed(null)
     setIsTyping(true)
     try {
       const currentStore = useSimulationStore.getState()
@@ -108,10 +128,14 @@ function SimulationSession() {
         role: m.role as 'system' | 'user' | 'assistant',
         content: m.content
       }))
-      if (isFirst) {
-        chatHistory.push({ role: 'system', content: systemPrompt })
-      } else {
-        chatHistory.unshift({ role: 'system', content: systemPrompt })
+      // Spoken replies need to be short; a long monologue is tiring to listen to
+      const spoken = voiceModeRef.current
+        ? '\n\nVOICE MODE: Your reply is read aloud. Keep every turn to at most 3 short sentences (about 60 words), ask exactly ONE question, and never use lists, headings or symbols.'
+        : ''
+      chatHistory.unshift({ role: 'system', content: systemPrompt + spoken })
+      // The AI needs the conversation to end with the student; the opening turn has nothing yet
+      if (isFirst || !chatHistory.some(m => m.role === 'user')) {
+        chatHistory.push({ role: 'user', content: 'I am ready. Please greet me briefly and ask your first question.' })
       }
 
       const response = await generateChatCompletion(chatHistory, 'recitation')
@@ -128,7 +152,8 @@ function SimulationSession() {
       addMessage('assistant', cleanedResponse)
     } catch (e) {
       console.error('Chat API failure:', e)
-      addMessage('assistant', "I'm having trouble connecting. Let's pause for a moment!")
+      // Not added to the conversation: a fake reply would be graded and sent back to the AI
+      setTurnFailed({ isFirst })
     } finally {
       setIsTyping(false)
     }
@@ -137,6 +162,7 @@ function SimulationSession() {
   const doSend = useCallback((text: string) => {
     if (!text.trim()) return
     stopVoiceRecognition()
+    inputRef.current = ''
     addMessage('user', text.trim())
     setInput('')
     setInterimText('')
@@ -164,28 +190,47 @@ function SimulationSession() {
           }
         }
         setInterimText(interimTranscript)
+        // Still talking: hold off sending
+        if (interimTranscript && silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current)
+          silenceTimerRef.current = null
+          setAutoSendAt(null)
+        }
         if (finalTranscript) {
           const textSoFar = `${inputRef.current} ${finalTranscript.trim()}`.trim()
           inputRef.current = textSoFar
           setInput(textSoFar)
-          // Voice mode sends after a pause; with voice off, dictation only fills the box
+          // Voice mode sends after a real pause; with voice off, dictation only fills the box
           if (voiceModeRef.current) {
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+            setAutoSendAt(Date.now())
             silenceTimerRef.current = setTimeout(() => {
               silenceTimerRef.current = null
+              setAutoSendAt(null)
               if (inputRef.current.trim()) doSendRef.current(inputRef.current)
-            }, 1500)
+            }, AUTO_SEND_MS)
           }
         }
       }
 
-      recognition.onerror = () => {
-        setListening(false)
+      recognition.onerror = (event: any) => {
+        if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
+          wantListeningRef.current = false
+          toast('Allow microphone access for this site to answer out loud.', 'error')
+        }
         setInterimText('')
       }
       recognition.onend = () => {
-        setListening(false)
         setInterimText('')
+        // Safari stops after a pause; keep listening until she sends or taps stop
+        if (wantListeningRef.current && !busyRef.current) {
+          setTimeout(() => {
+            if (!wantListeningRef.current || busyRef.current) return
+            try { recognition.start() } catch { /* already running */ }
+          }, 150)
+          return
+        }
+        setListening(false)
       }
     }
 
@@ -236,6 +281,8 @@ function SimulationSession() {
     setInput('')
     inputRef.current = ''
     setInterimText('')
+    cancelAutoSend()
+    wantListeningRef.current = true
     try {
       recognitionRef.current.start()
       setListening(true)
@@ -316,6 +363,18 @@ function SimulationSession() {
 
       {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar fn-card p-4 sm:p-6 space-y-5">
+        {/* Session brief: what's being tested and how it's scored */}
+        <div className="rounded-xl bg-[var(--rose-soft)] border border-th-pink/15 p-4">
+          <p className="text-[12px] font-medium text-[var(--pink)] mb-1.5">
+            {sourceName?.startsWith('Weak points') ? 'Focused review of what you missed last time' : activeMode === 'retdem' ? 'Return demonstration' : 'Oral recitation'}
+          </p>
+          <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+            {activeMode === 'retdem'
+              ? 'Talk through each step as if you were performing it, and give the rationale. '
+              : 'Answer the way you would to your clinical instructor, and explain your reasoning. '}
+            You'll be scored on <strong className="text-[var(--text)]">accuracy</strong>, <strong className="text-[var(--text)]">safety</strong>, <strong className="text-[var(--text)]">reasoning</strong> and <strong className="text-[var(--text)]">confidence</strong>. Tap <strong className="text-[var(--text)]">End &amp; grade</strong> whenever you're ready for feedback.
+          </p>
+        </div>
         {messages.map(m => (
           <div key={m.id} className={cn('flex gap-3 max-w-[88%] sm:max-w-[80%]', m.role === 'user' ? 'ml-auto flex-row-reverse' : '')}>
             <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-th-pink/15">
@@ -336,6 +395,13 @@ function SimulationSession() {
             </div>
           </div>
         ))}
+        {turnFailed && !isTyping && (
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-th-error/25 bg-th-error/5 text-[13px]">
+            <WarningCircleIcon size={18} className="text-[var(--error)] shrink-0" />
+            <p className="flex-1 text-[var(--text-secondary)]">{aiAssistantName} couldn't be reached. Check your connection, then try again.</p>
+            <button onClick={() => runTurn(turnFailed.isFirst)} className="btn-primary px-4 py-1.5 text-xs shrink-0">Try again</button>
+          </div>
+        )}
         {isTyping && (
           <div className="flex gap-3">
             <img src={assistantAvatar} alt={aiAssistantName} className="w-8 h-8 rounded-full object-cover shrink-0 border border-th-pink/15" />
@@ -348,8 +414,19 @@ function SimulationSession() {
       </div>
 
       {/* Voice status */}
-      <div className="h-9 flex items-center px-1 text-[12.5px] text-[var(--text-secondary)]">
-        {blockedReply && !isSpeaking ? (
+      <div className="min-h-[44px] flex items-center px-1 text-[12.5px] text-[var(--text-secondary)]">
+        {autoSendAt && isListening ? (
+          <div className="w-full flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="flex items-center gap-1.5 text-[var(--text)]"><Send size={13} className="text-[var(--pink)]" /> Sending your answer… keep talking to add more</p>
+              <div className="mt-1.5 h-1 rounded-full bg-th-pink/15 overflow-hidden">
+                <motion.div key={autoSendAt} className="h-full bg-[var(--pink)] rounded-full" initial={{ width: '100%' }} animate={{ width: '0%' }} transition={{ duration: AUTO_SEND_MS / 1000, ease: 'linear' }} />
+              </div>
+            </div>
+            <button onClick={cancelAutoSend} className="px-3 py-1.5 rounded-full border border-[var(--border)] text-[12px] font-medium hover:bg-[var(--rose-soft)] shrink-0">Not yet</button>
+            <button onClick={() => doSend(inputRef.current)} className="px-3 py-1.5 rounded-full bg-[var(--pink)] text-white text-[12px] font-medium shrink-0">Send now</button>
+          </div>
+        ) : blockedReply && !isSpeaking ? (
           <button
             onClick={() => { unlockAudio(); speakMessage(blockedReply) }}
             className="flex items-center gap-1.5 text-[var(--pink)] font-medium hover:underline"
@@ -357,13 +434,17 @@ function SimulationSession() {
             <Volume2 size={15} /> Tap to hear {aiAssistantName}&rsquo;s reply
           </button>
         ) : isSpeaking ? (
-          <span className="flex items-center gap-1.5 text-[var(--pink)]"><Volume2 size={15} className="animate-pulse" /> {aiAssistantName} is speaking</span>
+          <span className="flex items-center gap-1.5 text-[var(--pink)]"><Volume2 size={15} className="animate-pulse" /> {aiAssistantName} is speaking · tap the mic to answer</span>
         ) : isListening ? (
-          <span className="flex items-center gap-1.5 min-w-0"><Mic size={15} className="text-[var(--success)] animate-pulse shrink-0" /> Listening{interimText && <span className="italic truncate">&ldquo;{interimText}&rdquo;</span>}</span>
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span className="relative flex w-2.5 h-2.5 shrink-0"><span className="absolute inset-0 rounded-full bg-[var(--success)] animate-ping opacity-60" /><span className="relative w-2.5 h-2.5 rounded-full bg-[var(--success)]" /></span>
+            <span className="shrink-0">Listening, take your time</span>
+            {interimText && <span className="italic truncate">&ldquo;{interimText}&rdquo;</span>}
+          </span>
         ) : isTyping ? (
           <span className="flex items-center gap-1.5"><Loader2 size={15} className="animate-spin text-[var(--pink)]" /> {aiAssistantName} is thinking</span>
         ) : (
-          <span>{voiceMode && speechSupported ? 'Tap the mic to answer out loud, or type below.' : 'Type your answer below.'}</span>
+          <span>{voiceMode && speechSupported ? 'Tap the mic and answer out loud. It sends after you pause, or type below.' : 'Type your answer below.'}</span>
         )}
       </div>
 
@@ -386,7 +467,7 @@ function SimulationSession() {
         <div className="flex-1 relative">
           <textarea
             value={input + (isListening && interimText && !input ? interimText : '')}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => { cancelAutoSend(); setInput(e.target.value); inputRef.current = e.target.value }}
             placeholder={isListening ? 'Speak now...' : voiceMode ? 'Speak or type your answer...' : 'Type your response here...'}
             className="w-full bg-transparent px-2 py-2.5 text-[15px] outline-none resize-none block max-h-32"
             rows={1}
@@ -419,7 +500,8 @@ function SimulationSession() {
 
 function SimulationReport() {
   const { isFrance, aiAssistantName } = usePersonalization()
-  const { scores, feedback, reset, gradingFailed, gradeSession, topic, sourceName } = useSimulationStore()
+  const { scores, feedback, reset, gradingFailed, gradeSession, topic, sourceName, sourceText, difficulty, activeMode, startSession } = useSimulationStore()
+  const navigate = useNavigate()
   const examinerName = isFrance ? 'Doc Uno' : aiAssistantName
   const examinerAvatar = isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'
 
@@ -491,14 +573,32 @@ function SimulationReport() {
         )}
       </div>
 
-      <div className="mt-8 flex justify-center">
-        <button onClick={reset} className="btn-primary px-8 py-3 text-sm">Return to Simulation Hub</button>
+      <div className="mt-8 flex flex-col sm:flex-row justify-center gap-2">
+        <button
+          onClick={() => { unlockAudio(); startSession(activeMode, topic || 'General Nursing', difficulty, sourceText, sourceName) }}
+          className="btn-primary px-6 py-3 text-sm flex items-center justify-center gap-2"
+        >
+          <ArrowClockwise size={16} /> Practice again
+        </button>
+        {(feedback.missed.length > 0 || feedback.safetyViolations.length > 0) && (
+          <button
+            onClick={() => {
+              unlockAudio()
+              startSession('recitation', topic || 'General Nursing', difficulty, weakPointsBrief(topic || 'General Nursing', feedback), `Weak points: ${sourceName || topic || 'review'}`)
+              navigate('/recitation')
+            }}
+            className="btn-secondary px-6 py-3 text-sm flex items-center justify-center gap-2"
+          >
+            <Target size={16} /> Drill my weak points
+          </button>
+        )}
+        <button onClick={reset} className="btn-secondary px-6 py-3 text-sm">Back to hub</button>
       </div>
     </div>
   )
 }
 
-function ScoreRing({ value }: { value: number }) {
+export function ScoreRing({ value }: { value: number }) {
   const r = 34
   const c = 2 * Math.PI * r
   return (
@@ -515,7 +615,7 @@ function ScoreRing({ value }: { value: number }) {
   )
 }
 
-function ScoreBar({ label, score }: { label: string; score: number }) {
+export function ScoreBar({ label, score }: { label: string; score: number }) {
   return (
     <div>
       <div className="flex justify-between text-[12px] mb-1">
@@ -535,7 +635,7 @@ const TONES = {
   error: { text: 'text-[var(--error)]', chip: 'bg-th-error/10 text-[var(--error)]' },
 }
 
-function FeedbackList({ title, icon: ToneIcon, tone, items }: { title: string; icon: typeof Check; tone: keyof typeof TONES; items: string[] }) {
+export function FeedbackList({ title, icon: ToneIcon, tone, items }: { title: string; icon: typeof Check; tone: keyof typeof TONES; items: string[] }) {
   return (
     <section className={cn('fn-card p-5', tone === 'error' && 'border-th-error/30')}>
       <h3 className={cn('font-heading font-semibold text-[15px] mb-3', tone === 'error' && TONES.error.text)}>{title}</h3>

@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useProfileMediaStore, readImageFile } from '@/stores/profileMediaStore'
 import type { CropSettings } from '@/stores/profileMediaStore'
 import ImageCropDialog from '@/components/profile/ImageCropDialog'
+import { HOST_VOICES, getVoiceChoice, setVoiceChoice } from '@/lib/voices'
+import type { HostSpeaker } from '@/lib/voices'
+import { synthesizeSpeech, playClip, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useStudyBoxStore, isReferenceArticle } from '@/stores/studyBoxStore'
@@ -10,7 +13,7 @@ import { useQuizStore } from '@/stores/quizStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
 import { useReminderStore } from '@/stores/reminderStore'
-import { User, SignOut as LogOut, Moon, Sun, Calendar, GraduationCap, CaretRight as ChevronRight, Camera, Check, Lock, Footprints, Target, FirstAidKit, Books, Exam, Trophy, MoonStars, Star, PresentationChart, Certificate, Folder, Heart, Medal, ImageSquare, Crop, UploadSimple, Trash } from '@phosphor-icons/react'
+import { User, SignOut as LogOut, Moon, Sun, Calendar, GraduationCap, CaretRight as ChevronRight, Camera, Check, Lock, Footprints, Target, FirstAidKit, Books, Exam, Trophy, MoonStars, Star, PresentationChart, Certificate, Folder, Heart, Medal, ImageSquare, Crop, UploadSimple, Trash, Play, CircleNotch } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { AnimatePresence } from 'framer-motion'
@@ -339,6 +342,9 @@ export default function ProfilePage() {
             <p className="text-[13.5px] leading-relaxed text-[var(--text-secondary)] bg-[var(--rose-soft)] rounded-xl rounded-tl-sm p-3.5">{assistantNote}</p>
           </section>
 
+          {/* Voices */}
+          <VoicePicker isFrance={isFrance} />
+
           {/* Appearance */}
           <section className="fn-card p-5">
             <h3 className="font-heading font-semibold text-[15px] mb-3">Appearance</h3>
@@ -417,5 +423,97 @@ function PhotoMenu({ items, onClose, className }: {
         </button>
       ))}
     </div>
+  )
+}
+
+// Choose how Doc Uno and Nurse Florence sound in Nursepod and voice practice
+function VoicePicker({ isFrance }: { isFrance: boolean }) {
+  const [choice, setChoice] = useState<Record<HostSpeaker, string>>(() => ({
+    DOC_UNO: getVoiceChoice('DOC_UNO'),
+    NURSE_FLORENCE: getVoiceChoice('NURSE_FLORENCE'),
+  }))
+  const [previewing, setPreviewing] = useState<string | null>(null)
+  const [open, setOpen] = useState<HostSpeaker | null>(null)
+
+  const SAMPLE: Record<HostSpeaker, string> = {
+    DOC_UNO: isFrance
+      ? "Hey France, ready for a quick review? Let's talk about why potassium matters so much for the heart."
+      : "Hi, I'm Doc Uno. Let's talk about why potassium matters so much for the heart.",
+    NURSE_FLORENCE: "Hi, I'm Nurse Florence. Before we start, remember: airway, breathing, circulation, always.",
+  }
+
+  const preview = async (speaker: HostSpeaker, voiceId: string) => {
+    unlockAudio()
+    stopPlayback()
+    setPreviewing(voiceId)
+    const url = await synthesizeSpeech({ text: SAMPLE[speaker], speaker, voiceId })
+    if (!url) {
+      toast("Couldn't play the preview. Check your connection and try again.", 'error')
+      setPreviewing(null)
+      return
+    }
+    const result = await playClip(url)
+    if (result === 'blocked') toast('Tap preview again to hear it.', 'info')
+    setPreviewing(p => (p === voiceId ? null : p))
+  }
+
+  const pick = (speaker: HostSpeaker, id: string) => {
+    setVoiceChoice(speaker, id)
+    setChoice(c => ({ ...c, [speaker]: id }))
+  }
+
+  return (
+    <section className="fn-card p-5">
+      <h3 className="font-heading font-semibold text-[15px]">Voices</h3>
+      <p className="text-[12.5px] text-[var(--text-secondary)] mb-3">How the hosts sound in Nursepod and voice practice. Free voices have no limit.</p>
+      <div className="space-y-2">
+        {(['DOC_UNO', 'NURSE_FLORENCE'] as HostSpeaker[]).map(speaker => {
+          const current = HOST_VOICES[speaker].find(v => v.id === choice[speaker])!
+          return (
+            <div key={speaker} className="rounded-xl border border-[var(--border)]">
+              <button onClick={() => setOpen(o => (o === speaker ? null : speaker))} className="w-full flex items-center gap-3 p-3 text-left">
+                <img src={speaker === 'DOC_UNO' ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'} alt="" className="w-9 h-9 rounded-full object-cover border border-th-pink/20" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13.5px] font-medium">{speaker === 'DOC_UNO' ? 'Doc Uno' : 'Nurse Florence'}</p>
+                  <p className="text-[11.5px] text-[var(--text-secondary)] truncate">{current.name} · {current.description}</p>
+                </div>
+                <ChevronRight size={16} className={cn('text-[var(--text-secondary)] transition-transform', open === speaker && 'rotate-90')} />
+              </button>
+              {open === speaker && (
+                <div className="border-t border-[var(--border)] p-1.5 space-y-0.5">
+                  {HOST_VOICES[speaker].map((v, i, all) => (
+                    <div key={v.id}>
+                    {all[i - 1]?.provider !== v.provider && (
+                      <p className="px-2.5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                        {v.provider === 'free' ? 'Free voices' : 'ElevenLabs (uses monthly credits)'}
+                      </p>
+                    )}
+                    <div className={cn('flex items-center gap-2 px-2.5 py-2 rounded-lg', choice[speaker] === v.id ? 'bg-[var(--rose-soft)]' : 'hover:bg-[var(--rose-soft)]')}>
+                      <button onClick={() => pick(speaker, v.id)} className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
+                        <span className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0', choice[speaker] === v.id ? 'border-[var(--pink)]' : 'border-[var(--accent)]')}>
+                          {choice[speaker] === v.id && <span className="w-2 h-2 rounded-full bg-[var(--pink)]" />}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-[13px] font-medium">{v.name}</span>
+                          <span className="block text-[11.5px] text-[var(--text-secondary)] truncate">{v.description}</span>
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => preview(speaker, v.id)}
+                        className="w-8 h-8 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--pink)] flex items-center justify-center shrink-0"
+                        aria-label={`Preview ${v.name}`}
+                      >
+                        {previewing === v.id ? <CircleNotch size={14} className="animate-spin" /> : <Play size={13} weight="fill" />}
+                      </button>
+                    </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }

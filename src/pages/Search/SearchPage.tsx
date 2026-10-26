@@ -9,8 +9,10 @@ import type { Icon } from '@phosphor-icons/react'
 import PageHeader from '@/components/shared/PageHeader'
 import { toast } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
-import { useStudyBoxStore } from '@/stores/studyBoxStore'
+import { useStudyBoxStore, materialDisplayName, isReferenceArticle } from '@/stores/studyBoxStore'
 import { useViewerStore } from '@/stores/viewerStore'
+import { parseQuery, scoreFields, excerptAround } from '@/lib/smartSearch'
+import { cleanDeckTitle } from '@/lib/fileNames'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useNotesStore } from '@/stores/notesStore'
 import { useQuizStore } from '@/stores/quizStore'
@@ -43,14 +45,6 @@ function storeRecent(list: string[]) {
 type Hit = { id: string; title: string; snippet: string; meta: string; open?: () => void }
 
 // Short excerpt around the first match so results show why they matched
-function excerpt(text: string, q: string, length = 140) {
-  const clean = text.replace(/\s+/g, ' ').replace(/[#*_`>]/g, '').trim()
-  const at = clean.toLowerCase().indexOf(q.toLowerCase())
-  if (at < 0) return clean.slice(0, length)
-  const start = Math.max(0, at - 40)
-  return (start > 0 ? '…' : '') + clean.slice(start, start + length) + (start + length < clean.length ? '…' : '')
-}
-
 // One result group on the "All" tab; "See all" jumps to that group's tab
 function Section({ title, icon: SectionIcon, count, target, onSeeAll, children }: {
   title: string
@@ -124,43 +118,43 @@ export default function SearchPage() {
   }
 
   const term = q.trim().toLowerCase()
-  const matches = (...fields: (string | undefined | null)[]) => fields.some(f => f?.toLowerCase().includes(term))
   const topicName = (id: string | null) => topics.find(t => t.id === id)?.title
 
   const groups = useMemo(() => {
     if (!term) return null
-    const materials: Hit[] = items
-      .filter(i => matches(i.file_name, i.summary, i.extracted_text))
-      .map(i => ({
+    const query = parseQuery(term)
+    // Score every item, keep matches, best first
+    const ranked = <T,>(list: T[], score: (x: T) => { score: number; anchor: string | null }) =>
+      list.map(x => ({ x, ...score(x) })).filter(r => r.score > 0).sort((a, b) => b.score - a.score)
+
+    const materials: Hit[] = ranked(items, i => scoreFields(query, i.file_name, i.summary, i.extracted_text))
+      .map(({ x: i, anchor }) => ({
         id: i.id,
-        title: i.file_name.replace(/\.[^.]+$/, ''),
-        snippet: excerpt(i.summary || i.extracted_text || '', term),
-        meta: `${topicName(i.topic_id) || 'Study material'} · ${formatRelativeDate(i.created_at)}`,
+        title: materialDisplayName(i),
+        snippet: excerptAround(i.summary || i.extracted_text || '', anchor),
+        meta: `${isReferenceArticle(i) ? 'Saved reference' : topicName(i.topic_id) || 'Study material'} · ${formatRelativeDate(i.created_at)}`,
         open: () => openMaterial(i),
       }))
-    const reviewerHits: Hit[] = reviewers
-      .filter(r => matches(r.title, r.source_file, r.content?.summary, ...(r.content?.key_points || [])))
-      .map(r => ({
+    const reviewerHits: Hit[] = ranked(reviewers, r => scoreFields(query, r.title, r.source_file, r.content?.summary, (r.content?.key_points || []).join(' ')))
+      .map(({ x: r, anchor }) => ({
         id: r.id,
-        title: r.title,
-        snippet: excerpt(r.content?.summary || (r.content?.key_points || []).join(' ') || '', term),
+        title: cleanDeckTitle(r.title),
+        snippet: excerptAround(r.content?.summary || (r.content?.key_points || []).join(' ') || '', anchor),
         meta: `Reviewer · ${formatRelativeDate(r.created_at)}`,
         open: () => openReviewer(r),
       }))
-    const noteHits: Hit[] = notes
-      .filter(n => matches(n.title, n.kind === 'handwriting' ? '' : n.content))
-      .map(n => ({
+    const noteHits: Hit[] = ranked(notes, n => scoreFields(query, n.title, n.kind === 'handwriting' ? '' : n.content))
+      .map(({ x: n, anchor }) => ({
         id: n.id,
         title: n.title || 'Untitled note',
-        snippet: n.kind === 'handwriting' ? 'Handwritten note' : excerpt(n.content, term),
+        snippet: n.kind === 'handwriting' ? 'Handwritten note' : excerptAround(n.content, anchor),
         meta: `${topicName(n.topic_id) || 'Note'} · updated ${formatRelativeDate(n.updated_at).toLowerCase()}`,
         open: () => navigate('/notes', { state: { openNoteId: n.id } }),
       }))
-    const questionHits = quizzes.flatMap(quiz =>
-      (quiz.questions || [])
-        .filter(qq => qq.id !== 'error-q' && matches(qq.question, qq.rationale))
-        .map(qq => ({ quiz, question: qq }))
-    )
+    const questionHits = ranked(
+      quizzes.flatMap(quiz => (quiz.questions || []).filter(qq => qq.id !== 'error-q').map(qq => ({ quiz, question: qq }))),
+      ({ question }) => scoreFields(query, question.question, question.rationale),
+    ).map(({ x }) => x)
     return { materials, reviewers: reviewerHits, notes: noteHits, questions: questionHits }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [term, items, reviewers, notes, quizzes, topics])

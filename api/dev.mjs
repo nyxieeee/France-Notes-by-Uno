@@ -33,8 +33,32 @@ const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY
 const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY
 
 const ELEVENLABS_VOICES = {
-  DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'pNInz6obpgDQGcFmaJgB', // Adam
+  DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'iP95p4xoKVk53GtZA4qT', // Chris
   NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || 'EXAVITQu4vr4xnSDxMaL', // Sarah
+}
+
+const EDGE_VOICES = {
+  DOC_UNO: 'en-US-AndrewMultilingualNeural',
+  NURSE_FLORENCE: 'en-US-AvaMultilingualNeural',
+}
+
+async function edgeSpeech(text, voice) {
+  const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts')
+  const tts = new MsEdgeTTS({ connectionTimeoutMs: 10000 })
+  try {
+    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3)
+    const { audioStream } = tts.toStream(text)
+    const chunks = []
+    await new Promise((resolve, reject) => {
+      audioStream.on('data', d => chunks.push(d))
+      audioStream.on('close', resolve)
+      audioStream.on('error', reject)
+    })
+    if (!chunks.length) throw new Error('No audio returned')
+    return Buffer.concat(chunks)
+  } finally {
+    tts.close()
+  }
 }
 
 if (!MISTRAL_API_KEY && !GEMINI_API_KEY) {
@@ -101,10 +125,20 @@ async function handleRequest(req, res) {
       res.writeHead(apiRes.status, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(data))
 
+    } else if (path === '/api/tts') {
+      const { text, speaker, voice } = body
+      if (!text || !EDGE_VOICES[speaker]) throw new Error('Missing text or unknown speaker')
+      const voiceName = typeof voice === 'string' && /^[a-z]{2,3}-[A-Z]{2}-[A-Za-z]+Neural$/.test(voice) ? voice : EDGE_VOICES[speaker]
+      const input = String(text).slice(0, 5000)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+      const audio = await edgeSpeech(input, voiceName).catch(() => edgeSpeech(input, voiceName))
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+      res.end(JSON.stringify({ audio: audio.toString('base64'), contentType: 'audio/mpeg' }))
+
     } else if (path === '/api/elevenlabs') {
       if (!ELEVENLABS_API_KEY) throw new Error('VITE_ELEVENLABS_API_KEY not set')
-      const { text, speaker, stability = 0.5, similarity_boost = 0.75 } = body
-      const voiceId = ELEVENLABS_VOICES[speaker]
+      const { text, speaker, voice_id, previous_text, next_text } = body
+      const voiceId = typeof voice_id === 'string' && /^[A-Za-z0-9]{20}$/.test(voice_id) ? voice_id : ELEVENLABS_VOICES[speaker]
       if (!voiceId) throw new Error(`Unknown speaker: ${speaker}`)
       const apiRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: 'POST',
@@ -115,8 +149,11 @@ async function handleRequest(req, res) {
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_flash_v2_5',
-          voice_settings: { stability, similarity_boost, style: 0.0, use_speaker_boost: true },
+          // Turbo: natural, expressive delivery while still quick enough for conversation
+          model_id: 'eleven_turbo_v2_5',
+          previous_text: previous_text || undefined,
+          next_text: next_text || undefined,
+          voice_settings: { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
         }),
       })
       if (!apiRes.ok) {
@@ -144,6 +181,6 @@ async function handleRequest(req, res) {
 const PORT = 3001
 createServer(handleRequest).listen(PORT, () => {
   console.log(`✅ API dev server running on http://localhost:${PORT}`)
-  console.log(`   Routes: /api/mistral, /api/gemini, /api/elevenlabs`)
+  console.log(`   Routes: /api/mistral, /api/gemini, /api/tts, /api/elevenlabs`)
   console.log(`   Start Vite in another terminal: npm run dev`)
 })

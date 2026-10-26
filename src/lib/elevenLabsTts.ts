@@ -1,48 +1,51 @@
-// ─── ElevenLabs Text-to-Speech Client ───────────────────────────────────────
-// Routes through /api/elevenlabs Vercel proxy so the API key stays server-side.
+// ─── Text-to-Speech Client ──────────────────────────────────────────────────
+// Routes through the /api/tts (free voices) and /api/elevenlabs Vercel proxies so keys stay server-side.
 // Playback helpers below fall back to the Web Speech API if the proxy call fails.
+
+import { HOST_VOICES, findVoice, getVoiceChoice } from '@/lib/voices'
 
 export type ElevenLabsSpeaker = 'DOC_UNO' | 'NURSE_FLORENCE'
 
 export interface ElevenLabsSynthOptions {
   text: string
   speaker: ElevenLabsSpeaker
-  stability?: number
-  similarityBoost?: number
+  /** Override the host's chosen voice (used for previews) */
+  voiceId?: string
+  /** Surrounding sentences, so a reply spoken in pieces keeps a natural flow */
+  previousText?: string
+  nextText?: string
 }
 
-/**
- * Synthesizes speech via the /api/elevenlabs proxy (ElevenLabs Turbo v2.5).
- * Returns a blob object-URL (audio/mpeg) on success, or null on failure.
- */
-export async function synthesizeSpeechElevenLabs({
-  text,
-  speaker,
-  stability = 0.5,
-  similarityBoost = 0.75,
-}: ElevenLabsSynthOptions): Promise<string | null> {
+// Voices read "Doc" as "document" and can stumble on "Dr." and math symbols, so say them in words
+export function spokenText(text: string): string {
+  return text
+    .replace(/\bDoc\b/g, 'Doctor')
+    .replace(/\bDr\.\s*/g, 'Doctor ')
+    .replace(/\s*(<=|≤)\s*/g, ' less than or equal to ')
+    .replace(/\s*(>=|≥)\s*/g, ' greater than or equal to ')
+    .replace(/\s*<\s*(?=\d)/g, ' less than ')
+    .replace(/\s*>\s*(?=\d)/g, ' greater than ')
+    .replace(/(\w)\s*&\s*(\w)/g, '$1 and $2')
+}
+
+async function requestAudio(endpoint: string, body: Record<string, unknown>): Promise<string | null> {
   try {
-    const response = await fetch('/api/elevenlabs', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text,
-        speaker,
-        stability,
-        similarity_boost: similarityBoost,
-      }),
+      body: JSON.stringify(body),
     })
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({ error: response.statusText }))
-      console.error('[ElevenLabs TTS] Status:', response.status, '| ElevenLabs error:', errData.error)
+      console.error(`[TTS ${endpoint}] Status:`, response.status, '| error:', errData.error)
       return null
     }
 
-    // Proxy returns base64-encoded audio as JSON
+    // Proxies return base64-encoded audio as JSON
     const data = await response.json()
     if (!data.audio) {
-      console.warn('[ElevenLabs TTS] No audio in proxy response')
+      console.warn(`[TTS ${endpoint}] No audio in proxy response`)
       return null
     }
 
@@ -56,9 +59,36 @@ export async function synthesizeSpeechElevenLabs({
     return URL.createObjectURL(blob)
 
   } catch (error) {
-    console.error('[ElevenLabs TTS] Error:', error)
+    console.error(`[TTS ${endpoint}] Error:`, error)
     return null
   }
+}
+
+/**
+ * Synthesizes speech with the host's chosen voice: free Microsoft neural voices (/api/tts) or
+ * ElevenLabs (/api/elevenlabs, uses credits). If the chosen service fails, the other one is tried.
+ * Returns a blob object-URL (audio/mpeg) on success, or null on failure.
+ */
+export async function synthesizeSpeech({
+  text,
+  speaker,
+  voiceId,
+  previousText,
+  nextText,
+}: ElevenLabsSynthOptions): Promise<string | null> {
+  const chosen = findVoice(speaker, voiceId || getVoiceChoice(speaker)) ?? HOST_VOICES[speaker][0]
+  text = spokenText(text)
+  previousText = previousText && spokenText(previousText)
+  nextText = nextText && spokenText(nextText)
+  const viaFree = (voice?: string) => requestAudio('/api/tts', { text, speaker, voice })
+  const viaElevenLabs = (voice?: string) =>
+    requestAudio('/api/elevenlabs', { text, speaker, voice_id: voice, previous_text: previousText, next_text: nextText })
+
+  if (chosen.provider === 'free') {
+    // Retry once before switching to a different-sounding voice mid-episode
+    return (await viaFree(chosen.id)) ?? (await viaFree(chosen.id)) ?? (voiceId ? null : await viaElevenLabs())
+  }
+  return (await viaElevenLabs(chosen.id)) ?? (voiceId ? null : await viaFree())
 }
 
 // ─── Playback that survives iPad Safari's autoplay rules ────────────────────
@@ -143,7 +173,7 @@ export function speakWithBrowser(text: string, speaker: ElevenLabsSpeaker, rate 
       stopCurrent = null
       resolve(result)
     }
-    const utterance = new SpeechSynthesisUtterance(text)
+    const utterance = new SpeechSynthesisUtterance(spokenText(text))
     utterance.rate = rate
     const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'))
     // Rough voice split so the two hosts sound different
@@ -159,7 +189,7 @@ export function speakWithBrowser(text: string, speaker: ElevenLabsSpeaker, rate 
 
 /** Synthesize with ElevenLabs and play it, falling back to browser speech. */
 export async function speak(text: string, speaker: ElevenLabsSpeaker, rate = 1, stillWanted: () => boolean = () => true): Promise<PlaybackResult> {
-  const url = await synthesizeSpeechElevenLabs({ text, speaker })
+  const url = await synthesizeSpeech({ text, speaker })
   // Playback may have been stopped or skipped while the clip was being synthesized
   if (!stillWanted()) {
     if (url) URL.revokeObjectURL(url)
@@ -170,4 +200,46 @@ export async function speak(text: string, speaker: ElevenLabsSpeaker, rate = 1, 
     if (result !== 'error') return result
   }
   return speakWithBrowser(text, speaker, rate)
+}
+
+/** Split a reply into short spoken chunks (a sentence or two each) */
+function speechChunks(text: string, max = 220): string[] {
+  const plain = text.replace(/[#*_`>]/g, '').replace(/\s+/g, ' ').trim()
+  const sentences = plain.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g) || [plain]
+  const chunks: string[] = []
+  let current = ''
+  for (const s of sentences.map(x => x.trim()).filter(Boolean)) {
+    if (current && (current + ' ' + s).length > max) { chunks.push(current); current = s }
+    else current = current ? `${current} ${s}` : s
+  }
+  if (current) chunks.push(current)
+  return chunks
+}
+
+/**
+ * Speak a longer reply sentence by sentence: the first sentence starts playing as soon as it is
+ * ready while the next one is being voiced, instead of waiting for audio of the whole reply.
+ */
+export async function speakLong(text: string, speaker: ElevenLabsSpeaker, rate = 1, stillWanted: () => boolean = () => true): Promise<PlaybackResult> {
+  const chunks = speechChunks(text)
+  if (chunks.length <= 1) return speak(text, speaker, rate, stillWanted)
+  const clips = new Map<number, Promise<string | null>>()
+  const fetchClip = (i: number) => {
+    if (i < chunks.length && !clips.has(i)) {
+      clips.set(i, synthesizeSpeech({ text: chunks[i], speaker, previousText: chunks[i - 1], nextText: chunks[i + 1] }))
+    }
+  }
+  const release = () => clips.forEach(p => p.then(url => { if (url) URL.revokeObjectURL(url) }))
+  fetchClip(0)
+  fetchClip(1)
+  for (let i = 0; i < chunks.length; i++) {
+    const url = await clips.get(i)!
+    clips.delete(i)
+    if (!stillWanted()) { if (url) URL.revokeObjectURL(url); release(); return 'stopped' }
+    fetchClip(i + 2)
+    let result: PlaybackResult = url ? await playClip(url, rate) : 'error'
+    if (result === 'error') result = await speakWithBrowser(chunks[i], speaker, rate)
+    if (result !== 'ended') { release(); return result }
+  }
+  return 'ended'
 }

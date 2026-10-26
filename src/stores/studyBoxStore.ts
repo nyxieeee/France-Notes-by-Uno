@@ -6,6 +6,7 @@ import { getPersonalizationConfig } from '@/lib/personalization'
 import { useAuthStore } from './authStore'
 import { supabase } from '@/lib/supabase'
 import { readImageFile } from './profileMediaStore'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 interface StudyBoxState {
   items: StudyBoxItem[]
@@ -22,6 +23,10 @@ interface StudyBoxState {
 
   fetchItems: () => Promise<void>
   fetchSavedKnowledge: () => Promise<void>
+  /** Saved references whose study article is being written right now */
+  writingArticlesFor: string[]
+  failedArticlesFor: string[]
+  restoreReferenceArticles: () => Promise<void>
 
   addItem: (file: File, topicId?: string) => Promise<StudyBoxItem>
   removeItem: (id: string) => Promise<void>
@@ -107,11 +112,52 @@ export const isReferenceArticle = (item: StudyBoxItem) =>
 /** File name without the "[Reference] " prefix or extension, for showing in lists */
 export const materialDisplayName = (item: StudyBoxItem) => item.file_name.replace(/^\[Reference\]\s*/, '').replace(/\.[^.]+$/, '')
 
-// The Study Box article generated when a reference was saved to the Knowledge Garden
+const sourcedFileName = (result: { title: string; source: string }) => `[Reference] ${referenceTitle(result)} (${result.source}).txt`
+
+// The Study Box article generated when a reference was saved to the Knowledge Garden.
+// Two references can share a title (same topic, different sites), so the article's SOURCE line decides.
 export function findReferenceArticle(items: StudyBoxItem[], ref: { title: string; source: string }) {
-  const name = referenceFileName(ref)
-  return items.find(i => i.file_name === name && i.tags?.includes('knowledge-garden'))
+  const names = [referenceFileName(ref), sourcedFileName(ref)]
+  const candidates = items.filter(i => names.includes(i.file_name) && i.tags?.includes('knowledge-garden'))
+  return candidates.find(i => (i.extracted_text || '').startsWith(`SOURCE: ${ref.source}\n`))
+    ?? candidates.find(i => !(i.extracted_text || '').startsWith('SOURCE: '))
 }
+
+// A file name no other reference article is using yet
+const freeReferenceFileName = (items: StudyBoxItem[], ref: { title: string; source: string }) =>
+  items.some(i => i.file_name === referenceFileName(ref)) ? sourcedFileName(ref) : referenceFileName(ref)
+
+// Nurse Florence's full study article for a reference; null if the AI couldn't write it
+async function writeReferenceArticle(result: { title: string; description: string; source: string; url: string }): Promise<string | null> {
+  const prompt = `
+        You are a specialized clinical database librarian.
+        Generate an exhaustive, highly-detailed, authoritative Nursing Study Guide / Clinical Reference Article for the topic: "${result.title}".
+        Source reference context: "${result.description}" from ${result.source}.
+        
+        STRUCTURE:
+        Provide a complete and highly professional textbook-style clinical entry containing:
+        1. CLINICAL OVERVIEW & PATHOPHYSIOLOGY (Explain the mechanism, phases, and direct clinical significance)
+        2. KEY ETIOLOGIES & RISK FACTORS (Detailed list of exact causes)
+        3. KEY CLINICAL MANIFESTATIONS (Signs and symptoms categorised systematically)
+        4. DIAGNOSTIC PROCEDURES & LABS (Complete nursing assessments, diagnostic tests, lab findings, and rationales)
+        5. MEDICAL & PHARMACOLOGICAL TREATMENTS (Main therapies, fluids, medications, and surgical/interventional procedures)
+        6. ESSENTIAL NURSING DIAGNOSES & EVIDENCE-BASED INTERVENTIONS (At least 3 distinct care plan lines with clear rationales, including vital monitoring, positioning, comfort, and patient education)
+        
+        Style: Strictly formal, academic, clear, and highly detailed. Ensure all information is 100% evidence-based and clinical-grade. Keep it in high-yield medical English. Do NOT use any markdown formatting symbols anywhere (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings, simple line breaks, and standard bullet points (-) or numbered lists. Do not write a summary; write the full article. Aim for a comprehensive length of 600-800 words.
+      `
+  try {
+    const content = await generateCompletion(prompt, "You are a specialized clinical database librarian generating textbook-grade clinical references.", 'knowledge')
+    return content ? `SOURCE: ${result.source}\nURL: ${result.url}\n\n${content}` : null
+  } catch (error) {
+    console.error("Failed to generate full reference article:", error)
+    return null
+  }
+}
+
+// Both lists must be loaded before we can tell which references are missing their article
+let itemsLoaded = false
+let knowledgeLoaded = false
+let restoringArticles = false
 
 export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
   items: [],
@@ -123,6 +169,8 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
   selectedTopic: null,
   selectedItemIds: [],
   savedKnowledge: [],
+  writingArticlesFor: [],
+  failedArticlesFor: [],
   allTopics: BUILT_IN_TOPICS,
 
   fetchItems: async () => {
@@ -144,6 +192,8 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       const stray = items.filter(i => i.tags?.includes('knowledge-garden') && !i.topic_id)
       for (const i of stray) i.topic_id = REFERENCES_TOPIC_ID
       set({ items, isLoading: false })
+      itemsLoaded = true
+      void get().restoreReferenceArticles()
       if (stray.length > 0) {
         await supabase.from('study_materials').update({ topic_id: REFERENCES_TOPIC_ID }).in('id', stray.map(i => i.id))
       }
@@ -163,7 +213,48 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
       .order("date_saved", { ascending: false })
       
     if (!error && data) {
-      set({ savedKnowledge: data as KnowledgeSearchResult[] })
+      set({ savedKnowledge: (data as KnowledgeSearchResult[]).map(k => ({ ...k, title: deepStripMarkdown(k.title), description: deepStripMarkdown(k.description) })) })
+      knowledgeLoaded = true
+      void get().restoreReferenceArticles()
+    }
+  },
+
+  // References saved before articles were written (or whose article was deleted) get one now, one at a time
+  restoreReferenceArticles: async () => {
+    if (!itemsLoaded || !knowledgeLoaded || restoringArticles) return
+    restoringArticles = true
+    try {
+      for (;;) {
+        const { writingArticlesFor, failedArticlesFor } = get()
+        const ref = get().savedKnowledge.find(k => !findReferenceArticle(get().items, k) && !writingArticlesFor.includes(k.id) && !failedArticlesFor.includes(k.id))
+        if (!ref) break
+        set(state => ({ writingArticlesFor: [...state.writingArticlesFor, ref.id] }))
+        const text = await writeReferenceArticle(ref)
+        const { data: { session } } = await supabase.auth.getSession()
+        // Still saved, written, and signed in: store it in the References folder
+        if (text && session?.user && get().savedKnowledge.some(k => k.id === ref.id) && !findReferenceArticle(get().items, ref)) {
+          const { data } = await supabase.from('study_materials').insert([{
+            file_name: freeReferenceFileName(get().items, ref),
+            file_type: 'txt',
+            file_size: 0,
+            extracted_text: text,
+            preview_image: null,
+            topic_id: REFERENCES_TOPIC_ID,
+            is_favorite: true,
+            tags: ['knowledge-garden', ref.category],
+            user_id: session.user.id,
+          }]).select().single()
+          if (data) set(state => ({ items: [data as StudyBoxItem, ...state.items.filter(i => i.id !== (data as StudyBoxItem).id)] }))
+        }
+        // A failed one isn't retried until the app is next opened, so a bad connection can't loop
+        set(state => ({
+          writingArticlesFor: state.writingArticlesFor.filter(id => id !== ref.id),
+          failedArticlesFor: text ? state.failedArticlesFor : [...state.failedArticlesFor, ref.id],
+        }))
+        if (!text) break
+      }
+    } finally {
+      restoringArticles = false
     }
   },
 
@@ -223,40 +314,14 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
     const isAlreadySaved = get().savedKnowledge.some((k) => k.id === result.id || (!!result.url && k.url === result.url))
     if (isAlreadySaved) return
 
-    let fullArticleText = `SOURCE: ${result.source}\nURL: ${result.url}\n\n`
-    try {
-      const prompt = `
-        You are a specialized clinical database librarian.
-        Generate an exhaustive, highly-detailed, authoritative Nursing Study Guide / Clinical Reference Article for the topic: "${result.title}".
-        Source reference context: "${result.description}" from ${result.source}.
-        
-        STRUCTURE:
-        Provide a complete and highly professional textbook-style clinical entry containing:
-        1. CLINICAL OVERVIEW & PATHOPHYSIOLOGY (Explain the mechanism, phases, and direct clinical significance)
-        2. KEY ETIOLOGIES & RISK FACTORS (Detailed list of exact causes)
-        3. KEY CLINICAL MANIFESTATIONS (Signs and symptoms categorised systematically)
-        4. DIAGNOSTIC PROCEDURES & LABS (Complete nursing assessments, diagnostic tests, lab findings, and rationales)
-        5. MEDICAL & PHARMACOLOGICAL TREATMENTS (Main therapies, fluids, medications, and surgical/interventional procedures)
-        6. ESSENTIAL NURSING DIAGNOSES & EVIDENCE-BASED INTERVENTIONS (At least 3 distinct care plan lines with clear rationales, including vital monitoring, positioning, comfort, and patient education)
-        
-        Style: Strictly formal, academic, clear, and highly detailed. Ensure all information is 100% evidence-based and clinical-grade. Keep it in high-yield medical English. Do NOT use any markdown formatting symbols anywhere (such as "**" for bold, "#" for headings, or backticks). Use plain text capitalization for headings, simple line breaks, and standard bullet points (-) or numbered lists. Do not write a summary; write the full article. Aim for a comprehensive length of 600-800 words.
-      `
-      const articleContent = await generateCompletion(prompt, "You are a specialized clinical database librarian generating textbook-grade clinical references.", 'knowledge')
-      if (articleContent) {
-        fullArticleText += articleContent
-      } else {
-        fullArticleText += `SUMMARY:\n${result.description}`
-      }
-    } catch (error) {
-      console.error("Failed to generate full reference article:", error)
-      fullArticleText += `SUMMARY:\n${result.description}`
-    }
+    const fullArticleText = await writeReferenceArticle(result)
+      ?? `SOURCE: ${result.source}\nURL: ${result.url}\n\nSUMMARY:\n${result.description}`
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) throw new Error("No active session found")
 
     const newItem = {
-      file_name: referenceFileName(result),
+      file_name: freeReferenceFileName(get().items, result),
       file_type: 'txt',
       file_size: 0,
       extracted_text: fullArticleText,

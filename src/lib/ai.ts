@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/stores/authStore'
 import { getPersonalizationConfig, type PersonalizationConfig } from '@/lib/personalization'
+import { deepStripMarkdown } from '@/lib/markdown'
 
 export type { PersonalizationConfig }
 
@@ -419,8 +420,10 @@ export async function callGeminiGroundedSearch(
 
 // ─── Core Router ──────────────────────────────────────────────────────────────
 
-// Features that stick to their primary provider and never fall back
-const SINGLE_PROVIDER_FEATURES: AIFeature[] = ['quiz']
+// Features that stick to their primary provider and never fall back.
+// (Quizzes used to, back when one request wrote the whole quiz; they now go 5 questions at a time,
+// which Gemini handles fine, so a Mistral outage or rate limit no longer stops her quiz.)
+const SINGLE_PROVIDER_FEATURES: AIFeature[] = []
 
 async function routedCall(
   feature: AIFeature,
@@ -510,7 +513,8 @@ export async function generateJSON(
 
   try {
     const cleaned = stripThinkBlocks(raw).replace(/```json|```/g, '').trim()
-    return JSON.parse(cleaned)
+    // Structured results are shown as plain text, so no markdown symbols may survive
+    return deepStripMarkdown(JSON.parse(cleaned))
   } catch {
     console.error(`[AI Router] Failed to parse JSON for ${feature}. Response length: ${raw.length} chars. First 500 chars:`, raw.substring(0, 500))
     console.error(`[AI Router] Last 200 chars:`, raw.substring(raw.length - 200))
@@ -543,7 +547,7 @@ export async function generateJSON(
 
       const parsed = JSON.parse(repaired)
       console.warn(`[AI Router] Repaired truncated JSON for ${feature} — recovered ${parsed.questions?.length ?? 0} questions.`)
-      return parsed
+      return deepStripMarkdown(parsed)
     } catch (repairError) {
       console.error(`[AI Router] JSON repair also failed for ${feature}:`, repairError)
     }

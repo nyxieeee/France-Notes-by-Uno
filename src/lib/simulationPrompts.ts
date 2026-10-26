@@ -182,3 +182,9 @@ export const getRetDemPrompt = (procedure: string, difficulty: DifficultyMode, s
     ${difficultyRules}
   `
 }
+
+/** Source text for a follow-up oral exam that only covers what she missed last time */
+export function weakPointsBrief(topic: string, feedback: { missed: string[]; safetyViolations: string[] }) {
+  const lines = [...feedback.safetyViolations.map(v => `- (safety) ${v}`), ...feedback.missed.map(m => `- ${m}`)]
+  return `This is a focused review of "${topic}". In the student's last session they struggled with the points below. Ask about these points only, one at a time, and make sure they can explain each one correctly before moving on:\n${lines.join('\n')}`
+}
