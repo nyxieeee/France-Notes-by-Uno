@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n api,vite -k -c blue,green \"node api/dev.mjs\" \"vite\"",
+    "dev:vite": "vite",
     "dev:api": "node api/dev.mjs",
     "dev:all": "concurrently -n api,vite -c blue,green \"node api/dev.mjs\" \"vite\"",
     "build": "tsc -b && vite build",
@@ -22,7 +23,7 @@
     "jimp": "^1.6.1",
     "jspdf": "^4.2.1",
     "mammoth": "^1.12.0",
-    "msedge-tts": "^2.1.0",
+    "msedge-tts": "^2.1.1",
     "pdfjs-dist": "^5.7.284",
     "perfect-freehand": "^1.2.2",
     "pptxgenjs": "^4.0.1",
