@@ -9,23 +9,12 @@ import { startBackgroundMusic, stopBackgroundMusic, getMusicPreference, setMusic
 import { synthesizeSpeech, playClip, speakWithBrowser, stopPlayback, unlockAudio } from '@/lib/elevenLabsTts'
 import { toast, confirmDialog } from '@/stores/feedbackStore'
 import { usePersonalization } from '@/hooks/usePersonalization'
+import { usePodcastStore, type DialogueLine, type PodcastEpisode } from '@/stores/podcastStore'
 import { useStudyBoxStore, isReferenceArticle, findReferenceArticle } from '@/stores/studyBoxStore'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
 
-interface DialogueLine {
-  speaker: 'DOC_UNO' | 'NURSE_FLORENCE'
-  text: string
-}
-
-export interface PodcastEpisode {
-  id: string
-  title: string
-  topic: string
-  script: DialogueLine[]
-  created_at: string
-  source_type: string
-}
+// DialogueLine and PodcastEpisode imported from @/stores/podcastStore
 
 const HOSTS = {
   DOC_UNO: { name: 'Doc Uno', avatar: '/doc-uno-avatar.jpg' },
@@ -179,12 +168,44 @@ function cleanLine(text: string): string {
     .trim()
 }
 
+function extractEpisodeTitle(raw: string): string | null {
+  const cleanRaw = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+  const match = cleanRaw.match(/^\s*(?:\*\*|\*|#)*\s*\[?\s*EPISODE\s*TITLE\s*\]?\s*:?\s*(?:\*\*|\*)*\s*([^\r\n]+)/im)
+    || cleanRaw.match(/^\s*(?:\*\*|\*|#)*\s*TITLE\s*:\s*(?:\*\*|\*)*\s*([^\r\n]+)/im)
+  if (match) {
+    const title = match[1]
+      .replace(/^["'`*#]+|["'`*#]+$/g, '')
+      .replace(/\*\*/g, '')
+      .trim()
+    if (title && title.length >= 4 && !/^part\s*\d/i.test(title)) {
+      return title
+    }
+  }
+  return null
+}
+
+function formatPodcastTitleFallback(rawTopic: string): string {
+  const clean = rawTopic
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[_-]+/g, ' ')
+    .trim()
+
+  if (!clean) return 'Clinical Deep Dive: Essential Nursing Priorities'
+  const capitalized = clean
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ')
+
+  return `The Bedside Brief: ${capitalized} & Nursing Priorities`
+}
+
 function parseScript(raw: string): DialogueLine[] {
   const lines: DialogueLine[] = []
 
   const cleanRaw = raw
     .replace(/<think>[\s\S]*?<\/think>/gi, '')
     .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*(?:\*\*|\*|#)*\s*\[?\s*EPISODE\s*TITLE\s*\]?\s*:?.*$/gim, '')
     .trim()
 
   const lineRegex = /^\s*(?:\*\*|\*|#)*\s*\[?\s*(DOC[_ ]?UNO|NURSE[_ ]?FLORENCE|UNO|FLORENCE)\s*\]?\s*(?:\*\*|\*|#)*\s*:?\s*(.*)/i
@@ -314,6 +335,35 @@ export default function PodcastReviewPage() {
   const { topics, items, savedKnowledge, fetchItems, fetchSavedKnowledge } = useStudyBoxStore()
   const user = useAuthStore(s => s.user)
 
+  // Global Podcast Store (audio keeps playing across page navigation)
+  const {
+    script,
+    episodeTitle,
+    activeEpisodeId,
+    isWritingMore,
+    isPlaying,
+    currentLine,
+    speed,
+    musicOn,
+    progress,
+    setScript,
+    setEpisodeTitle,
+    setEpisodeTopic,
+    setActiveEpisodeId,
+    setIsWritingMore,
+    setSpeed,
+    toggleMusic,
+    startFrom,
+    togglePlay: handlePlay,
+    stopAll: stopAllPlayback,
+    goToLine,
+    handlePrevious,
+    handleNext,
+    loadEpisode: loadSavedEpisode,
+    prefetchLine: prefetch,
+    resetPlayback,
+  } = usePodcastStore()
+
   // Source selection state
   const [inputMode, setInputMode] = useState<SourceMode>('type')
   const [freeText, setFreeText] = useState('')
@@ -322,46 +372,10 @@ export default function PodcastReviewPage() {
   const [selectedItemId, setSelectedItemId] = useState(myFiles[0]?.id || '')
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState(savedKnowledge[0]?.id || '')
 
-  // Episode state
+  // Generation state
   const [isGenerating, setIsGenerating] = useState(false)
-  const [script, setScript] = useState<DialogueLine[]>([])
-  const [episodeTitle, setEpisodeTitle] = useState('')
-  const [activeEpisodeId, setActiveEpisodeId] = useState<string | null>(null)
-  // The episode is written in two parts; this is true while the second part is still being written
-  const [isWritingMore, setIsWritingMore] = useState(false)
-  const scriptRef = useRef<DialogueLine[]>([])
-  const writingMoreRef = useRef(false)
-  useEffect(() => { scriptRef.current = script }, [script])
-  useEffect(() => { writingMoreRef.current = isWritingMore }, [isWritingMore])
-
-  // Saved episodes / History
-  const [savedEpisodes, setSavedEpisodes] = useState<PodcastEpisode[]>([])
   const [genError, setGenError] = useState<string | null>(null)
-
-  // Playback state
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentLine, setCurrentLine] = useState(-1)
-  const [speed, setSpeed] = useState(1)
-  const [musicOn, setMusicOn] = useState(getMusicPreference)
-  const [progress, setProgress] = useState(0)
-
-  const playRunRef = useRef(0)
-  const speedRef = useRef(speed)
-  useEffect(() => { speedRef.current = speed }, [speed])
-  const currentLineRef = useRef(-1)
-  const isPlayingRef = useRef(false)
-
-  // Voice clips fetched ahead of time (current line + the next two) so hosts speak without gaps
-  const clipCache = useRef(new Map<number, Promise<string | null>>())
-  const resetClips = () => {
-    clipCache.current.forEach(p => p.then(url => { if (url) URL.revokeObjectURL(url) }))
-    clipCache.current = new Map()
-  }
-  const prefetch = (index: number) => {
-    const line = scriptRef.current[index]
-    if (!line || clipCache.current.has(index)) return
-    clipCache.current.set(index, synthesizeSpeech({ text: line.text, speaker: line.speaker }))
-  }
+  const [savedEpisodes, setSavedEpisodes] = useState<PodcastEpisode[]>([])
 
   useEffect(() => {
     fetchItems()
@@ -392,13 +406,7 @@ export default function PodcastReviewPage() {
     fetchEpisodes()
   }, [user?.id])
 
-  const stopAllPlayback = () => {
-    // Bumping the run id makes any line still being synthesized drop itself instead of playing
-    playRunRef.current++
-    isPlayingRef.current = false
-    stopPlayback()
-    stopBackgroundMusic()
-  }
+
 
   const saveEpisodeToHistory = async (newEpisode: PodcastEpisode) => {
     const storageKey = `france_notes_podcast_episodes_${user?.id || 'guest'}`
@@ -437,14 +445,7 @@ export default function PodcastReviewPage() {
 
     // If it's the episode in the player, stop it and clear the player right away
     if (activeEpisodeId === ep.id) {
-      stopAllPlayback()
-      resetClips()
-      setIsPlaying(false)
-      setCurrentLine(-1)
-      setProgress(0)
-      setScript([])
-      setEpisodeTitle('')
-      setActiveEpisodeId(null)
+      resetPlayback()
     }
 
     if (user?.id) {
@@ -493,11 +494,7 @@ export default function PodcastReviewPage() {
     setIsGenerating(true)
     setGenError(null)
     stopAllPlayback()
-    setIsPlaying(false)
-    setCurrentLine(-1)
-    setProgress(0)
     setScript([])
-    resetClips()
     setIsWritingMore(false)
 
     let systemPrompt = `You are an elite medical and nursing podcast showrunner producing "Nursepod" — a premier, highly engaging clinical education podcast.
@@ -538,14 +535,24 @@ CRITICAL REQUIREMENTS:
     const brief = `Ensure Doc Uno and Nurse Florence engage in a deep, natural, highly educational professional discussion covering pathophysiology, clinical assessments, pharmacology, priority nursing interventions, and a step-by-step board scenario breakdown.`
     // Part one is short so the hosts can start talking quickly; part two is written while she listens
     const partOnePrompt = `Write PART ONE of a nursing podcast episode about: "${sourceDetails.title}".
+
+CRITICAL EPISODE TITLE REQUIREMENT:
+On the VERY FIRST LINE of your response, write a creative, catchy, and professional podcast episode title (like real medical/nursing podcasts: e.g., "Under Pressure: Decoding Hypertension & Bedside Priorities", "The Silent Squeeze: Managing High Blood Pressure", "Fluid Overload: Diuretics, Daily Weights, and Heart Failure", "When the Rhythm Breaks: Bedside Dysrhythmias & Emergency Action").
+Format it strictly as:
+[EPISODE TITLE]: <Catchy Hook: Engaging Clinical Subtitle>
+
+Immediately following the episode title, start the spoken dialogue between Doc Uno and Nurse Florence.
 Cover only section 1 (EPISODE INTRO) and section 2 (PATHOPHYSIOLOGY & ETIOLOGY), in about 14 to 18 dialogue exchanges. End at a natural hand-off into clinical presentation. Do not write the outro.
 ${brief}`
 
     const episodeId = `ep-${crypto.randomUUID()}`
     let partOne: DialogueLine[]
+    let generatedTitle = ''
     try {
-      partOne = parseScript(await generateCompletion(partOnePrompt, systemPrompt, 'reviewer'))
+      const partOneRaw = await generateCompletion(partOnePrompt, systemPrompt, 'reviewer')
+      partOne = parseScript(partOneRaw)
       if (partOne.length === 0) throw new Error('Empty script')
+      generatedTitle = extractEpisodeTitle(partOneRaw) || formatPodcastTitleFallback(sourceDetails.title)
     } catch (err) {
       console.error('[Podcast] Generation failed:', err)
       setGenError('The episode could not be written. Check your connection and try again.')
@@ -554,7 +561,8 @@ ${brief}`
     }
 
     setScript(partOne)
-    setEpisodeTitle(sourceDetails.title)
+    setEpisodeTitle(generatedTitle)
+    setEpisodeTopic(sourceDetails.title)
     setActiveEpisodeId(episodeId)
     setIsGenerating(false)
     setIsWritingMore(true)
@@ -563,7 +571,7 @@ ${brief}`
     let fullScript = partOne
     try {
       const transcript = partOne.map(l => `[${l.speaker === 'DOC_UNO' ? 'DOC UNO' : 'NURSE FLORENCE'}]: ${l.text}`).join('\n')
-      const partTwoPrompt = `Here is PART ONE of the episode about "${sourceDetails.title}" that has already aired:
+      const partTwoPrompt = `Here is PART ONE of the episode "${generatedTitle}" (Topic: "${sourceDetails.title}") that has already aired:
 """
 ${transcript}
 """
@@ -586,7 +594,7 @@ ${brief}`
     try {
       const newEp: PodcastEpisode = {
         id: episodeId,
-        title: sourceDetails.title,
+        title: generatedTitle,
         topic: sourceDetails.title,
         script: fullScript,
         created_at: new Date().toISOString(),
@@ -599,128 +607,7 @@ ${brief}`
     }
   }
 
-  const loadSavedEpisode = (ep: PodcastEpisode) => {
-    stopAllPlayback()
-    resetClips()
-    setIsWritingMore(false)
-    setIsPlaying(false)
-    setCurrentLine(-1)
-    setProgress(0)
-    setScript(ep.script)
-    scriptRef.current = ep.script
-    setEpisodeTitle(ep.title)
-    setActiveEpisodeId(ep.id)
-    prefetch(0)
-  }
-
-  // ─── Playback Engine (ElevenLabs, falling back to the browser's own voices) ──
-  const speakLine = useCallback(async (startIndex: number, run: number) => {
-    for (let lineIndex = startIndex; ; lineIndex++) {
-      if (playRunRef.current !== run) return
-      // Reached the end of what's written so far: wait for part two if it's still being written
-      while (lineIndex >= scriptRef.current.length && writingMoreRef.current) {
-        await new Promise(r => setTimeout(r, 400))
-        if (playRunRef.current !== run) return
-      }
-      if (lineIndex >= scriptRef.current.length) break
-
-      const line = scriptRef.current[lineIndex]
-      currentLineRef.current = lineIndex
-      setCurrentLine(lineIndex)
-      setProgress(lineIndex / scriptRef.current.length)
-
-      prefetch(lineIndex)
-      prefetch(lineIndex + 1)
-      prefetch(lineIndex + 2)
-      const url = await clipCache.current.get(lineIndex)
-      clipCache.current.delete(lineIndex)
-      if (playRunRef.current !== run) {
-        if (url) URL.revokeObjectURL(url)
-        return
-      }
-
-      let result = url ? await playClip(url, speedRef.current) : 'error'
-      if (result === 'error') result = await speakWithBrowser(line.text, line.speaker, speedRef.current)
-      if (playRunRef.current !== run) return
-
-      if (result === 'blocked') {
-        // iOS refused to start audio; pause on this line so one more tap on Play resumes it
-        isPlayingRef.current = false
-        setIsPlaying(false)
-        stopBackgroundMusic()
-        toast('Tap play again to start the audio.', 'info')
-        return
-      }
-      if (result === 'error') {
-        // No voice available at all: stop instead of racing silently through the episode
-        isPlayingRef.current = false
-        setIsPlaying(false)
-        stopBackgroundMusic()
-        toast('Audio isn\'t available right now. You can still read the transcript.', 'error')
-        return
-      }
-    }
-    setIsPlaying(false)
-    setCurrentLine(-1)
-    setProgress(1)
-    isPlayingRef.current = false
-    stopBackgroundMusic()
-  }, [])
-
-  const startFrom = (lineIndex: number) => {
-    // Must run inside the tap so iPad Safari allows audio for the whole episode
-    unlockAudio()
-    stopAllPlayback()
-    const run = playRunRef.current
-    isPlayingRef.current = true
-    setIsPlaying(true)
-    if (musicOn) startBackgroundMusic()
-    speakLine(lineIndex, run)
-  }
-
-  const toggleMusic = () => {
-    const next = !musicOn
-    setMusicOn(next)
-    setMusicPreference(next)
-    if (!isPlayingRef.current) return
-    if (next) startBackgroundMusic()
-    else stopBackgroundMusic()
-  }
-
-  const handlePlay = () => {
-    if (script.length === 0) return
-    if (isPlaying) {
-      stopAllPlayback()
-      setIsPlaying(false)
-    } else {
-      startFrom(currentLine < 0 || currentLine >= script.length ? 0 : currentLine)
-    }
-  }
-
-  const goToLine = (lineIndex: number) => {
-    const index = Math.min(Math.max(0, lineIndex), script.length - 1)
-    if (index < 0) return
-    if (isPlayingRef.current) {
-      startFrom(index)
-    } else {
-      setCurrentLine(index)
-      setProgress(index / script.length)
-      prefetch(index)
-    }
-  }
-
-  // Like Spotify: back goes to the start of the current line first, then to the line before
-  const lineStartedAt = useRef(0)
-  useEffect(() => { lineStartedAt.current = Date.now() }, [currentLine])
-  const handlePrevious = () => {
-    if (currentLine < 0) return goToLine(script.length - 1)
-    const restartCurrent = isPlayingRef.current && Date.now() - lineStartedAt.current > 3000
-    goToLine(restartCurrent ? currentLine : currentLine - 1)
-  }
-  const handleNext = () => {
-    if (currentLine < 0 || currentLine >= script.length - 1) return
-    goToLine(currentLine + 1)
-  }
+// Playback engine managed globally by usePodcastStore
 
   const hasScript = script.length > 0
   const estimatedDuration = hasScript ? Math.max(1, Math.round(script.reduce((acc, l) => acc + l.text.split(' ').length, 0) / 130)) : 0
@@ -939,7 +826,7 @@ ${brief}`
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-medium truncate">{ep.title}</p>
                     <p className="text-[11.5px] text-[var(--text-secondary)] truncate">
-                      {ep.source_type || 'Episode'} · {new Date(ep.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {ep.topic && ep.topic !== ep.title ? `${ep.topic} · ` : ''}{ep.source_type || 'Episode'} · {new Date(ep.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </p>
                   </div>
                   <button

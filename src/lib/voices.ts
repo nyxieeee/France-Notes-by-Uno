@@ -1,44 +1,29 @@
-// Voices she can pick for each host. Free voices (Microsoft neural, no quota) come first and
-// are the defaults; ElevenLabs premade voices use the account's monthly credits.
+// Voices she can pick for each host. Free neural voices (Microsoft Edge Neural, no quota)
+// provide natural, conversational speech with zero API keys or monthly costs.
+// Choices sync seamlessly across her iPad, laptop, and phone.
+
+import { supabase } from '@/lib/supabase'
 
 export type HostSpeaker = 'DOC_UNO' | 'NURSE_FLORENCE'
 
-export type VoiceProvider = 'free' | 'elevenlabs'
+export interface VoiceOption { id: string; name: string; description: string }
 
-export interface VoiceOption { id: string; name: string; description: string; provider: VoiceProvider }
-
-const free = (id: string, name: string, description: string): VoiceOption => ({ id, name, description, provider: 'free' })
-const eleven = (id: string, name: string, description: string): VoiceOption => ({ id, name, description, provider: 'elevenlabs' })
+const voice = (id: string, name: string, description: string): VoiceOption => ({ id, name, description })
 
 export const HOST_VOICES: Record<HostSpeaker, VoiceOption[]> = {
   DOC_UNO: [
-    free('en-US-AndrewMultilingualNeural', 'Andrew', 'Warm and conversational'),
-    free('en-US-BrianMultilingualNeural', 'Brian', 'Casual and easygoing'),
-    free('en-PH-JamesNeural', 'James', 'Filipino English accent'),
-    free('en-US-ChristopherNeural', 'Christopher', 'Calm and steady'),
-    free('en-GB-RyanNeural', 'Ryan', 'Friendly British accent'),
-    eleven('iP95p4xoKVk53GtZA4qT', 'Chris', 'Natural and down-to-earth, like a real conversation'),
-    eleven('cjVigY5qzO86Huf0OWal', 'Eric', 'Smooth and friendly'),
-    eleven('nPczCjzI2devNBz1zQrb', 'Brian', 'Deep, calm and reassuring'),
-    eleven('TX3LPaxmHKxFdv7VOQHJ', 'Liam', 'Young, warm and clear'),
-    eleven('bIHbv24MWmeRgasZH58o', 'Will', 'Relaxed and chill'),
-    eleven('IKne3meq5aSn9XLyUdCD', 'Charlie', 'Easygoing, Australian accent'),
-    eleven('JBFqnCBsd6RMkjVDRZzb', 'George', 'Warm British storyteller'),
-    eleven('pNInz6obpgDQGcFmaJgB', 'Adam', 'The original voice'),
+    voice('en-US-AndrewMultilingualNeural', 'Andrew', 'Warm and conversational'),
+    voice('en-US-BrianMultilingualNeural', 'Brian', 'Casual and easygoing'),
+    voice('en-PH-JamesNeural', 'James', 'Filipino English accent'),
+    voice('en-US-ChristopherNeural', 'Christopher', 'Calm and steady'),
+    voice('en-GB-RyanNeural', 'Ryan', 'Friendly British accent'),
   ],
   NURSE_FLORENCE: [
-    free('en-US-AvaMultilingualNeural', 'Ava', 'Warm and caring'),
-    free('en-US-EmmaMultilingualNeural', 'Emma', 'Bright and cheerful'),
-    free('en-PH-RosaNeural', 'Rosa', 'Filipino English accent'),
-    free('en-US-JennyNeural', 'Jenny', 'Soft and friendly'),
-    free('en-GB-SoniaNeural', 'Sonia', 'Gentle British accent'),
-    eleven('EXAVITQu4vr4xnSDxMaL', 'Sarah', 'Soft and reassuring (the original voice)'),
-    eleven('XrExE9yKIg1WjnnlVkGX', 'Matilda', 'Warm and friendly'),
-    eleven('cgSgspJ2msm6clMCkdW9', 'Jessica', 'Bright, playful and warm'),
-    eleven('FGY2WhTYpPnrIDTdsKH5', 'Laura', 'Upbeat and lively'),
-    eleven('9BWtsMINqrJLrRacOk9x', 'Aria', 'Expressive and natural'),
-    eleven('pFZP5JQG7iQjIQuC4Bku', 'Lily', 'Gentle British accent'),
-    eleven('Xb7hH8MSUJpSbSDYk0k2', 'Alice', 'Clear and confident, British'),
+    voice('en-US-AvaMultilingualNeural', 'Ava', 'Warm and caring'),
+    voice('en-US-EmmaMultilingualNeural', 'Emma', 'Bright and cheerful'),
+    voice('en-PH-RosaNeural', 'Rosa', 'Filipino English accent'),
+    voice('en-US-JennyNeural', 'Jenny', 'Soft and friendly'),
+    voice('en-GB-SoniaNeural', 'Sonia', 'Gentle British accent'),
   ],
 }
 
@@ -57,6 +42,49 @@ export function findVoice(speaker: HostSpeaker, id: string): VoiceOption | undef
   return HOST_VOICES[speaker].find(v => v.id === id)
 }
 
+/** Apply a voice choice coming from cloud sync or another device */
+export function applyRemoteVoiceChoice(speaker: HostSpeaker, id: string) {
+  if (!HOST_VOICES[speaker].some(v => v.id === id)) return
+  try {
+    localStorage.setItem(storageKey(speaker), id)
+  } catch { /* storage unavailable */ }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('fn-voice-change', { detail: { speaker, id } }))
+  }
+}
+
+/** Set voice locally and sync across all her devices */
 export function setVoiceChoice(speaker: HostSpeaker, id: string) {
   try { localStorage.setItem(storageKey(speaker), id) } catch { /* storage unavailable */ }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('fn-voice-change', { detail: { speaker, id } }))
+  }
+  syncVoiceToCloud(speaker, id)
+}
+
+async function syncVoiceToCloud(speaker: HostSpeaker, id: string) {
+  try {
+    const metaKey = speaker === 'DOC_UNO' ? 'voice_doc_uno' : 'voice_nurse_florence'
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // 1. Save to Supabase user metadata so it persists in cloud
+    await supabase.auth.updateUser({
+      data: { [metaKey]: id }
+    })
+
+    // 2. Broadcast via Supabase Realtime so all open devices update immediately
+    const channel = supabase.channel(`settings-sync-${user.id}`)
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'voice_change',
+          payload: { speaker, id },
+        })
+      }
+    })
+  } catch (err) {
+    console.warn('[Voices] Cloud sync failed:', err)
+  }
 }

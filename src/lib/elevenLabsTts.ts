@@ -1,6 +1,6 @@
 // ─── Text-to-Speech Client ──────────────────────────────────────────────────
-// Routes through the /api/tts (free voices) and /api/elevenlabs Vercel proxies so keys stay server-side.
-// Playback helpers below fall back to the Web Speech API if the proxy call fails.
+// Routes through the /api/tts (free Microsoft neural voices) proxy.
+// Playback helpers below fall back to the Web Speech API only if network connectivity is lost.
 
 import { HOST_VOICES, findVoice, getVoiceChoice } from '@/lib/voices'
 
@@ -11,7 +11,6 @@ export interface ElevenLabsSynthOptions {
   speaker: ElevenLabsSpeaker
   /** Override the host's chosen voice (used for previews) */
   voiceId?: string
-  /** Surrounding sentences, so a reply spoken in pieces keeps a natural flow */
   previousText?: string
   nextText?: string
 }
@@ -65,30 +64,20 @@ async function requestAudio(endpoint: string, body: Record<string, unknown>): Pr
 }
 
 /**
- * Synthesizes speech with the host's chosen voice: free Microsoft neural voices (/api/tts) or
- * ElevenLabs (/api/elevenlabs, uses credits). If the chosen service fails, the other one is tried.
+ * Synthesizes speech with the host's chosen free Microsoft neural voice (/api/tts).
  * Returns a blob object-URL (audio/mpeg) on success, or null on failure.
  */
 export async function synthesizeSpeech({
   text,
   speaker,
   voiceId,
-  previousText,
-  nextText,
 }: ElevenLabsSynthOptions): Promise<string | null> {
   const chosen = findVoice(speaker, voiceId || getVoiceChoice(speaker)) ?? HOST_VOICES[speaker][0]
-  text = spokenText(text)
-  previousText = previousText && spokenText(previousText)
-  nextText = nextText && spokenText(nextText)
-  const viaFree = (voice?: string) => requestAudio('/api/tts', { text, speaker, voice })
-  const viaElevenLabs = (voice?: string) =>
-    requestAudio('/api/elevenlabs', { text, speaker, voice_id: voice, previous_text: previousText, next_text: nextText })
-
-  if (chosen.provider === 'free') {
-    // Retry once before switching to a different-sounding voice mid-episode
-    return (await viaFree(chosen.id)) ?? (await viaFree(chosen.id)) ?? (voiceId ? null : await viaElevenLabs())
-  }
-  return (await viaElevenLabs(chosen.id)) ?? (voiceId ? null : await viaFree())
+  const formatted = spokenText(text)
+  const audio = await requestAudio('/api/tts', { text: formatted, speaker, voice: chosen.id })
+  if (audio) return audio
+  // Quick retry for any intermittent dropped connection
+  return requestAudio('/api/tts', { text: formatted, speaker, voice: chosen.id })
 }
 
 // ─── Playback that survives iPad Safari's autoplay rules ────────────────────
@@ -161,7 +150,7 @@ export function playClip(url: string, rate = 1): Promise<PlaybackResult> {
   })
 }
 
-/** Browser text-to-speech fallback for when ElevenLabs is unavailable. */
+/** Browser text-to-speech fallback for when network speech is unavailable. */
 export function speakWithBrowser(text: string, speaker: ElevenLabsSpeaker, rate = 1): Promise<PlaybackResult> {
   if (!('speechSynthesis' in window)) return Promise.resolve('error')
   stopPlayback()
@@ -187,7 +176,7 @@ export function speakWithBrowser(text: string, speaker: ElevenLabsSpeaker, rate 
   })
 }
 
-/** Synthesize with ElevenLabs and play it, falling back to browser speech. */
+/** Synthesize with neural voice and play it, falling back to browser speech if offline. */
 export async function speak(text: string, speaker: ElevenLabsSpeaker, rate = 1, stillWanted: () => boolean = () => true): Promise<PlaybackResult> {
   const url = await synthesizeSpeech({ text, speaker })
   // Playback may have been stopped or skipped while the clip was being synthesized

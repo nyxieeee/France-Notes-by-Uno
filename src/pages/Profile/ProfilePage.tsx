@@ -435,6 +435,17 @@ function VoicePicker({ isFrance }: { isFrance: boolean }) {
   const [previewing, setPreviewing] = useState<string | null>(null)
   const [open, setOpen] = useState<HostSpeaker | null>(null)
 
+  useEffect(() => {
+    const onVoiceChange = () => {
+      setChoice({
+        DOC_UNO: getVoiceChoice('DOC_UNO'),
+        NURSE_FLORENCE: getVoiceChoice('NURSE_FLORENCE'),
+      })
+    }
+    window.addEventListener('fn-voice-change', onVoiceChange)
+    return () => window.removeEventListener('fn-voice-change', onVoiceChange)
+  }, [])
+
   const SAMPLE: Record<HostSpeaker, string> = {
     DOC_UNO: isFrance
       ? "Hey France, ready for a quick review? Let's talk about why potassium matters so much for the heart."
@@ -481,13 +492,9 @@ function VoicePicker({ isFrance }: { isFrance: boolean }) {
               </button>
               {open === speaker && (
                 <div className="border-t border-[var(--border)] p-1.5 space-y-0.5">
-                  {HOST_VOICES[speaker].map((v, i, all) => (
+                  {HOST_VOICES[speaker].map(v => (
                     <div key={v.id}>
-                    {all[i - 1]?.provider !== v.provider && (
-                      <p className="px-2.5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-                        {v.provider === 'free' ? 'Free voices' : 'ElevenLabs (uses monthly credits)'}
-                      </p>
-                    )}
+                    
                     <div className={cn('flex items-center gap-2 px-2.5 py-2 rounded-lg', choice[speaker] === v.id ? 'bg-[var(--rose-soft)]' : 'hover:bg-[var(--rose-soft)]')}>
                       <button onClick={() => pick(speaker, v.id)} className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
                         <span className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0', choice[speaker] === v.id ? 'border-[var(--pink)]' : 'border-[var(--accent)]')}>

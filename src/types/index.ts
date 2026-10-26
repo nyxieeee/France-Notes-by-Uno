@@ -7,6 +7,8 @@ export type UserProfile = {
   year_level: string
   school: string
   created_at: string
+  voice_doc_uno?: string
+  voice_nurse_florence?: string
 }
 
 export type StudyBoxItem = {

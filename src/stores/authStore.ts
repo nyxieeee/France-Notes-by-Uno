@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
+import { applyRemoteVoiceChoice } from '@/lib/voices'
 import type { UserProfile } from '@/types'
 
 interface AuthState {
@@ -15,6 +16,27 @@ interface AuthState {
   initAuth: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   updatePassword: (password: string) => Promise<void>
+}
+
+function mapUserProfile(u: any): UserProfile {
+  if (u.user_metadata?.voice_doc_uno) {
+    applyRemoteVoiceChoice('DOC_UNO', u.user_metadata.voice_doc_uno)
+  }
+  if (u.user_metadata?.voice_nurse_florence) {
+    applyRemoteVoiceChoice('NURSE_FLORENCE', u.user_metadata.voice_nurse_florence)
+  }
+  return {
+    id: u.id,
+    full_name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Nurse',
+    email: u.email || '',
+    avatar_url: u.user_metadata?.avatar_url || null,
+    theme_preference: 'light',
+    year_level: u.user_metadata?.year_level || '',
+    school: u.user_metadata?.school || '',
+    created_at: u.created_at,
+    voice_doc_uno: u.user_metadata?.voice_doc_uno || undefined,
+    voice_nurse_florence: u.user_metadata?.voice_nurse_florence || undefined,
+  }
 }
 
 export const useAuthStore = create<AuthState>()((set, get) => ({

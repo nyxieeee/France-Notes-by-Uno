@@ -5,6 +5,7 @@ import MobileNav from './MobileNav'
 import TopBar from './TopBar'
 import XboxAchievementNotifier from './XboxAchievementNotifier'
 import GlobalViewer from '@/components/shared/GlobalViewer'
+import FloatingPodcastPlayer from '@/components/podcast/FloatingPodcastPlayer'
 
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
@@ -52,6 +53,9 @@ export default function AppShell() {
         <main className="flex-1 relative flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
           <Outlet />
         </main>
+
+        {/* Floating Picture-in-Picture Podcast Mini Player */}
+        <FloatingPodcastPlayer />
 
         {/* Materials and reviewers opened from anywhere */}
         <GlobalViewer />

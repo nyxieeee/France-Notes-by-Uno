@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { applyRemoteVoiceChoice } from '@/lib/voices'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
 import { useRetDemStore } from '@/stores/retDemStore'
@@ -20,8 +21,8 @@ const REFRESH: Record<string, () => unknown> = {
 }
 
 /**
- * Keeps her devices in step: a change made on the iPad shows up on the phone within a moment.
- * Supabase only sends events for rows Row Level Security lets this user read.
+ * Keeps her devices in step: a change made on the iPad shows up on the phone and laptop within a moment.
+ * Syncs database collections and user voice/settings across all her active devices.
  */
 export function useRealtimeSync(userId: string | undefined) {
   useEffect(() => {
@@ -33,6 +34,7 @@ export function useRealtimeSync(userId: string | undefined) {
       timers.set(table, setTimeout(() => { REFRESH[table]?.() }, 700))
     }
 
+    // 1. Database table sync
     let channel = supabase.channel(`sync-${userId}`)
     for (const table of Object.keys(REFRESH)) {
       channel = channel.on(
@@ -43,9 +45,36 @@ export function useRealtimeSync(userId: string | undefined) {
     }
     channel.subscribe()
 
-    // Catch up on anything missed while the tab was in the background
+    // 2. Settings & Voice Broadcast sync across devices
+    const settingsChannel = supabase.channel(`settings-sync-${userId}`)
+    settingsChannel
+      .on('broadcast', { event: 'voice_change' }, ({ payload }) => {
+        if (payload?.speaker && payload?.id) {
+          applyRemoteVoiceChoice(payload.speaker, payload.id)
+        }
+      })
+      .subscribe()
+
+    // 3. Catch up on any settings / data changes when device wakes up or tab becomes visible
+    const syncCloudSettings = () => {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user?.user_metadata) return
+        if (user.user_metadata.voice_doc_uno) {
+          applyRemoteVoiceChoice('DOC_UNO', user.user_metadata.voice_doc_uno)
+        }
+        if (user.user_metadata.voice_nurse_florence) {
+          applyRemoteVoiceChoice('NURSE_FLORENCE', user.user_metadata.voice_nurse_florence)
+        }
+      }).catch(() => {})
+    }
+
+    syncCloudSettings()
+
     const onVisible = () => {
-      if (document.visibilityState === 'visible') Object.keys(REFRESH).forEach(schedule)
+      if (document.visibilityState === 'visible') {
+        Object.keys(REFRESH).forEach(schedule)
+        syncCloudSettings()
+      }
     }
     document.addEventListener('visibilitychange', onVisible)
 
@@ -53,6 +82,7 @@ export function useRealtimeSync(userId: string | undefined) {
       document.removeEventListener('visibilitychange', onVisible)
       timers.forEach(clearTimeout)
       supabase.removeChannel(channel)
+      supabase.removeChannel(settingsChannel)
     }
   }, [userId])
 }

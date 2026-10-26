@@ -30,12 +30,6 @@ if (existsSync(envPath)) {
 
 const MISTRAL_API_KEY = process.env.VITE_MISTRAL_API_KEY
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY
-const ELEVENLABS_API_KEY = process.env.VITE_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY
-
-const ELEVENLABS_VOICES = {
-  DOC_UNO:        process.env.VITE_ELEVENLABS_VOICE_DOC_UNO        || 'iP95p4xoKVk53GtZA4qT', // Chris
-  NURSE_FLORENCE: process.env.VITE_ELEVENLABS_VOICE_NURSE_FLORENCE || 'EXAVITQu4vr4xnSDxMaL', // Sarah
-}
 
 const EDGE_VOICES = {
   DOC_UNO: 'en-US-AndrewMultilingualNeural',
@@ -135,38 +129,6 @@ async function handleRequest(req, res) {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
       res.end(JSON.stringify({ audio: audio.toString('base64'), contentType: 'audio/mpeg' }))
 
-    } else if (path === '/api/elevenlabs') {
-      if (!ELEVENLABS_API_KEY) throw new Error('VITE_ELEVENLABS_API_KEY not set')
-      const { text, speaker, voice_id, previous_text, next_text } = body
-      const voiceId = typeof voice_id === 'string' && /^[A-Za-z0-9]{20}$/.test(voice_id) ? voice_id : ELEVENLABS_VOICES[speaker]
-      if (!voiceId) throw new Error(`Unknown speaker: ${speaker}`)
-      const apiRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: 'POST',
-        headers: {
-          'xi-api-key': ELEVENLABS_API_KEY,
-          'Content-Type': 'application/json',
-          'Accept': 'audio/mpeg',
-        },
-        body: JSON.stringify({
-          text,
-          // Turbo: natural, expressive delivery while still quick enough for conversation
-          model_id: 'eleven_turbo_v2_5',
-          previous_text: previous_text || undefined,
-          next_text: next_text || undefined,
-          voice_settings: { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
-        }),
-      })
-      if (!apiRes.ok) {
-        const errText = await apiRes.text().catch(() => apiRes.statusText)
-        res.writeHead(apiRes.status, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: errText }))
-        return
-      }
-      const audioBuffer = await apiRes.arrayBuffer()
-      const base64Audio = Buffer.from(audioBuffer).toString('base64')
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
-      res.end(JSON.stringify({ audio: base64Audio, contentType: 'audio/mpeg' }))
-
     } else {
       res.writeHead(404, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'Not found' }))
@@ -181,6 +143,6 @@ async function handleRequest(req, res) {
 const PORT = 3001
 createServer(handleRequest).listen(PORT, () => {
   console.log(`✅ API dev server running on http://localhost:${PORT}`)
-  console.log(`   Routes: /api/mistral, /api/gemini, /api/tts, /api/elevenlabs`)
+  console.log(`   Routes: /api/mistral, /api/gemini, /api/tts`)
   console.log(`   Start Vite in another terminal: npm run dev`)
 })
