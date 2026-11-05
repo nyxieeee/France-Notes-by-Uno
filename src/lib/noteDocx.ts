@@ -7,6 +7,8 @@ import type { Note } from '@/types'
 import { noteContentHTML, NOTE_CONTENT_CSS } from '@/lib/noteContent'
 import { PAGE_RATIO, drawPaper, drawStroke, strokeBounds } from '@/lib/handwriting'
 import { downloadName } from '@/lib/fileNames'
+import { prepareFileDownload } from '@/lib/fileDownload'
+import type { FileDownload } from '@/lib/fileDownload'
 
 type ExportNote = Pick<Note, 'title' | 'content' | 'kind' | 'drawing'>
 
@@ -132,14 +134,9 @@ export async function createNoteDOCX(note: ExportNote): Promise<Blob> {
   }))
 }
 
-export async function exportNoteToDOCX(note: ExportNote) {
-  const blob = await createNoteDOCX(note)
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = downloadName(note.title || 'Untitled note', null, 'docx')
-  document.body.append(link)
-  link.click()
-  link.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+export async function exportNoteToDOCX(note: ExportNote, download: FileDownload = prepareFileDownload()) {
+  try {
+    const blob = await createNoteDOCX(note)
+    await download.save(blob, downloadName(note.title || 'Untitled note', null, 'docx'))
+  } catch (error) { download.cancel(); throw error }
 }
