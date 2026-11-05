@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
-  NotePencil, Plus, MagnifyingGlass, PushPin, Trash, ArrowLeft, CheckCircle, CircleNotch, Folder, Scribble, DownloadSimple,
+  NotePencil, Plus, MagnifyingGlass, PushPin, Trash, ArrowLeft, CheckCircle, CircleNotch, Folder, Scribble, DownloadSimple, FileDoc,
 } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 import HandwritingCanvas from '@/components/notes/HandwritingCanvas'
@@ -267,7 +267,8 @@ function EditorBar({ note, topics, saveState, onBack, onSave, onDelete, children
   )
 }
 
-function NotePDFButton({ getNote }: {
+function NoteExportButton({ getNote, format = 'pdf' }: {
+  format?: 'pdf' | 'docx'
   getNote: () => Pick<Note, 'title' | 'content' | 'kind' | 'drawing'>
 }) {
   const [exporting, setExporting] = useState(false)
@@ -276,15 +277,18 @@ function NotePDFButton({ getNote }: {
       if (exporting) return
       setExporting(true)
       const snapshot = getNote()
-      try { await exportNoteToPDF(snapshot) }
-      catch (error) { console.error('Note PDF export failed:', error); toast("Couldn't create the PDF. Please try again.", 'error') }
+      try {
+        if (format === 'pdf') await exportNoteToPDF(snapshot)
+        else await (await import('@/lib/noteDocx')).exportNoteToDOCX(snapshot)
+      }
+      catch (error) { console.error('Note export failed:', error); toast("Couldn't create the file. Please try again.", 'error') }
       finally { setExporting(false) }
     }}
     disabled={exporting}
     className="btn-icon disabled:opacity-50 shrink-0"
-    aria-label={exporting ? 'Creating PDF' : 'Download note as PDF'}
-    title={exporting ? 'Creating PDF...' : 'Download PDF'}
-  >{exporting ? <CircleNotch size={18} className="animate-spin" /> : <DownloadSimple size={18} />}</button>
+    aria-label={exporting ? 'Creating file' : format === 'pdf' ? 'Download note as PDF' : 'Download note as Word document'}
+    title={exporting ? 'Creating file...' : format === 'pdf' ? 'Download PDF' : 'Download Word (.docx)'}
+  >{exporting ? <CircleNotch size={18} className="animate-spin" /> : format === 'pdf' ? <DownloadSimple size={18} /> : <FileDoc size={18} />}</button>
 }
 
 function HandwritingEditor({ note, topics, onBack, onSave, onDelete }: EditorProps) {
@@ -296,7 +300,8 @@ function HandwritingEditor({ note, topics, onBack, onSave, onDelete }: EditorPro
   return (
     <section className="fn-card flex flex-col min-h-[60vh] overflow-hidden">
       <EditorBar note={note} topics={topics} saveState={saveState} onBack={() => { flush(); onBack() }} onSave={onSave} onDelete={onDelete}>
-        <NotePDFButton getNote={() => ({ ...note, title, drawing: latestDrawing.current })} />
+        <NoteExportButton getNote={() => ({ ...note, title, drawing: latestDrawing.current })} />
+        <NoteExportButton format="docx" getNote={() => ({ ...note, title, drawing: latestDrawing.current })} />
       </EditorBar>
       <div className="p-4 sm:p-6 bg-th-bg/60 flex-1">
         <input
@@ -319,7 +324,8 @@ function NoteEditor({ note, topics, onBack, onSave, onDelete }: EditorProps) {
   return (
     <section className="fn-card flex flex-col min-h-[60vh] overflow-hidden">
       <EditorBar note={note} topics={topics} saveState={saveState} onBack={() => { flush(); onBack() }} onSave={onSave} onDelete={onDelete}>
-        <NotePDFButton getNote={() => ({ ...note, title, content })} />
+        <NoteExportButton getNote={() => ({ ...note, title, content })} />
+        <NoteExportButton format="docx" getNote={() => ({ ...note, title, content })} />
       </EditorBar>
 
       <div className="flex-1 flex flex-col p-5 sm:p-7">

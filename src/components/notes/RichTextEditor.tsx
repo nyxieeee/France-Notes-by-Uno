@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { ArrowCounterClockwise, ArrowClockwise, ListBullets, ListNumbers, TextAlignLeft, TextAlignCenter, TextAlignRight } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { encodeNoteHTML, noteContentHTML, NOTE_CONTENT_CSS, sanitizeNoteHTML } from '@/lib/noteContent'
 
 const COMMANDS = [
   ['bold', 'Bold (Ctrl+B)', 'B'], ['italic', 'Italic (Ctrl+I)', 'I'],
   ['underline', 'Underline (Ctrl+U)', 'U'], ['strikeThrough', 'Strikethrough', 'S'],
-  ['insertUnorderedList', 'Bullet list', '? List'], ['insertOrderedList', 'Numbered list', '1. List'],
+  ['insertUnorderedList', 'Bullet list', 'List'], ['insertOrderedList', 'Numbered list', '1. List'],
   ['justifyLeft', 'Align left', 'Left'], ['justifyCenter', 'Align center', 'Center'], ['justifyRight', 'Align right', 'Right'],
-  ['undo', 'Undo', '?'], ['redo', 'Redo', '?'], ['removeFormat', 'Clear formatting', 'Clear'],
+  ['undo', 'Undo', 'Undo'], ['redo', 'Redo', 'Redo'], ['removeFormat', 'Clear formatting', 'Clear'],
 ] as const
 
 export default function RichTextEditor({ initialContent, onChange }: { initialContent: string; onChange: (content: string) => void }) {
@@ -47,7 +48,14 @@ export default function RichTextEditor({ initialContent, onChange }: { initialCo
         <option value="2">Small</option><option value="3">Normal</option><option value="4">Large</option><option value="5">Extra large</option>
       </select>
       {COMMANDS.map(([name, label, text]) => <button key={name} type="button" title={label} aria-label={label} aria-pressed={active.includes(name)} onMouseDown={event => event.preventDefault()} onClick={() => command(name)} className={cn('rounded-lg px-2.5 py-1.5 text-xs hover:bg-[var(--rose-soft)]', active.includes(name) && 'bg-[var(--secondary-bg)] text-[var(--pink)]')}>
-        <span style={{ fontWeight: name === 'bold' ? 700 : undefined, fontStyle: name === 'italic' ? 'italic' : undefined, textDecoration: name === 'underline' ? 'underline' : name === 'strikeThrough' ? 'line-through' : undefined }}>{text}</span>
+        {name === 'undo' ? <ArrowCounterClockwise size={16} aria-hidden="true" />
+          : name === 'redo' ? <ArrowClockwise size={16} aria-hidden="true" />
+          : name === 'insertUnorderedList' ? <ListBullets size={16} aria-hidden="true" />
+          : name === 'insertOrderedList' ? <ListNumbers size={16} aria-hidden="true" />
+          : name === 'justifyLeft' ? <TextAlignLeft size={16} aria-hidden="true" />
+          : name === 'justifyCenter' ? <TextAlignCenter size={16} aria-hidden="true" />
+          : name === 'justifyRight' ? <TextAlignRight size={16} aria-hidden="true" />
+          : <span style={{ fontWeight: name === 'bold' ? 700 : undefined, fontStyle: name === 'italic' ? 'italic' : undefined, textDecoration: name === 'underline' ? 'underline' : name === 'strikeThrough' ? 'line-through' : undefined }}>{text}</span>}
       </button>)}
       <label className="text-xs flex items-center gap-1 px-2" title="Text color">Text<input type="color" aria-label="Text color" defaultValue="#4a3237" onChange={event => command('foreColor', event.target.value)} className="w-6 h-6 bg-transparent cursor-pointer" /></label>
       <label className="text-xs flex items-center gap-1 px-2" title="Highlight color">Highlight<input type="color" aria-label="Highlight color" defaultValue="#ffe066" onChange={event => command('hiliteColor', event.target.value)} className="w-6 h-6 bg-transparent cursor-pointer" /></label>

@@ -1,9 +1,17 @@
 const RICH_PREFIX = 'france-notes:richtext:v1:'
-const TAGS = new Set(['P', 'DIV', 'BR', 'SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'SUB', 'SUP', 'H1', 'H2', 'H3', 'BLOCKQUOTE', 'UL', 'OL', 'LI'])
+const TAGS = new Set(['P', 'DIV', 'BR', 'SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'SUB', 'SUP', 'H1', 'H2', 'H3', 'BLOCKQUOTE', 'UL', 'OL', 'LI'])
 const STYLES = ['font-weight', 'font-style', 'text-decoration', 'text-decoration-line', 'text-align', 'font-size', 'color', 'background-color']
 
 export function sanitizeNoteHTML(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html')
+  // Browsers display <del> as struck text but their formatting command cannot
+  // toggle it off. Normalize pasted deletion markup to editable strikethrough.
+  doc.querySelectorAll('del').forEach(node => {
+    const strike = doc.createElement('s')
+    strike.setAttribute('style', node.getAttribute('style') ?? '')
+    strike.append(...Array.from(node.childNodes))
+    node.replaceWith(strike)
+  })
   const clean = (parent: Element) => {
     for (const node of Array.from(parent.children)) {
       if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'SVG', 'MATH'].includes(node.tagName)) { node.remove(); continue }
@@ -50,6 +58,6 @@ export const NOTE_CONTENT_CSS = `
 .note-rich-content b, .note-rich-content strong { font-weight:700; }
 .note-rich-content i, .note-rich-content em { font-style:italic; }
 .note-rich-content u { text-decoration:underline; }
-.note-rich-content s, .note-rich-content strike { text-decoration:line-through; }
+.note-rich-content s, .note-rich-content strike, .note-rich-content del { text-decoration:line-through; }
 .note-rich-content blockquote { border-left:3px solid #be5b6c; padding-left:1em; margin:0.5em 0; }
 `
