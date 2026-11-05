@@ -3,6 +3,8 @@ export type FileDownload = {
   cancel: () => void
 }
 
+export class FileDownloadError extends Error {}
+
 function dataURL(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -21,22 +23,48 @@ export function prepareFileDownload(): FileDownload {
     cancel: () => { cancelled = true },
     save: async (blob, filename) => {
       if (cancelled) return
-      // Safari gets embedded file bytes to avoid WebKitBlobResource errors.
-      // The download attribute requests a file download in the browser's
-      // configured folder; no target or window.open means no preview tab.
-      const href = webkit ? await dataURL(blob) : URL.createObjectURL(blob)
-      if (cancelled) { if (!webkit) URL.revokeObjectURL(href); return }
+      if (webkit) {
+        // An HTTP attachment works through Safari's download manager without
+        // relying on an async synthetic click on a blob/data URL.
+        const response = await fetch('/api/download', { cache: 'no-store' }).catch(() => null)
+        const config = await response?.json().catch(() => null)
+        if (!response?.ok || config?.ready !== true || typeof config.maxBytes !== 'number') {
+          throw new FileDownloadError('The download service is unavailable. Refresh the app and try again.')
+        }
+        if (blob.size > config.maxBytes) {
+          throw new FileDownloadError('This export is too large for the iPad download service (2.8 MB). Split the note into smaller notes and try again.')
+        }
+        const encoded = await dataURL(blob)
+        if (cancelled) return
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = '/api/download'
+        form.target = '_self'
+        form.hidden = true
+        for (const [name, value] of Object.entries({ filename, data: encoded.slice(encoded.indexOf(',') + 1) })) {
+          const input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = name
+          input.value = value
+          form.append(input)
+        }
+        document.body.append(form)
+        // The attachment response leaves the current app page in place.
+        try { form.submit() } finally { setTimeout(() => form.remove(), 60_000) }
+        return
+      }
+      const href = URL.createObjectURL(blob)
+      if (cancelled) { URL.revokeObjectURL(href); return }
       const link = document.createElement('a')
       link.href = href
       link.download = filename
       link.hidden = true
       document.body.append(link)
       try { link.click() } finally {
-        // Retain the resource while the browser reads it. Safari's data URL
-        // has no dependency on a blob URL or on URL.revokeObjectURL.
+        // Retain the resource while the browser reads it.
         setTimeout(() => {
           link.remove()
-          if (!webkit) URL.revokeObjectURL(href)
+          URL.revokeObjectURL(href)
         }, 5 * 60_000)
       }
     },

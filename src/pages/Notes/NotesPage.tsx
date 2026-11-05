@@ -14,7 +14,7 @@ import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import type { Note, HandwritingDrawing } from '@/types'
 import { exportNoteToPDF } from '@/lib/notePdf'
-import { prepareFileDownload } from '@/lib/fileDownload'
+import { FileDownloadError, prepareFileDownload } from '@/lib/fileDownload'
 import { confirmDialog, toast } from '@/stores/feedbackStore'
 
 const SAVE_DELAY_MS = 600
@@ -283,7 +283,7 @@ function NoteExportButton({ getNote, format = 'pdf' }: {
         if (format === 'pdf') await exportNoteToPDF(snapshot, download)
         else await (await import('@/lib/noteDocx')).exportNoteToDOCX(snapshot, download)
       }
-      catch (error) { download.cancel(); console.error('Note export failed:', error); toast("Couldn't create the file. Please try again.", 'error') }
+      catch (error) { download.cancel(); console.error('Note export failed:', error); toast(error instanceof FileDownloadError ? error.message : "Couldn't create the file. Please try again.", 'error') }
       finally { setExporting(false) }
     }}
     disabled={exporting}
