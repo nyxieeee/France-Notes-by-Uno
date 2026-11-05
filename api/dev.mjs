@@ -63,10 +63,6 @@ async function handleRequest(req, res) {
   const url = new URL(req.url, 'http://localhost:3001')
   const path = url.pathname
 
-  if (path === '/api/download') {
-    const { handleDownloadRequest } = await import('../server/download.mjs')
-    return handleDownloadRequest(req, res)
-  }
 
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')

@@ -1,3 +1,4 @@
+import { downloadFile } from '@/lib/fileDownload'
 import { useState, useRef, useEffect } from 'react'
 import { useQuizStore } from '@/stores/quizStore'
 import { useStudyBoxStore, isReferenceArticle, materialDisplayName } from '@/stores/studyBoxStore'
@@ -147,7 +148,7 @@ export default function QuizPage() {
         </div>
       `)
 
-      pdf.save(downloadName(quiz.title, 'Quiz Results', 'pdf'))
+      downloadFile(pdf.output('blob'), downloadName(quiz.title, 'Quiz Results', 'pdf'))
     } catch (err) {
       console.error('PDF Export error:', err)
     }
@@ -253,7 +254,7 @@ export default function QuizPage() {
         </div>
       `)
 
-      pdf.save(downloadName(`Quiz History ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`, null, 'pdf'))
+      downloadFile(pdf.output('blob'), downloadName(`Quiz History ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`, null, 'pdf'))
     } catch (err) {
       console.error('PDF Export error:', err)
     }

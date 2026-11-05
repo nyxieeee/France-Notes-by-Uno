@@ -10,6 +10,7 @@ import type { Icon } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatTime } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
+import { chatReplyToNote, chatSessionToNote } from '@/lib/chatNotes'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { toast, confirmDialog } from '@/stores/feedbackStore'
 
@@ -43,13 +44,14 @@ export default function AIPage() {
     sessions, activeSessionId, isSidebarOpen, isTyping,
     fetchSessions, setActiveSession, createNewSession, deleteSession, setSidebarOpen, sendMessage, clearHistory,
   } = useChatStore()
-  const { createNote, updateNote } = useNotesStore()
+  const { createNote } = useNotesStore()
   const { isFrance, aiAssistantName, greetingName } = usePersonalization()
   const avatar = isFrance ? '/doc-uno-avatar.jpg' : '/nurse-florence-avatar.jpg'
 
   const [input, setInput] = useState('')
   const [chatSearch, setChatSearch] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [savingNotes, setSavingNotes] = useState<string[]>([])
   const [openedAt] = useState(() => Date.now())
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -114,15 +116,18 @@ export default function AIPage() {
     }
   }
 
-  const saveToNotes = async (content: string) => {
-    const note = await createNote('text')
-    if (!note) {
+  const saveToNotes = async (key: string, buildNote: () => { title: string; content: string }) => {
+    if (savingNotes.includes(key)) return
+    setSavingNotes(current => [...current, key])
+    try {
+      const note = await createNote('text', null, buildNote())
+      if (!note) throw new Error('Note was not saved')
+      toast('Saved to Notes', 'success')
+    } catch {
       toast("Couldn't save to Notes. Check your connection and try again.", 'error')
-      return
+    } finally {
+      setSavingNotes(current => current.filter(saving => saving !== key))
     }
-    const firstLine = content.replace(/[#*_`>]/g, '').split('\n').find(l => l.trim())?.trim() || 'From chat'
-    await updateNote(note.id, { title: `${aiAssistantName}: ${firstLine.slice(0, 60)}`, content })
-    toast('Saved to Notes', 'success')
   }
 
   // Conversation list, filtered and grouped by day
@@ -177,6 +182,13 @@ export default function AIPage() {
                 >
                   <MessageSquare size={15} weight={active ? 'fill' : 'regular'} className="shrink-0" />
                   <span className="truncate flex-1">{s.title}</span>
+                  {s.messages.length > 0 && <button
+                    onClick={e => { e.stopPropagation(); saveToNotes(`session:${s.id}`, () => chatSessionToNote(s, aiAssistantName)) }}
+                    disabled={savingNotes.includes(`session:${s.id}`)}
+                    className="p-1 rounded-md hover:bg-[var(--card)] hover:text-[var(--pink)] disabled:opacity-40 shrink-0"
+                    aria-label={`Save ${s.title} to Notes`}
+                    title="Save entire chat to Notes"
+                  ><NotePencil size={15} /></button>}
                   <button
                     onClick={e => { e.stopPropagation(); handleDelete(s) }}
                     className="p-1 rounded-md hover:bg-[var(--card)] hover:text-[var(--error)] lg:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
@@ -236,6 +248,13 @@ export default function AIPage() {
               {isTyping ? `${aiAssistantName} is typing…` : activeSession && messages.length > 0 ? `with ${aiAssistantName}` : isFrance ? 'Always here for you, babe' : 'Your clinical study mentor'}
             </p>
           </div>
+          {activeSession && messages.length > 0 && <button
+            onClick={() => saveToNotes(`session:${activeSession.id}`, () => chatSessionToNote(activeSession, aiAssistantName))}
+            disabled={savingNotes.includes(`session:${activeSession.id}`)}
+            className="btn-icon p-2 disabled:opacity-40"
+            aria-label="Save entire chat to Notes"
+            title="Save entire chat to Notes"
+          ><NotePencil size={18} /></button>}
           <button onClick={handleNewChat} className="lg:hidden btn-icon p-2" aria-label="New chat"><Plus size={18} /></button>
         </header>
 
@@ -293,12 +312,12 @@ export default function AIPage() {
                           <div className="px-4 py-3 rounded-2xl rounded-tl-md bg-[var(--bg)] border border-[var(--border)] text-[14.5px] leading-relaxed">
                             <MarkdownText content={msg.content} className="text-[var(--text)]" />
                           </div>
-                          <div className={cn('flex items-center gap-1 mt-1.5 transition-opacity', msg.id === lastAssistantId ? 'opacity-100' : 'sm:opacity-0 group-hover:opacity-100')}>
+                          <div className="flex flex-wrap items-center gap-1 mt-1.5">
                             <button onClick={() => copyMessage(msg.id, msg.content)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[12px] text-[var(--text-secondary)] hover:bg-[var(--rose-soft)] hover:text-[var(--text)]">
                               {copiedId === msg.id ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
                             </button>
-                            <button onClick={() => saveToNotes(msg.content)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[12px] text-[var(--text-secondary)] hover:bg-[var(--rose-soft)] hover:text-[var(--text)]">
-                              <NotePencil size={13} /> Save to Notes
+                            <button onClick={() => saveToNotes(`message:${msg.id}`, () => chatReplyToNote(msg.content, aiAssistantName))} disabled={savingNotes.includes(`message:${msg.id}`)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[12px] text-[var(--text-secondary)] hover:bg-[var(--rose-soft)] hover:text-[var(--text)] disabled:opacity-40">
+                              <NotePencil size={13} /> {savingNotes.includes(`message:${msg.id}`) ? 'Saving...' : 'Save to Notes'}
                             </button>
                           </div>
                         </div>

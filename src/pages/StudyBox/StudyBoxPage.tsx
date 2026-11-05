@@ -1,3 +1,4 @@
+import { downloadFile } from '@/lib/fileDownload'
 import { useState, useRef, useEffect } from 'react'
 import { useStudyBoxStore, REFERENCES_TOPIC_ID, UNSORTED_TOPIC_ID, isCustomFolder } from '@/stores/studyBoxStore'
 import { useReviewerStore } from '@/stores/reviewerStore'
@@ -873,7 +874,8 @@ export function StudyBoxDetailModal({ item, onClose, topics, removeItem, navigat
     }
     
     const runGeneration = () => {
-      (window as any).html2pdf().from(element).set(opt).save().then(() => {
+      (window as any).html2pdf().from(element).set(opt).outputPdf('blob').then((blob: Blob) => {
+        downloadFile(blob, opt.filename)
         // Restore button visibility
         if (downloadBtn) {
           downloadBtn.style.removeProperty('display')
@@ -1082,7 +1084,9 @@ body {
     }
 
     const run = () => {
-      (window as any).html2pdf().from(html, 'string').set(opt).save().catch((err: unknown) => {
+      (window as any).html2pdf().from(html, 'string').set(opt).outputPdf('blob').then((blob: Blob) => {
+        downloadFile(blob, opt.filename)
+      }).catch((err: unknown) => {
         console.error('PDF generation failed:', err)
         toast("Couldn't create the PDF. Please try again.", 'error')
       })

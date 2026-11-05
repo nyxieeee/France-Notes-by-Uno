@@ -4,6 +4,7 @@ import type { ReviewerItem } from '@/types'
 import { useAuthStore } from '@/stores/authStore'
 import { isFranceUser } from '@/lib/personalization'
 import { toast } from '@/stores/feedbackStore'
+import { downloadFile } from '@/lib/fileDownload'
 import { cleanDeckTitle, downloadName } from '@/lib/fileNames'
 
 export { cleanDeckTitle }
@@ -139,7 +140,7 @@ export const exportToPDF = async (reviewer: ReviewerItem) => {
       </div>
     `)
 
-    pdf.save(downloadName(reviewer.title, 'Study Guide', 'pdf'))
+    downloadFile(pdf.output('blob'), downloadName(reviewer.title, 'Study Guide', 'pdf'))
   } catch (err) {
     console.error("PDF Export error:", err)
     toast("Couldn't create the PDF. Please try again.", 'error')
@@ -218,12 +219,7 @@ export const exportToDOCX = async (reviewer: ReviewerItem) => {
   })
 
   const blob = await Packer.toBlob(doc)
-  const url = window.URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = downloadName(reviewer.title, 'Study Guide', 'docx')
-  link.click()
-  window.URL.revokeObjectURL(url)
+  downloadFile(blob, downloadName(reviewer.title, 'Study Guide', 'docx'))
 }
 
 // Widescreen 13.33 x 7.5 in, matching every position below
@@ -370,7 +366,9 @@ export const exportToPPTX = async (reviewer: ReviewerItem) => {
     })
 
     // 3. Save / Download presentation
-    await pptx.writeFile({ fileName: downloadName(deckTitle, 'Slides', 'pptx') })
+    const blob = await pptx.write({ outputType: 'blob' })
+    if (!(blob instanceof Blob)) throw new Error('Could not create the PowerPoint file')
+    downloadFile(blob, downloadName(deckTitle, 'Slides', 'pptx'))
   } catch (err) {
     console.error("Failed to export PPTX slide deck:", err)
     toast("Couldn't create the PowerPoint file. Please try again.", 'error')

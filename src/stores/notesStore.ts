@@ -8,7 +8,7 @@ interface NotesState {
   error: string | null
 
   fetchNotes: () => Promise<void>
-  createNote: (kind: Note['kind'], topicId?: string | null) => Promise<Note | null>
+  createNote: (kind: Note['kind'], topicId?: string | null, initial?: Partial<Pick<Note, 'title' | 'content'>>) => Promise<Note | null>
   updateNote: (id: string, updates: Partial<Pick<Note, 'title' | 'content' | 'drawing' | 'topic_id' | 'is_pinned'>>) => Promise<void>
   deleteNote: (id: string) => Promise<void>
 }
@@ -47,14 +47,14 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
     }
   },
 
-  createNote: async (kind, topicId = null) => {
+  createNote: async (kind, topicId = null, initial = {}) => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) return null
 
     const { data, error } = await supabase
       .from('notes')
       .insert([{
-        user_id: session.user.id, title: '', content: '', kind, topic_id: topicId,
+        user_id: session.user.id, title: initial.title ?? '', content: initial.content ?? '', kind, topic_id: topicId,
         drawing: kind === 'handwriting' ? { paper: 'lined', pages: 1, strokes: [] } : null,
       }])
       .select()
