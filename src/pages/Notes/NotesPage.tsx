@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
-  NotePencil, Plus, MagnifyingGlass, PushPin, Trash, ArrowLeft, Eye, PencilSimple, CheckCircle, CircleNotch, Folder, Scribble,
+  NotePencil, Plus, MagnifyingGlass, PushPin, Trash, ArrowLeft, Eye, PencilSimple, CheckCircle, CircleNotch, Folder, Scribble, DownloadSimple,
 } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 import HandwritingCanvas from '@/components/notes/HandwritingCanvas'
@@ -12,7 +12,8 @@ import { useBackToClose } from '@/hooks/useBackToClose'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import type { Note, HandwritingDrawing } from '@/types'
-import { confirmDialog } from '@/stores/feedbackStore'
+import { exportNoteToPDF } from '@/lib/notePdf'
+import { confirmDialog, toast } from '@/stores/feedbackStore'
 
 const SAVE_DELAY_MS = 600
 
@@ -221,7 +222,7 @@ function EditorBar({ note, topics, saveState, onBack, onSave, onDelete, children
   children?: ReactNode
 }) {
   return (
-    <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
+    <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
       <button onClick={onBack} className="btn-icon lg:hidden" aria-label="Back to notes">
         <ArrowLeft size={18} />
       </button>
@@ -265,14 +266,35 @@ function EditorBar({ note, topics, saveState, onBack, onSave, onDelete, children
   )
 }
 
+function NotePDFButton({ getNote }: { getNote: () => Pick<Note, 'title' | 'content' | 'kind' | 'drawing'> }) {
+  const [exporting, setExporting] = useState(false)
+  return <button
+    onClick={async () => {
+      if (exporting) return
+      setExporting(true)
+      const snapshot = getNote()
+      try { await exportNoteToPDF(snapshot) }
+      catch (error) { console.error('Note PDF export failed:', error); toast("Couldn't create the PDF. Please try again.", 'error') }
+      finally { setExporting(false) }
+    }}
+    disabled={exporting}
+    className="btn-icon disabled:opacity-50 shrink-0"
+    aria-label={exporting ? 'Creating PDF' : 'Download note as PDF'}
+    title={exporting ? 'Creating PDF...' : 'Download PDF'}
+  >{exporting ? <CircleNotch size={18} className="animate-spin" /> : <DownloadSimple size={18} />}</button>
+}
+
 function HandwritingEditor({ note, topics, onBack, onSave, onDelete }: EditorProps) {
   const [title, setTitle] = useState(note.title)
   const { saveState, queue, flush } = useAutosave(onSave)
+  const latestDrawing = useRef(note.drawing)
   const drawing: HandwritingDrawing = note.drawing ?? { paper: 'lined', pages: 1, strokes: [] }
 
   return (
     <section className="fn-card flex flex-col min-h-[60vh] overflow-hidden">
-      <EditorBar note={note} topics={topics} saveState={saveState} onBack={() => { flush(); onBack() }} onSave={onSave} onDelete={onDelete} />
+      <EditorBar note={note} topics={topics} saveState={saveState} onBack={() => { flush(); onBack() }} onSave={onSave} onDelete={onDelete}>
+        <NotePDFButton getNote={() => ({ ...note, title, drawing: latestDrawing.current })} />
+      </EditorBar>
       <div className="p-4 sm:p-6 bg-th-bg/60 flex-1">
         <input
           value={title}
@@ -280,7 +302,7 @@ function HandwritingEditor({ note, topics, onBack, onSave, onDelete }: EditorPro
           placeholder="Untitled handwritten note"
           className="w-full bg-transparent outline-none text-2xl font-heading font-semibold placeholder:text-th-text-secondary/50 mb-3"
         />
-        <HandwritingCanvas drawing={drawing} onChange={next => queue({ drawing: next })} />
+        <HandwritingCanvas drawing={drawing} onChange={next => { latestDrawing.current = next; queue({ drawing: next }) }} />
       </div>
     </section>
   )
@@ -295,6 +317,7 @@ function NoteEditor({ note, topics, onBack, onSave, onDelete }: EditorProps) {
   return (
     <section className="fn-card flex flex-col min-h-[60vh] overflow-hidden">
       <EditorBar note={note} topics={topics} saveState={saveState} onBack={() => { flush(); onBack() }} onSave={onSave} onDelete={onDelete}>
+        <NotePDFButton getNote={() => ({ ...note, title, content })} />
         <button
           onClick={() => setPreview(p => !p)}
           className="btn-icon"
