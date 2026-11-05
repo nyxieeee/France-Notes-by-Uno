@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
-  NotePencil, Plus, MagnifyingGlass, PushPin, Trash, ArrowLeft, Eye, PencilSimple, CheckCircle, CircleNotch, Folder, Scribble, DownloadSimple,
+  NotePencil, Plus, MagnifyingGlass, PushPin, Trash, ArrowLeft, CheckCircle, CircleNotch, Folder, Scribble, DownloadSimple,
 } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 import HandwritingCanvas from '@/components/notes/HandwritingCanvas'
 import PageHeader from '@/components/shared/PageHeader'
-import MarkdownText from '@/components/shared/MarkdownText'
+import RichTextEditor from '@/components/notes/RichTextEditor'
+import { noteContentText } from '@/lib/noteContent'
 import { useNotesStore } from '@/stores/notesStore'
 import { useBackToClose } from '@/hooks/useBackToClose'
 import { useStudyBoxStore } from '@/stores/studyBoxStore'
@@ -35,7 +36,7 @@ export default function NotesPage() {
     const q = query.trim().toLowerCase()
     return notes.filter(n =>
       (topicFilter === 'all' || n.topic_id === topicFilter) &&
-      (!q || n.title.toLowerCase().includes(q) || (n.kind !== 'handwriting' && n.content.toLowerCase().includes(q)))
+      (!q || n.title.toLowerCase().includes(q) || (n.kind !== 'handwriting' && noteContentText(n.content).toLowerCase().includes(q)))
     )
   }, [notes, query, topicFilter])
 
@@ -134,7 +135,7 @@ export default function NotesPage() {
                     <p className="text-[11.5px] text-[var(--text-secondary)] truncate">
                       {note.kind === 'handwriting'
                         ? `Handwritten · ${note.drawing?.pages ?? 1} page${(note.drawing?.pages ?? 1) > 1 ? 's' : ''}`
-                        : note.content.replace(/[#*_>`-]/g, '').trim().slice(0, 80) || 'Empty note'}
+                        : noteContentText(note.content).trim().slice(0, 80) || 'Empty note'}
                     </p>
                     <p className="text-[10.5px] text-th-text-secondary/80 mt-0.5">
                       {topicName(note.topic_id) ? `${topicName(note.topic_id)} · ` : ''}Updated {formatRelativeDate(note.updated_at).toLowerCase()}
@@ -171,7 +172,7 @@ export default function NotesPage() {
               <NotePencil size={30} weight="duotone" />
             </div>
             <p className="font-heading font-semibold">Pick a note or start a new one</p>
-            <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-xs">Notes support Markdown — use # for headings, - for bullets and **bold** for key terms.</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-xs">Format your notes with headings, lists, bold, colors, and more.</p>
           </section>
         )}
       </div>
@@ -266,7 +267,9 @@ function EditorBar({ note, topics, saveState, onBack, onSave, onDelete, children
   )
 }
 
-function NotePDFButton({ getNote }: { getNote: () => Pick<Note, 'title' | 'content' | 'kind' | 'drawing'> }) {
+function NotePDFButton({ getNote }: {
+  getNote: () => Pick<Note, 'title' | 'content' | 'kind' | 'drawing'>
+}) {
   const [exporting, setExporting] = useState(false)
   return <button
     onClick={async () => {
@@ -311,21 +314,12 @@ function HandwritingEditor({ note, topics, onBack, onSave, onDelete }: EditorPro
 function NoteEditor({ note, topics, onBack, onSave, onDelete }: EditorProps) {
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content)
-  const [preview, setPreview] = useState(false)
   const { saveState, queue, flush } = useAutosave(onSave)
 
   return (
     <section className="fn-card flex flex-col min-h-[60vh] overflow-hidden">
       <EditorBar note={note} topics={topics} saveState={saveState} onBack={() => { flush(); onBack() }} onSave={onSave} onDelete={onDelete}>
         <NotePDFButton getNote={() => ({ ...note, title, content })} />
-        <button
-          onClick={() => setPreview(p => !p)}
-          className="btn-icon"
-          aria-label={preview ? 'Edit note' : 'Preview note'}
-          title={preview ? 'Edit' : 'Preview'}
-        >
-          {preview ? <PencilSimple size={18} /> : <Eye size={18} />}
-        </button>
       </EditorBar>
 
       <div className="flex-1 flex flex-col p-5 sm:p-7">
@@ -337,18 +331,7 @@ function NoteEditor({ note, topics, onBack, onSave, onDelete }: EditorProps) {
         />
         <p className="text-[11px] text-[var(--text-secondary)] mb-4">Created {formatRelativeDate(note.created_at).toLowerCase()}</p>
 
-        {preview ? (
-          <div className="flex-1 text-sm leading-relaxed">
-            {content.trim() ? <MarkdownText content={content} /> : <p className="text-[var(--text-secondary)]">Nothing to preview yet.</p>}
-          </div>
-        ) : (
-          <textarea
-            value={content}
-            onChange={e => { setContent(e.target.value); queue({ content: e.target.value }) }}
-            placeholder={'Start writing...\n\n# Key points\n- Normal K+ is 3.5–5.0 mEq/L\n- **Priority:** airway, breathing, circulation'}
-            className="flex-1 min-h-[45vh] bg-transparent outline-none resize-none text-[14.5px] leading-relaxed placeholder:text-th-text-secondary/50"
-          />
-        )}
+        <RichTextEditor initialContent={note.content} onChange={next => { setContent(next); queue({ content: next }) }} />
       </div>
     </section>
   )

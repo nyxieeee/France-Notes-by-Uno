@@ -1,10 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import MarkdownText from '@/components/shared/MarkdownText'
+import { noteContentHTML, NOTE_CONTENT_CSS } from '@/lib/noteContent'
 import { downloadName } from '@/lib/fileNames'
 import { PAGE_RATIO, drawPaper, drawStroke, strokeBounds } from '@/lib/handwriting'
 import type { Note } from '@/types'
 
-export async function exportNoteToPDF(note: Pick<Note, 'title' | 'content' | 'kind' | 'drawing'>) {
+export async function exportNoteToPDF(
+  note: Pick<Note, 'title' | 'content' | 'kind' | 'drawing'>,
+) {
   const { jsPDF } = await import('jspdf')
   const pdf = new jsPDF('p', 'pt', 'a4')
   const pageWidth = pdf.internal.pageSize.getWidth()
@@ -56,12 +58,14 @@ export async function exportNoteToPDF(note: Pick<Note, 'title' | 'content' | 'ki
     element.style.cssText = 'display:flow-root;box-sizing:border-box;width:794px;padding:24px 32px 40px;background:#fff;color:#202020;font:16px/1.6 Arial,sans-serif;overflow-wrap:anywhere;'
     element.innerHTML = renderToStaticMarkup(<><style>{`
       * { box-sizing:border-box; }
-      .markdown-content { color:#202020; display:flow-root; }
+      ${NOTE_CONTENT_CSS}
       p { margin:0 0 16px; }
       h1,h2,h3,h4 { color:#202020; line-height:1.3; }
       pre { white-space:pre-wrap; } table { border-collapse:collapse; width:100%; }
       th,td { border:1px solid #ccc; padding:6px; } img { max-width:100%; }
-    `}</style><h1 style={{ fontSize: 28, margin: '0 0 20px' }}>{title}</h1><MarkdownText content={note.content} /></>)
+    `}</style><h1 style={{ fontSize: 28, margin: '0 0 20px' }}>{title}</h1>
+      <div className="note-rich-content" dangerouslySetInnerHTML={{ __html: noteContentHTML(note.content) }} />
+    </>)
     exportDocument.body.appendChild(element)
     try {
       await exportDocument.fonts.ready

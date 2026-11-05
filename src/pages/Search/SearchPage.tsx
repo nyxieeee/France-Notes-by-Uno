@@ -1,3 +1,4 @@
+import { noteContentText } from '@/lib/noteContent'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -143,11 +144,11 @@ export default function SearchPage() {
         meta: `Reviewer · ${formatRelativeDate(r.created_at)}`,
         open: () => openReviewer(r),
       }))
-    const noteHits: Hit[] = ranked(notes, n => scoreFields(query, n.title, n.kind === 'handwriting' ? '' : n.content))
+    const noteHits: Hit[] = ranked(notes, n => scoreFields(query, n.title, n.kind === 'handwriting' ? '' : noteContentText(n.content)))
       .map(({ x: n, anchor }) => ({
         id: n.id,
         title: n.title || 'Untitled note',
-        snippet: n.kind === 'handwriting' ? 'Handwritten note' : excerptAround(n.content, anchor),
+        snippet: n.kind === 'handwriting' ? 'Handwritten note' : excerptAround(noteContentText(n.content), anchor),
         meta: `${topicName(n.topic_id) || 'Note'} · updated ${formatRelativeDate(n.updated_at).toLowerCase()}`,
         open: () => navigate('/notes', { state: { openNoteId: n.id } }),
       }))
