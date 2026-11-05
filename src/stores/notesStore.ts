@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Note } from '@/types'
 import { supabase } from '@/lib/supabase'
+import { sessionRequest } from '@/lib/sessionRequest'
 
 interface NotesState {
   notes: Note[]
@@ -28,45 +29,46 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
 
   fetchNotes: async () => {
     set({ isLoading: true, error: null })
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      set({ notes: [], isLoading: false })
-      return
-    }
-    const { data, error } = await supabase
-      .from('notes')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('updated_at', { ascending: false })
+    try {
+      const { data, error } = await sessionRequest(userId => supabase
+        .from('notes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false }))
 
-    if (error) {
-      console.error('Error fetching notes:', error)
-      set({ error: error.message, notes: [], isLoading: false })
-    } else {
-      set({ notes: sortNotes(data as Note[]), isLoading: false })
+      if (error) {
+        console.error('Error fetching notes:', error)
+        set({ error: error.message, isLoading: false })
+      } else {
+        set({ notes: sortNotes(data as Note[]), isLoading: false })
+      }
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Could not load notes. Please try again.', isLoading: false })
     }
   },
 
   createNote: async (kind, topicId = null, initial = {}) => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) return null
+    try {
+      const { data, error } = await sessionRequest(userId => supabase
+        .from('notes')
+        .insert([{
+          user_id: userId, title: initial.title ?? '', content: initial.content ?? '', kind, topic_id: topicId,
+          drawing: kind === 'handwriting' ? { paper: 'lined', pages: 1, strokes: [] } : null,
+        }])
+        .select()
+        .single())
 
-    const { data, error } = await supabase
-      .from('notes')
-      .insert([{
-        user_id: session.user.id, title: initial.title ?? '', content: initial.content ?? '', kind, topic_id: topicId,
-        drawing: kind === 'handwriting' ? { paper: 'lined', pages: 1, strokes: [] } : null,
-      }])
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating note:', error)
-      set({ error: error.message })
+      if (error) {
+        console.error('Error creating note:', error)
+        set({ error: error.message })
+        return null
+      }
+      set(state => ({ notes: sortNotes([data as Note, ...state.notes]), error: null }))
+      return data as Note
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Could not create the note. Please try again.' })
       return null
     }
-    set(state => ({ notes: sortNotes([data as Note, ...state.notes]) }))
-    return data as Note
   },
 
   updateNote: (id, updates) => {
@@ -79,11 +81,13 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
     // Saves for one note go out one at a time, in order, so a slow earlier save can never land
     // after (and overwrite) a newer one
     const run = async () => {
-      const { error } = await supabase.from('notes').update({ ...updates, updated_at }).eq('id', id)
-      if (error) {
-        console.error('Error saving note:', error)
-        set({ error: error.message })
-      }
+      try {
+        const { error } = await sessionRequest(userId => supabase.from('notes').update({ ...updates, updated_at }).eq('id', id).eq('user_id', userId))
+        if (error) {
+          console.error('Error saving note:', error)
+          set({ error: error.message })
+        } else set({ error: null })
+      } catch (error) { set({ error: error instanceof Error ? error.message : 'Could not save this note. Please try again.' }) }
     }
     const queued = (saveQueues.get(id) ?? Promise.resolve()).then(run, run)
     saveQueues.set(id, queued)
@@ -95,10 +99,14 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
     const previous = get().notes
     set(state => ({ notes: state.notes.filter(n => n.id !== id) }))
 
-    const { error } = await supabase.from('notes').delete().eq('id', id)
-    if (error) {
-      console.error('Error deleting note:', error)
-      set({ notes: previous, error: error.message })
+    try {
+      const { error } = await sessionRequest(userId => supabase.from('notes').delete().eq('id', id).eq('user_id', userId))
+      if (error) {
+        console.error('Error deleting note:', error)
+        set({ notes: previous, error: error.message })
+      } else set({ error: null })
+    } catch (error) {
+      set({ notes: previous, error: error instanceof Error ? error.message : 'Could not delete this note. Please try again.' })
     }
   },
 }))

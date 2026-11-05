@@ -104,7 +104,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ isLoading: true, error: null })
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) {
-      set({ sessions: [], activeSessionId: null, isLoading: false })
+      set({ isLoading: false })
       return
     }
 

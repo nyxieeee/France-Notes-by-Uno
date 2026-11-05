@@ -1,0 +1,59 @@
+/* Motion adapted from transitions.dev page, text-reveal, and modal recipes.
+   https://transitions.dev/ — Copyright (c) 2026 Jakub Antalik / Transitions.dev.
+   Applied to this app under the Transitions.dev License. */
+:root {
+  --motion-quick: 150ms;
+  --motion-enter: 250ms;
+  --motion-reveal: 400ms;
+  --motion-stagger: 40ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fn-page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fn-text-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.fn-route-enter { animation: fn-page-enter var(--motion-enter) var(--motion-ease); }
+.fn-header-icon { animation: fn-text-reveal var(--motion-reveal) var(--motion-ease) both; }
+.fn-header-title { animation: fn-text-reveal var(--motion-reveal) var(--motion-ease) var(--motion-stagger) both; }
+.fn-header-subtitle { animation: fn-text-reveal var(--motion-reveal) var(--motion-ease) calc(var(--motion-stagger) * 2) both; }
+.fn-header-actions { animation: fn-text-reveal var(--motion-reveal) var(--motion-ease) calc(var(--motion-stagger) * 3) both; }
+
+/* Name each property so controls never animate layout or text dimensions. */
+.btn-primary, .btn-secondary, .btn-ghost, .btn-icon {
+  transition-property: background-color, color, border-color, box-shadow, opacity, transform;
+  transition-duration: var(--motion-quick);
+  transition-timing-function: var(--motion-ease);
+}
+.fn-input {
+  transition: border-color var(--motion-quick) var(--motion-ease),
+    box-shadow var(--motion-quick) var(--motion-ease),
+    background-color var(--motion-quick) var(--motion-ease);
+}
+.fn-card { transition: box-shadow var(--motion-enter) var(--motion-ease), border-color var(--motion-enter) var(--motion-ease); }
+.btn-primary:not(:disabled):active, .btn-secondary:not(:disabled):active,
+.btn-ghost:not(:disabled):active, .btn-icon:not(:disabled):active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .btn-primary:not(:disabled):hover, .btn-secondary:not(:disabled):hover { transform: translateY(-1px); }
+  .btn-primary:not(:disabled):active, .btn-secondary:not(:disabled):active { transform: scale(0.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  .fn-route-enter, .fn-header-icon, .fn-header-title,
+  .fn-header-subtitle, .fn-header-actions { animation: none !important; }
+  .btn-primary:active, .btn-secondary:active, .btn-ghost:active, .btn-icon:active { transform: none !important; }
+}
+@media print {
+  .fn-route-enter, .fn-header-icon, .fn-header-title,
+  .fn-header-subtitle, .fn-header-actions { animation: none !important; }
+}

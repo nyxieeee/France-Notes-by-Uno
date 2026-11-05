@@ -23,7 +23,7 @@ export const useReminderStore = create<ReminderState>()((set, get) => ({
     set({ isLoading: true, error: null })
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) {
-      set({ reminders: [], isLoading: false })
+      set({ isLoading: false })
       return
     }
     const { data, error } = await supabase
@@ -34,7 +34,7 @@ export const useReminderStore = create<ReminderState>()((set, get) => ({
     
     if (error) {
       console.error('Error fetching reminders:', error)
-      set({ error: error.message, reminders: [], isLoading: false })
+      set({ error: error.message, isLoading: false })
     } else {
       set({ reminders: data as Reminder[], isLoading: false })
     }

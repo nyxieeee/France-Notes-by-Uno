@@ -66,9 +66,9 @@ export default function NotesPage() {
       />
 
       {error && (
-        <p className="mb-4 px-4 py-3 rounded-xl bg-th-error/10 border border-th-error/25 text-[var(--error)] text-sm">
-          Notes couldn't be loaded or saved ({error}). If this is the first time using Notes, the database table may still need to be set up.
-        </p>
+        <div role="alert" className="mb-4 px-4 py-3 rounded-xl bg-th-error/10 border border-th-error/25 text-[var(--error)] text-sm">
+          Notes couldn't be loaded or saved: {error}
+        </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-5">

@@ -3,6 +3,7 @@ import { Bell, Moon, Sun, MagnifyingGlass as Search } from '@phosphor-icons/reac
 import { useThemeStore } from '@/stores/themeStore'
 import { useAuthStore } from '@/stores/authStore'
 import { motion, AnimatePresence } from 'framer-motion'
+import { MOTION_ENTER, MOTION_EXIT } from '@/lib/motion'
 import { useNavigate } from 'react-router-dom'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useReminderStore } from '@/stores/reminderStore'
@@ -235,10 +236,10 @@ export default function TopBar() {
           <AnimatePresence>
             {isOpen && (
               <motion.div 
-                initial={{ opacity: 0, scale: 0.5, y: 0 }}
+                initial={{ opacity: 0, scale: 0.97, y: 8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.5, y: 0 }}
-                transition={{ type: "spring", stiffness: 380, damping: 28, mass: 0.8 }}
+                exit={{ opacity: 0, scale: 0.99, y: 4, transition: MOTION_EXIT }}
+                transition={MOTION_ENTER}
                 className="md:absolute md:right-0 md:mt-3.5 md:w-80 md:origin-top-right max-md:fixed max-md:left-4 max-md:right-4 max-md:top-1/2 max-md:-translate-y-1/2 max-md:w-auto max-md:origin-center bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn p-4 z-50 text-left"
               >
                 {/* Speech Bubble Arrow - desktop only */}

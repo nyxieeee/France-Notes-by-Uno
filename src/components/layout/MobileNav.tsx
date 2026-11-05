@@ -4,6 +4,7 @@ import { House as Home, Archive, MagnifyingGlass as Search, DotsThree as MoreHor
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigation, isNavItemActive } from './navigation'
+import { MOTION_ENTER, MOTION_EXIT, MOTION_INDICATOR } from '@/lib/motion'
 
 const primaryNavItems = [
   { icon: Home,       label: 'Home',   path: '/home' },
@@ -62,10 +63,10 @@ export default function MobileNav() {
         {moreOpen && (
           <motion.div
             ref={moreRef}
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 24 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            exit={{ opacity: 0, y: 8, transition: MOTION_EXIT }}
+            transition={MOTION_ENTER}
             className="md:hidden fixed left-3 right-3 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] z-50 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-fn-lg p-4"
           >
             <div className="flex items-center justify-between mb-3 px-1">
@@ -126,10 +127,13 @@ export default function MobileNav() {
           >
             {({ isActive }) => (
               <>
-                <div className={cn(
-                  'px-3 py-1 rounded-full transition-all duration-300',
-                  isActive && 'bg-[var(--secondary-bg)]'
-                )}>
+                <div className="relative isolate px-3 py-1 rounded-full">
+                  {isActive && !moreOpen && <motion.span
+                    layoutId="mobile-active-navigation"
+                    className="absolute inset-0 -z-10 rounded-full bg-[var(--secondary-bg)]"
+                    transition={MOTION_INDICATOR}
+                    aria-hidden="true"
+                  />}
                   <item.icon size={21} weight={isActive ? 'fill' : 'regular'} />
                 </div>
                 <span className="text-[10.5px] font-semibold leading-none">{item.label}</span>
@@ -146,10 +150,13 @@ export default function MobileNav() {
             (moreOpen || isMoreActive) ? 'text-[var(--pink)]' : 'text-[var(--text-secondary)]'
           )}
         >
-          <div className={cn(
-            'px-3 py-1 rounded-full transition-all duration-300',
-            (moreOpen || isMoreActive) && 'bg-[var(--secondary-bg)]'
-          )}>
+          <div className="relative isolate px-3 py-1 rounded-full">
+            {(moreOpen || isMoreActive) && <motion.span
+              layoutId="mobile-active-navigation"
+              className="absolute inset-0 -z-10 rounded-full bg-[var(--secondary-bg)]"
+              transition={MOTION_INDICATOR}
+              aria-hidden="true"
+            />}
             <MoreHorizontal size={21} weight={(moreOpen || isMoreActive) ? 'bold' : 'regular'} />
           </div>
           <span className="text-[10.5px] font-semibold leading-none">More</span>

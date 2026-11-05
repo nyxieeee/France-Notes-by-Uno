@@ -177,7 +177,7 @@ export const useStudyBoxStore = create<StudyBoxState>()((set, get) => ({
     set({ isLoading: true })
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) {
-      set({ items: [], isLoading: false })
+      set({ isLoading: false })
       return
     }
     const { data, error } = await supabase

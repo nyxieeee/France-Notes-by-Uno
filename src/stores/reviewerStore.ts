@@ -40,7 +40,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
     set({ isLoading: true })
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) {
-      set({ reviewers: [], isLoading: false })
+      set({ isLoading: false })
       return
     }
     const { data, error } = await supabase
@@ -53,7 +53,7 @@ export const useReviewerStore = create<ReviewerState>()((set, get) => ({
       set({ reviewers: (data as ReviewerItem[]).map(r => ({ ...r, title: deepStripMarkdown(r.title), content: deepStripMarkdown(r.content) })), isLoading: false })
     } else {
       if (error) console.error('Error fetching reviewers:', error)
-      set({ reviewers: [], isLoading: false })
+      set({ isLoading: false })
     }
   },
 

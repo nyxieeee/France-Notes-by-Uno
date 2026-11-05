@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePersonalization } from '@/hooks/usePersonalization'
 import { useNavigation, isNavItemActive } from './navigation'
+import { MOTION_INDICATOR } from '@/lib/motion'
 
 const docUnoMessages = [
   "You've got this, future nurse! I'm always here to support you! I love you!",
@@ -72,14 +73,20 @@ export default function DesktopSidebar() {
                   key={item.path}
                   to={item.path}
                   className={() => cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] transition-colors duration-150 group",
+                    "relative isolate flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] transition-colors duration-150 group",
                     isNavItemActive(item, location.pathname)
-                      ? "bg-[var(--secondary-bg)] text-[var(--pink)] font-semibold" 
+                      ? "text-[var(--pink)] font-semibold"
                       : "text-[var(--text-secondary)] hover:bg-[var(--rose-soft)] hover:text-[var(--text)]"
                   )}
                 >
                   {() => (
                     <>
+                      {isNavItemActive(item, location.pathname) && <motion.span
+                        layoutId="desktop-active-navigation"
+                        className="absolute inset-0 -z-10 rounded-xl bg-[var(--secondary-bg)]"
+                        transition={MOTION_INDICATOR}
+                        aria-hidden="true"
+                      />}
                       <item.icon size={18} weight={isNavItemActive(item, location.pathname) ? 'fill' : 'regular'} className="shrink-0" />
                       <span className="flex-1 truncate">{item.label}</span>
                       {item.isBeta && (

@@ -64,7 +64,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
     set({ isLoading: true, error: null })
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) {
-      set({ quizzes: [], isLoading: false })
+      set({ isLoading: false })
       return
     }
     const { data, error } = await supabase
@@ -75,7 +75,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
 
     if (error) {
       console.error('Error fetching quizzes:', error)
-      set({ error: error.message, quizzes: [], isLoading: false })
+      set({ error: error.message, isLoading: false })
     } else {
       // Questions and her answers are cleaned together so answer checking still lines up
       set({ quizzes: (data as Quiz[]).map(q => ({ ...q, questions: deepStripMarkdown(q.questions), user_answers: deepStripMarkdown(q.user_answers) })), isLoading: false })

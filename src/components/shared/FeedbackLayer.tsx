@@ -1,13 +1,15 @@
 import { useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { CheckCircle, WarningCircle, Info, X } from '@phosphor-icons/react'
 import { useFeedbackStore } from '@/stores/feedbackStore'
 import { cn } from '@/lib/utils'
+import { MOTION_ENTER, MOTION_EXIT } from '@/lib/motion'
 
 const TONE_ICON = { success: CheckCircle, error: WarningCircle, info: Info }
 
 export default function FeedbackLayer() {
   const { toasts, dismissToast, confirmRequest, settleConfirm } = useFeedbackStore()
+  const reduceMotion = useReducedMotion()
 
   useEffect(() => {
     if (!confirmRequest) return
@@ -29,9 +31,10 @@ export default function FeedbackLayer() {
               <motion.div
                 key={t.id}
                 layout
-                initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                exit={{ opacity: 0, y: reduceMotion ? 0 : 8, scale: reduceMotion ? 1 : 0.98, transition: reduceMotion ? { duration: 0 } : MOTION_EXIT }}
+                transition={reduceMotion ? { duration: 0 } : MOTION_ENTER}
                 role={t.tone === 'error' ? 'alert' : 'status'}
                 className="pointer-events-auto flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-fn-lg text-[13.5px]"
               >
@@ -51,9 +54,10 @@ export default function FeedbackLayer() {
             <motion.div
               role="alertdialog"
               aria-modal="true"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 24 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: reduceMotion ? 0 : 8, scale: reduceMotion ? 1 : 0.96, transition: reduceMotion ? { duration: 0 } : MOTION_EXIT }}
+              transition={reduceMotion ? { duration: 0 } : MOTION_ENTER}
               className="relative z-10 w-full max-w-sm bg-[var(--card)] border border-[var(--border)] rounded-t-3xl sm:rounded-2xl shadow-fn-lg p-6"
             >
               <h2 className="font-heading font-semibold text-[17px]">{confirmRequest.title}</h2>
