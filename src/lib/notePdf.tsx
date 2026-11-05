@@ -41,33 +41,68 @@ export async function exportNoteToPDF(note: Pick<Note, 'title' | 'content' | 'ki
     }
   } else {
     const { default: html2canvas } = await import('html2canvas')
-    const element = document.createElement('div')
-    element.style.cssText = 'position:fixed;left:-10000px;top:0;width:730px;padding:0;background:#fff;color:#202020;font:16px/1.6 Arial,sans-serif;overflow-wrap:anywhere;'
+    // Render in a separate document: the app's scroll position, responsive CSS,
+    // and collapsed paragraph margins must not affect the capture bounds.
+    const frame = document.createElement('iframe')
+    frame.setAttribute('aria-hidden', 'true')
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;pointer-events:none;'
+    document.body.appendChild(frame)
+    const exportDocument = frame.contentDocument
+    if (!exportDocument) { frame.remove(); throw new Error('Could not create the export document') }
+    exportDocument.open()
+    exportDocument.write('<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:white;"></body></html>')
+    exportDocument.close()
+    const element = exportDocument.createElement('div')
+    element.style.cssText = 'display:flow-root;box-sizing:border-box;width:794px;padding:24px 32px 40px;background:#fff;color:#202020;font:16px/1.6 Arial,sans-serif;overflow-wrap:anywhere;'
     element.innerHTML = renderToStaticMarkup(<><style>{`
-      .markdown-content { color:#202020; }
+      * { box-sizing:border-box; }
+      .markdown-content { color:#202020; display:flow-root; }
+      p { margin:0 0 16px; }
       h1,h2,h3,h4 { color:#202020; line-height:1.3; }
       pre { white-space:pre-wrap; } table { border-collapse:collapse; width:100%; }
       th,td { border:1px solid #ccc; padding:6px; } img { max-width:100%; }
     `}</style><h1 style={{ fontSize: 28, margin: '0 0 20px' }}>{title}</h1><MarkdownText content={note.content} /></>)
-    document.body.appendChild(element)
+    exportDocument.body.appendChild(element)
     try {
-      await document.fonts.ready
-      const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true })
+      await exportDocument.fonts.ready
+      await Promise.all(Array.from(element.querySelectorAll('img')).map(image => image.decode().catch(() => undefined)))
+      const captureHeight = Math.ceil(Math.max(element.scrollHeight, element.getBoundingClientRect().height))
+      const canvas = await html2canvas(element, {
+        scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true,
+        width: 794, height: captureHeight, windowWidth: 794,
+        windowHeight: Math.max(1123, captureHeight), scrollX: 0, scrollY: 0,
+      })
       // Slice into separate images so long notes never extend beyond a PDF page.
-      // Whole raster rows are retained across pages, including very long paragraphs.
+      // Prefer whitespace for page breaks so text lines stay together.
       const rows = Math.floor(height * canvas.width / width)
       const slice = document.createElement('canvas')
       slice.width = canvas.width
       const ctx = slice.getContext('2d')
       if (!ctx) throw new Error('Could not create the PDF canvas')
-      for (let y = 0; y < canvas.height; y += rows) {
+      const source = canvas.getContext('2d')
+      if (!source) throw new Error('Could not read the PDF canvas')
+      for (let y = 0; y < canvas.height;) {
         if (y) pdf.addPage()
-        slice.height = Math.min(rows, canvas.height - y)
+        let end = Math.min(y + rows, canvas.height)
+        if (end < canvas.height) {
+          const searchStart = Math.max(y + Math.floor(rows * 0.8), end - 100)
+          const pixels = source.getImageData(0, searchStart, canvas.width, end - searchStart).data
+          for (let row = end - searchStart - 1; row >= 0; row--) {
+            let blank = true
+            for (let x = 0; x < canvas.width; x++) {
+              const i = (row * canvas.width + x) * 4
+              if (pixels[i] < 245 || pixels[i + 1] < 245 || pixels[i + 2] < 245) { blank = false; break }
+            }
+            if (blank) { end = searchStart + row + 1; break }
+          }
+        }
+        slice.height = end - y
         ctx.drawImage(canvas, 0, y, canvas.width, slice.height, 0, 0, slice.width, slice.height)
         pdf.addImage(slice, 'PNG', margin, margin, width, slice.height * width / canvas.width)
+        y = end
       }
     } finally {
-      element.remove()
+      frame.remove()
     }
   }
   await pdf.save(downloadName(title, null, 'pdf'), { returnPromise: true })
