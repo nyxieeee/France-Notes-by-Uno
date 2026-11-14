@@ -102,7 +102,7 @@ async function handleRequest(req, res) {
       const apiRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}` },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, model: 'ministral-8b-latest' }),
       })
       const data = await apiRes.json()
       res.writeHead(apiRes.status, { 'Content-Type': 'application/json' })

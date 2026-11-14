@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'MISTRAL_API_KEY not configured' })
   }
 
-  const { model, messages, temperature, max_tokens, response_format } = req.body
+  const { messages, temperature, max_tokens, response_format } = req.body
 
   try {
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'Authorization': `Bearer ${MISTRAL_API_KEY}`,
       },
       body: JSON.stringify({
-        model,
+        model: 'ministral-8b-latest',
         messages,
         temperature,
         max_tokens,

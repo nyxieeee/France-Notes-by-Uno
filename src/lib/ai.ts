@@ -14,8 +14,8 @@ function stripThinkBlocks(text: string): string {
 }
 
 // ─── Model Registry ───────────────────────────────────────────────────────────
-const MISTRAL_MODEL        = 'open-mistral-nemo'
-const MISTRAL_SMALL_MODEL  = 'mistral-small-latest'
+const MISTRAL_MODEL        = 'ministral-8b-latest'
+const MISTRAL_SMALL_MODEL  = MISTRAL_MODEL
 const MISTRAL_VISION_MODEL = MISTRAL_SMALL_MODEL
 const GEMINI_MODEL         = 'gemini-2.5-flash-lite'
 
