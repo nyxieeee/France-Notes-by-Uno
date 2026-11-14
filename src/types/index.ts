@@ -113,6 +113,7 @@ export type QuizQuestion = {
   correct_answer: string | string[]
   rationale: string
   question_type: QuestionType
+  self_assessed_correct?: boolean
   image_url?: string
 }
 

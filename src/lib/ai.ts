@@ -257,7 +257,7 @@ export async function callGeminiGroundedSearch(
   page = 1,
 ): Promise<GroundedSearchResult[]> {
   const body = {
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.5-flash-lite',
     contents: [{
       role: 'user',
       parts: [{ text: `${query} (page ${page})` }],
@@ -384,7 +384,7 @@ export async function callGeminiGroundedSearch(
         `
         const responseText = await callGemini(
           [{ role: 'user', content: titlesPrompt }],
-          'gemini-2.5-flash',
+          'gemini-2.5-flash-lite',
           0.2,
           2000,
           true

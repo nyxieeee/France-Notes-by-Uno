@@ -39,33 +39,35 @@ export interface CaseBlueprint {
 
 /** One distinct case per question in the quiz: no repeated names, ages spread out, every angle different */
 export function quizBlueprints(count: number): CaseBlueprint[] {
-  const female = shuffle(FEMALE_NAMES)
-  const male = shuffle(MALE_NAMES)
+  const firstNames = shuffle([
+    ...FEMALE_NAMES.map(name => ({ name, sex: 'female' })),
+    ...MALE_NAMES.map(name => ({ name, sex: 'male' })),
+  ])
   const surnames = shuffle(SURNAMES)
-  const ages = shuffle(AGE_BANDS)
+  const patients = Array.from({ length: count }, (_, i) => ({
+    name: firstNames[i % firstNames.length].name + ' ' + surnames[Math.floor(i / firstNames.length) % surnames.length],
+    sex: firstNames[i % firstNames.length].sex,
+  }))
+  const agePools = AGE_BANDS.map(([lo, hi]) => shuffle(Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)))
+  const ages: number[] = []
+  while (agePools.some(pool => pool.length)) {
+    for (const pool of shuffle(agePools)) { const age = pool.pop(); if (age !== undefined) ages.push(age) }
+  }
   const settings = shuffle(SETTINGS)
   const angles = shuffle(ANGLES)
-
-  let nextFemale = 0
-  let nextMale = 0
   return Array.from({ length: count }, (_, i) => {
-    const isFemale = Math.random() < 0.5
-    const first = isFemale ? female[nextFemale++ % female.length] : male[nextMale++ % male.length]
-    const [lo, hi] = ages[i % ages.length]
-    const age = lo + Math.floor(Math.random() * (hi - lo + 1))
-    return {
-      patient: `${first} ${surnames[i % surnames.length]}, ${age}-year-old ${isFemale ? 'female' : 'male'}`,
-      setting: settings[i % settings.length],
-      angle: angles[i % angles.length],
-    }
+    const patient = patients[i % patients.length]
+    return { patient: patient.name + ', ' + ages[i % ages.length] + '-year-old ' + patient.sex,
+      setting: settings[i % settings.length], angle: angles[i % angles.length] }
   })
+
 }
 
 export function blueprintInstructions(blueprints: CaseBlueprint[]): string {
   return `
           QUESTION PLAN (follow it exactly, one line per question, in order):
           ${blueprints.map((b, i) => `${i + 1}. Patient: ${b.patient}. Setting: ${b.setting}. Focus: ${b.angle}.`).join('\n          ')}
-          - Use each question's assigned patient, setting and focus. Change the age only if it is clinically impossible for the topic, and then pick a clearly different age.
+          - Use each question's assigned patient, setting and focus. If the age is clinically inappropriate, use a different appropriate age not already used in this quiz. Omit fictional names and ages when they do not help test the concept. Preserve any actual patient facts supplied by the source.
           - Question types without a patient (true or false, identification, fill in the blank) still follow their assigned focus.
           - Every question must test a different fact or decision. Vary the vital signs, labs, history and medications between patients.
           - Do not mention race or ethnicity unless it changes the nursing care.`

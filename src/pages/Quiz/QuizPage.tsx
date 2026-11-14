@@ -8,7 +8,7 @@ import PageHeader from '@/components/shared/PageHeader'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { jsPDF } from 'jspdf'
-import { cn, getScoreColor, getScoreLabel, checkAnswerCorrectness, formatRelativeDate } from '@/lib/utils'
+import { cn, getScoreColor, getScoreLabel, checkAnswerCorrectness, checkQuestionAnswer, isWrittenQuestion, formatRelativeDate } from '@/lib/utils'
 import MarkdownText from '@/components/shared/MarkdownText'
 import type { QuestionType, QuizSetupConfig, Quiz, Topic, StudyBoxItem } from '@/types'
 import { usePersonalization } from '@/hooks/usePersonalization'
@@ -116,7 +116,7 @@ export default function QuizPage() {
         for (let i = 0; i < quiz.questions.length; i++) {
           const q = quiz.questions[i]
           const userAnswer = quiz.user_answers[q.id]
-          const isCorrect = checkAnswerCorrectness(q.correct_answer, userAnswer, q.question_type)
+          const isCorrect = checkQuestionAnswer(q, userAnswer)
           const userAnsText = Array.isArray(userAnswer) ? userAnswer.join(', ') : userAnswer
           const correctAnsText = Array.isArray(q.correct_answer) ? q.correct_answer.join(', ') : q.correct_answer
 
@@ -221,7 +221,7 @@ export default function QuizPage() {
           for (let i = 0; i < quiz.questions.length; i++) {
             const q = quiz.questions[i]
             const userAnswer = quiz.user_answers[q.id]
-            const isCorrect = checkAnswerCorrectness(q.correct_answer, userAnswer, q.question_type)
+            const isCorrect = checkQuestionAnswer(q, userAnswer)
             const userAnsText = Array.isArray(userAnswer) ? userAnswer.join(', ') : userAnswer
             const correctAnsText = Array.isArray(q.correct_answer) ? q.correct_answer.join(', ') : q.correct_answer
 
@@ -733,7 +733,7 @@ function QuizEngine() {
         const { questions: qs, currentIndex: idx, answers: latest } = useQuizStore.getState()
         const q = qs[idx]
         if (!q) return
-        setIsCorrect(checkAnswerCorrectness(q.correct_answer, latest[q.id], q.question_type))
+        setIsCorrect(checkQuestionAnswer(q, latest[q.id]))
         setShowRationale(true)
       }
     }
@@ -743,7 +743,7 @@ function QuizEngine() {
   if (!question) return null
 
   const isSata = question?.question_type === 'sata'
-  const isEssayInput = question?.question_type === 'essay'
+  const isEssayInput = isWrittenQuestion(question)
   const isTextInput = question?.question_type === 'identification' || question?.question_type === 'fill_blank'
   const currentAnswer = answers[question?.id] || (isSata ? [] : '')
 
@@ -762,7 +762,7 @@ function QuizEngine() {
   const handleCheckAnswer = () => {
     // Read from the store so a timer firing from an older render still sees the latest pick
     const userAnswer = useQuizStore.getState().answers[question?.id]
-    const correct = checkAnswerCorrectness(question?.correct_answer, userAnswer, question?.question_type)
+    const correct = checkQuestionAnswer(question, userAnswer)
     setIsCorrect(correct)
     setShowRationale(true)
     // Bring the rationale into view
@@ -842,7 +842,7 @@ function QuizEngine() {
           <div className="fn-card p-5 sm:p-7">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[11px] font-semibold px-2.5 py-0.5 bg-[var(--rose-soft)] text-[var(--pink)] rounded-full capitalize border border-[var(--border)]">
-                {question.question_type?.replace(/_/g, ' ') || 'Question'}
+                {question.question_type?.replace(/_/g, ' ') || 'Question'}{isEssayInput ? ' - self-assessed' : ''}
               </span>
               {isSata && <span className="text-[11.5px] font-medium text-[var(--warning)]">Select all that apply</span>}
             </div>
@@ -856,6 +856,7 @@ function QuizEngine() {
                 onChange={(e) => submitAnswer(question.id, e.target.value)}
                 disabled={showRationale}
                 placeholder="Write your answer and clinical reasoning…"
+                aria-label="Your written answer"
                 rows={6}
                 className="fn-input rounded-2xl bg-[var(--card)] p-4 text-[15px] leading-relaxed resize-none"
               />
@@ -865,7 +866,19 @@ function QuizEngine() {
                   <p className="text-sm whitespace-pre-line leading-relaxed">
                     {Array.isArray(question.correct_answer) ? question.correct_answer.join('\n') : question.correct_answer}
                   </p>
-                  <p className="text-xs text-[var(--text-secondary)] mt-3">Compare your answer with the model answer to grade yourself.</p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-3">Compare your response with the model answer and rationale. This is a self-assessment, not an AI or instructor grade.</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {[{ correct: true, label: 'My answer meets the key points' }, { correct: false, label: 'I need more practice' }].map(option => (
+                      <button key={option.label} type="button" aria-pressed={question.self_assessed_correct === option.correct}
+                        className={cn('px-4 py-2 text-sm', question.self_assessed_correct === option.correct ? 'btn-primary' : 'btn-secondary')}
+                        onClick={() => {
+                          useQuizStore.setState(state => ({ questions: state.questions.map(q => q.id === question.id ? { ...q, self_assessed_correct: option.correct } : q) }))
+                          setIsCorrect(option.correct)
+                        }}>
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -932,7 +945,7 @@ function QuizEngine() {
           <AnimatePresence>
             {showRationale && (
               <motion.div id="quiz-rationale" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="fn-card p-5">
-                <div className={cn('flex items-center gap-2 mb-3 font-semibold text-[15px]', isCorrect ? 'text-[var(--success)]' : 'text-[var(--error)]')}>
+                <div className={cn('flex items-center gap-2 mb-3 font-semibold text-[15px]', isEssayInput ? 'text-[var(--pink)]' : isCorrect ? 'text-[var(--success)]' : 'text-[var(--error)]')}>
                   {isCorrect ? <CheckCircle2 size={20} weight="fill" /> : <AlertCircle size={20} weight="fill" />}
                   {isCorrect
                     ? (isFrance ? 'Correct! Amazing job, France!' : `Correct! Nice work, ${greetingName}.`)
@@ -952,10 +965,10 @@ function QuizEngine() {
           <div className="flex justify-end pt-1">
             <button
               onClick={showRationale ? handleNext : handleCheckAnswer}
-              disabled={!showRationale && cannotCheck}
+              disabled={(!showRationale && cannotCheck) || (showRationale && isEssayInput && question.self_assessed_correct === undefined)}
               className={cn('px-7 py-3 text-sm w-full sm:w-auto flex items-center justify-center gap-2', showRationale ? 'btn-primary' : 'btn-primary disabled:opacity-40')}
             >
-              {showRationale ? (currentIndex === questions.length - 1 ? 'See results' : 'Next question') : 'Check answer'}
+              {showRationale ? (currentIndex === questions.length - 1 ? 'See results' : 'Next question') : isEssayInput ? 'Review model answer' : 'Check answer'}
               <ArrowRight size={16} />
             </button>
           </div>
@@ -1004,7 +1017,7 @@ function QuizResults() {
   const [open, setOpen] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'wrong'>('all')
 
-  const graded = questions.map(q => ({ q, correct: checkAnswerCorrectness(q.correct_answer, answers[q.id], q.question_type) }))
+  const graded = questions.map(q => ({ q, correct: checkQuestionAnswer(q, answers[q.id]) }))
   const correctCount = graded.filter(g => g.correct).length
   const shown = filter === 'wrong' ? graded.filter(g => !g.correct) : graded
   const answerText = (a: string | string[] | undefined) => (Array.isArray(a) ? a.join(', ') : a) || 'No answer'
@@ -1032,6 +1045,7 @@ function QuizResults() {
           </div>
           <div className="text-center sm:text-left min-w-0">
             <p className="text-xs font-medium text-[var(--text-secondary)]">Quiz complete</p>
+            {questions.some(isWrittenQuestion) && <p className="text-xs text-[var(--text-secondary)] mt-2">Score includes your written-response self-assessments. Unreviewed responses receive no credit.</p>}
             <h1 className="font-heading font-semibold text-xl mt-0.5">{activeQuiz?.title}</h1>
             <div className="flex justify-center sm:justify-start gap-5 mt-3 text-sm">
               <span><b className="text-[var(--success)]">{correctCount}</b> correct</span>

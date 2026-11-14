@@ -1,6 +1,7 @@
+import { quizTypePlan, validQuizQuestion, questionFingerprint } from '@/lib/quizGeneration'
 import { create } from 'zustand'
 import type { Quiz, QuizQuestion, QuizSetupConfig } from '@/types'
-import { shuffleArray, checkAnswerCorrectness } from '@/lib/utils'
+import { shuffleArray, checkQuestionAnswer } from '@/lib/utils'
 import { generateJSON } from '@/lib/ai'
 import { quizBlueprints, blueprintInstructions } from '@/lib/caseBlueprints'
 import type { CaseBlueprint } from '@/lib/caseBlueprints'
@@ -197,6 +198,8 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
         CRITICAL DIVERSITY INSTRUCTION: Ensure that all questions, scenario profiles, lab values, and clinical settings are completely different from prior quizzes. Explore a different sub-focus within this topic area (e.g. drug side effects, priority assessments, post-op instructions, or ethical nurse dilemmas) to keep it fully dynamic!`
 
         systemPrompt += blueprintInstructions(plan)
+        systemPrompt += '\nREQUIRED TYPES, in exact question order: ' + typePlan.slice(generatedQuestions.length, generatedQuestions.length + count).join(', ')
+        systemPrompt += '\nUse the assigned type for each question. Case study and essay are written responses with choices: [] and a detailed model answer. Do not convert selected types into multiple choice. Do not add patient names or ages to conceptual questions unless clinically relevant. Use assigned fictional patient details only when the source does not specify an actual case; preserve source case facts. Never invent patient facts presented as coming from the source.'
 
         if (avoid.length > 0) {
           systemPrompt += `
@@ -213,6 +216,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
       const generatedQuestions: QuizQuestion[] = []
       // Every question in the whole quiz gets its own patient, setting and focus up front
       const plan = quizBlueprints(config.size)
+      const typePlan = quizTypePlan(config.question_type, config.size)
       let failedAttempts = 0
       let lastReason = ''
 
@@ -226,15 +230,20 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
         let batch: QuizQuestion[] = []
         try {
           const result = await generateJSON(prompt, systemPrompt, 'quiz', 0.85, 6000)
-          batch = (result.questions || [])
-            .filter((q: any) => q && typeof q.question === 'string')
-            .slice(0, count)
-            .map((q: any) => ({
-              ...q,
-              id: `q-${Math.random().toString(36).substring(7)}`, // Ensure unique ID
-              choices: q.type === 'true_false' ? (q.choices || ["True", "False"]) : shuffleArray(q.choices || []),
-              question_type: q.type || q.question_type || config.question_type || 'multiple_choice'
-            })) as QuizQuestion[]
+          const seen = new Set(generatedQuestions.map(q => questionFingerprint(q.question)))
+          const rawQuestions = Array.isArray(result.questions) ? result.questions : []
+          // Accept only the valid prefix: retry the same planned slot if the model drifts.
+          for (const raw of rawQuestions.slice(0, count)) {
+            const expected = typePlan[offset + batch.length]
+            if (!validQuizQuestion(raw, expected) || seen.has(questionFingerprint(raw.question))) {
+              lastReason = 'The generated question did not match the selected format or repeated an earlier question.'
+              break
+            }
+            seen.add(questionFingerprint(raw.question))
+            batch.push({ ...raw, id: 'q-' + crypto.randomUUID(), question_type: expected,
+              choices: expected === 'true_false' ? raw.choices : shuffleArray(raw.choices),
+              self_assessed_correct: undefined })
+          }
         } catch (batchError) {
           console.warn('Quiz batch failed:', batchError)
           lastReason = batchError instanceof Error ? batchError.message : String(batchError)
@@ -269,7 +278,8 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
 
   submitAnswer: (questionId: string, answer: string | string[]) => {
     set((state) => ({
-      answers: { ...state.answers, [questionId]: answer }
+      answers: { ...state.answers, [questionId]: answer },
+      questions: state.questions.map(q => q.id === questionId ? { ...q, self_assessed_correct: undefined } : q)
     }))
   },
 
@@ -351,7 +361,7 @@ export const useQuizStore = create<QuizState>()((set, get) => ({
     
     questions.forEach((q) => {
       const userAnswer = answers[q.id]
-      if (checkAnswerCorrectness(q.correct_answer, userAnswer, q.question_type)) {
+      if (checkQuestionAnswer(q, userAnswer)) {
         correctCount++
       }
     })

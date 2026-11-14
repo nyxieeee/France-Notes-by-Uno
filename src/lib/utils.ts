@@ -1,3 +1,4 @@
+import type { QuizQuestion } from '@/types'
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -164,7 +165,7 @@ export function checkAnswerCorrectness(
   }
 
   if (questionType === 'essay') {
-    return true // Essay is self-graded/qualitative, so we let the user pass it
+    return false // Written answers require an explicit self-assessment through checkQuestionAnswer.
   }
 
   // For identification and fill_blank, do a more aggressive text-cleaning
@@ -187,4 +188,15 @@ const EMOJI_RUN = new RegExp(`[ \\t]*[${EMOJI_CHARS}]+`, 'gu')
 // Removes emoji from AI-written text, including any space left in front of them
 export function stripEmoji(text: string): string {
   return text.replace(EMOJI_RUN, '')
+}
+
+export function isWrittenQuestion(question: Pick<QuizQuestion, 'question_type' | 'choices'>): boolean {
+  return question.question_type === 'essay' || (question.question_type === 'case_study' && !question.choices?.length)
+}
+
+export function checkQuestionAnswer(question: QuizQuestion, answer: string | string[] | undefined): boolean {
+  if (isWrittenQuestion(question)) {
+    return typeof answer === 'string' && answer.trim().length > 0 && question.self_assessed_correct === true
+  }
+  return checkAnswerCorrectness(question.correct_answer, answer, question.question_type)
 }
