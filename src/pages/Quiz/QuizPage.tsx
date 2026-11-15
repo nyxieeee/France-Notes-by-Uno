@@ -437,6 +437,18 @@ function QuizSetup({ onStart, recent, onShowHistory }: { onStart: (config: QuizS
     timer_value: 0
   })
 
+  // Synchronize config when handoff state changes (e.g. Navigating from Notes or Reviewer Library)
+  useEffect(() => {
+    if (preSelectedText || preSelectedTopic || preSelectedItems.length > 0) {
+      setConfig(prev => ({
+        ...prev,
+        topic: initialTopic,
+        sourceText: initialSourceText,
+        sourceName: initialSourceName,
+      }))
+    }
+  }, [location.key, preSelectedText, preSelectedTopic, preSelectedItems.length, initialTopic, initialSourceText, initialSourceName])
+
   const pickTopic = (topicTitle: string) => {
     // Collect all extracted text from items in this topic
     const matchedTopic = topics.find(t => t.title === topicTitle)
@@ -473,12 +485,22 @@ function QuizSetup({ onStart, recent, onShowHistory }: { onStart: (config: QuizS
         }
       />
 
-      {preSelectedItems.length > 0 && (
-        <div className="mb-5 fn-card p-4 bg-[var(--rose-soft)] flex items-start gap-3">
-          <Sparkles size={18} className="text-[var(--pink)] mt-0.5 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">Quizzing you on {preSelectedItems.length} selected material{preSelectedItems.length > 1 ? 's' : ''}</p>
-            <p className="text-xs text-[var(--text-secondary)] truncate">{preSelectedItems.map(i => i.file_name).join(', ')}</p>
+      {(preSelectedItems.length > 0 || config.sourceName || config.sourceText) && (
+        <div className="mb-5 fn-card p-4 bg-[var(--rose-soft)] border border-[var(--border)] flex items-start gap-3 rounded-2xl">
+          <div className="w-9 h-9 rounded-xl bg-[var(--card)] text-[var(--pink)] flex items-center justify-center shrink-0 border border-[var(--border)] shadow-xs">
+            <Sparkles size={18} weight="duotone" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--text)]">
+              {preSelectedItems.length > 0
+                ? `Quizzing you on ${preSelectedItems.length} selected material${preSelectedItems.length > 1 ? 's' : ''}`
+                : `Quizzing you on: ${config.sourceName || config.topic}`}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
+              {preSelectedItems.length > 0
+                ? preSelectedItems.map(i => i.file_name).join(', ')
+                : 'Loaded directly from your study note — questions will be created strictly from this material.'}
+            </p>
           </div>
         </div>
       )}
